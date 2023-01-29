@@ -7,12 +7,26 @@ from debugger.utils.metrics import smoothness, are_significantly_different
 from debugger.utils.model_params_getters import get_loss, get_model_weights_and_biases
 
 
+def get_config():
+    config = {
+        "Period": 0,
+        "single_batch_size": 16,
+        "total_iters": 100,
+        "abs_loss_min_thresh": 1e-8,
+        "loss_min_thresh": 0.00001,
+        "smoothness_max_thresh": 0.95,
+        "mislabeled_rate_max_thresh": 0.05,
+        "mean_error_max_thresh": 0.001,
+        "sample_size_of_losses": 100,
+        "Instance_wise_Operation": {"sample_size": 32, "trials": 10}}
+
+    return config
+
+
 class ProperFittingCheck(DebuggerInterface):
 
-    def __init__(self, check_period):
-        super().__init__()
-        self.check_type = "ProperFitting"
-        self.check_period = check_period
+    def __init__(self):
+        super().__init__(check_type="ProperFitting", config=get_config())
 
     def run(self, observations, labels, actions, opt, model, loss):
         def _loss_is_stable(loss_value):
@@ -63,4 +77,3 @@ class ProperFittingCheck(DebuggerInterface):
                 error_msg.append(self.main_msgs['data_dep'])
 
         return error_msg
-

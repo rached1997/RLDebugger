@@ -1,23 +1,28 @@
-from functools import reduce
-
 import torch.nn
-import numpy as np
-
 from debugger.debugger_interface import DebuggerInterface
-from debugger.utils.metrics import almost_equal
-from debugger.utils import metrics
-from debugger.utils.model_params_getters import get_model_layer_names, get_model_weights_and_biases
-import torch.nn as nn
+from hdebugger.utils.utils import is_activation_function, get_activation_max_min_bound
 
-from debugger.utils.utils import is_activation_function, get_activation_max_min_bound
+
+def get_config():
+    config = {"Period": 1,
+              "start": 10,
+              "Dead": {"act_min_thresh": 0.00001, "act_maj_percentile": 95, "neurons_ratio_max_thresh": 0.5},
+              "Saturation": {"ro_histo_bins_count": 50, "ro_histo_min": 0.0, "ro_histo_max": 1.0,
+                             "ro_max_thresh": 0.85, "neurons_ratio_max_thresh": 0.5},
+              "Distribution": {"std_acts_min_thresh": 0.5, "std_acts_max_thresh": 2.0, "f_test_alpha": 0.1},
+              "Range": {"disabled": False},
+              "Output": {"patience": 5},
+              "Numerical_Instability": {"disabled": False}
+              }
+    return config
 
 
 class ActivationCheck(DebuggerInterface):
 
-    def __init__(self, check_period):
-        super().__init__()
-        self.check_type = "Activation"
-        self.check_period = check_period
+    def __init__(self):
+        super().__init__(check_type="Activation", config=get_config())
+        # self.check_type = "Activation"
+        # self.check_period = check_period
         self.nn_data = {}
         self.outputs_metadata = {
             'non_zero_variance': {'patience': 5,
@@ -124,12 +129,12 @@ class ActivationCheck(DebuggerInterface):
         outputs = model(torch.tensor(observations))
         self.update_outs_conds(outputs)
 
-        if iteration_number % self.config["Period"] == 0:
+        if iteration_number % self.period == 0:
             self.check_outputs(outputs, error_msg)
 
         for acts_name, acts_array in activations.items():
             acts_buffer = self.update_buffer(acts_name, acts_array)
-            if iteration_number < self.config["start"] or iteration_number % self.config["Period"] != 0:
+            if iteration_number < self.config["start"] or iteration_number % self.period != 0:
                 continue
             self.check_activations_range(acts_name, acts_buffer, error_msg)
             # if self.check_numerical_instabilities(acts_name, acts_array): continue

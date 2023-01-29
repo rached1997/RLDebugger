@@ -4,6 +4,7 @@ import numpy as np
 import torch.nn as nn
 import re
 import torch
+import scipy.stats as stats
 
 
 def add_extra_feeds(feeds, extra_feed_dict):
@@ -16,17 +17,17 @@ def add_extra_feeds(feeds, extra_feed_dict):
 
 
 def almost_equal(value1, value2, rtol=1e-2):
-    rerr = np.abs(value1 - value2)
-    if isinstance(value1, np.ndarray):
-        return (rerr <= rtol).all()
+    rerr = torch.abs(value1 - value2)
+    if isinstance(value1, torch.Tensor):
+        return (rerr <= torch.tensor(rtol)).all()
     else:
         return rerr <= rtol
 
 
-def reduce_data(np_data, reductions, axis=None):
+def reduce_data(data, reductions, axis=None):
     data_reductions = {}
     for reduction_name in reductions:
-        data_reductions[reduction_name] = getattr(np, reduction_name)(np_data, axis=axis)
+        data_reductions[reduction_name] = getattr(torch, reduction_name)(data, dim=axis)
     return data_reductions
 
 
@@ -88,15 +89,23 @@ def get_activation_max_min_bound(name):
     return activation_max_bound, activation_min_bound
 
 
-def numpify(t):
-    """Convert object to a numpy array.
-
-    Args:
-        t (np.ndarray | torch.Tensor | obj): Converts object to :py:class:`np.ndarray`.
-    """
-    if isinstance(t, np.ndarray):
-        return t
-    elif isinstance(t, torch.Tensor):
-        return t.detach().cpu().numpy()
+def get_probas(targets):
+    if targets.shape[1] == 1:
+        labels_probas = np.zeros(2)
+        labels_probas[0] = torch.mean(1.0 - targets)
+        labels_probas[1] = torch.mean(targets)
     else:
-        return np.array(t)
+        labels_probas = torch.mean(targets, dim=0)
+    return labels_probas
+
+
+def get_balance(targets):
+    if targets.shape[1] == 1:
+        labels = 2
+    else:
+        labels = targets.shape[1]
+    labels_probas = get_probas(targets)
+    perplexity = torch.exp(torch.distributions.Categorical(labels_probas, validate_args=False).entropy())
+    balance = (perplexity - 1) / (labels - 1)
+    return balance
+

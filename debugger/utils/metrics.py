@@ -1,15 +1,17 @@
 # TODO: remove unused functions
+# TODO: Merge metrics and utils
 import scipy
 import numpy as np
 from itertools import groupby
 from operator import itemgetter
 from scipy.stats import mannwhitneyu
+import torch
 
 
 def almost_equal(value1, value2, rtol=1e-2):
-    rerr = np.abs(value1 - value2)
-    if isinstance(value1, np.ndarray):
-        return (rerr <= rtol).all()
+    rerr = torch.abs(value1 - value2)
+    if isinstance(value1, torch.Tensor):
+        return (rerr <= torch.tensor(rtol)).all()
     else:
         return rerr <= rtol
 
@@ -24,7 +26,7 @@ def are_significantly_different(sample_1, sample_2, alpha=0.05):
 
 
 def empirical_f_test(data, ref_std, F_critical=1.5):
-    var_1 = np.std(data) ** 2
+    var_1 = torch.var(data)
     var_2 = ref_std ** 2
     F = var_1 / var_2 if var_1 > var_2 else var_2 / var_1
     return F, F <= F_critical
@@ -42,20 +44,20 @@ def pure_f_test(data, ref_std, alpha=0.1):
         elif alpha == 0.01:
             return 6.635
 
-    var_1 = np.std(data) ** 2
+    var_1 = torch.var(data)
     var_2 = ref_std ** 2
     F = var_1 / var_2 if var_1 > var_2 else var_2 / var_1
     return F, F <= _F_critical(alpha)
 
 
+# TODO: this function has an error in line: "ratios = (data[1:] / data[:-1])"
 def smoothness(data):
-    data = np.array(data)
-    data_size = len(data)
+    data_size = data.shape[0]
     if data_size < 1:
         return 1.0
     ratios = (data[1:] / data[:-1])
-    rate_changes = np.abs(np.diff(ratios > 1.))
-    rate_changes_count = np.count_nonzero(rate_changes)
+    rate_changes = torch.abs(torch.diff(torch.gt(ratios, 1.).type(torch.float32)))
+    rate_changes_count = rate_changes.nonzero().shape[0]
     smoothness = (data_size - rate_changes_count) / data_size
     return smoothness
 
