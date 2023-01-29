@@ -1,4 +1,3 @@
-# TODO: changes this
 from debugger.utils.registry import Registrable
 from debugger.utils import settings
 

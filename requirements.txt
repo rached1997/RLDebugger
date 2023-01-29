@@ -3,3 +3,4 @@ matplotlib==3.5.1
 numpy>=1.18.5
 PyYAML>=5.4
 torch
+hive
