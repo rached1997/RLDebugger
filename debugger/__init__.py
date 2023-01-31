@@ -6,6 +6,7 @@ from debugger.checkers.nn_checkers.proper_fitting_check import ProperFittingChec
 from debugger.checkers.nn_checkers.gradient_check import GradientCheck
 from debugger.checkers.nn_checkers.weights_check import WeightsCheck, OverfitWeightsCheck
 from debugger.debugger_interface import DebuggerInterface
+from debugger.debugger_factory import DebuggerFactory
 from debugger.utils.registry import registry
 
 # Todo
@@ -31,5 +32,18 @@ registry.register("OverfitBias", OverfitBiasCheck, OverfitBiasCheck)
 registry.register("OverfitWeight", OverfitWeightsCheck, OverfitWeightsCheck)
 registry.register("OverfitLoss", OverfitLossCheck, OverfitLossCheck)
 
-
 get_debugger = getattr(registry, f"get_{DebuggerInterface.type_name()}")
+
+
+class DebuggerSingleton:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = DebuggerFactory()
+        return cls._instance
+
+
+# Create an instance of the singleton class
+my_singleton = DebuggerSingleton()
+

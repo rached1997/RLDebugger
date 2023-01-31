@@ -2,16 +2,12 @@ import torch
 import copy
 import hive
 from hive.runners.utils import load_config
-from utils import set_up_experiment
+from hive.runners.single_agent_loop import set_up_experiment
 from hive.agents.dqn import DQNAgent
 from debugger.debugger_factory import DebuggerFactory
-from hive.agents.qnets.base import FunctionApproximator
 
 
 class DebuggableDQNAgent(DQNAgent):
-    def __init__(self, debugger: DebuggerFactory, representation_net: FunctionApproximator, obs_dim, act_dim: int):
-        super().__init__(representation_net, obs_dim, act_dim)
-        self._debugger = debugger
 
     def update(self, update_info):
         if update_info["done"]:
@@ -27,9 +23,9 @@ class DebuggableDQNAgent(DQNAgent):
         # If the replay buffer doesn't have enough samples, catch the exception
         # and move on.
         if (
-            self._learn_schedule.update()
-            and self._replay_buffer.size() > 0
-            and self._update_period_schedule.update()
+                self._learn_schedule.update()
+                and self._replay_buffer.size() > 0
+                and self._update_period_schedule.update()
         ):
             batch = self._replay_buffer.sample(batch_size=self._batch_size)
             (
@@ -49,18 +45,18 @@ class DebuggableDQNAgent(DQNAgent):
             next_qvals, _ = torch.max(next_qvals, dim=1)
 
             q_targets = batch["reward"] + self._discount_rate * next_qvals * (
-                1 - batch["done"]
+                    1 - batch["done"]
             )
 
-            self.run_debugging(observations=copy.deepcopy(current_state_inputs[0].numpy()),
-                               model=copy.deepcopy(self._qnet),
-                               labels=copy.deepcopy(q_targets),
-                               predictions=copy.deepcopy(pred_qvals.detach()),
-                               loss=copy.deepcopy(self._loss_fn),
-                               opt=copy.deepcopy(self._optimizer),
-                               actions=copy.deepcopy(actions),
-                               done=copy.deepcopy(update_info["done"])
-                               )
+            debugger.run_debugging(observations=copy.deepcopy(current_state_inputs[0].numpy()),
+                                   model=copy.deepcopy(self._qnet),
+                                   labels=copy.deepcopy(q_targets),
+                                   predictions=copy.deepcopy(pred_qvals.detach()),
+                                   loss=copy.deepcopy(self._loss_fn),
+                                   opt=copy.deepcopy(self._optimizer),
+                                   actions=copy.deepcopy(actions),
+                                   done=copy.deepcopy(update_info["done"])
+                                   )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 
@@ -78,16 +74,13 @@ class DebuggableDQNAgent(DQNAgent):
         if self._target_net_update_schedule.update():
             self._update_target()
 
-    def run_debugging(self, **kwargs):
-        if self._debugger is not None:
-            self._debugger.set_parameters(**kwargs)
-            self._debugger.run()
-
 
 hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
-hive.registry.register("Debugger", DebuggerFactory, DebuggerFactory)
-
 
 config = load_config(config='dqn_VR.yml')
+debugger = None
+if "debugger" in config:
+    debugger_config = config["debugger"]
+    debugger = DebuggerFactory(debugger_config["kwargs"]["check_type"])
 runner = set_up_experiment(config)
 runner.run_training()

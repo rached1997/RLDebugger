@@ -9,7 +9,7 @@ def period(check_period, iter_num):
 
 
 class DebuggerFactory:
-    def __init__(self, config, app_path=None):
+    def __init__(self, config=None, app_path=None):
         # TODO: Clean this please
         app_path = Path.cwd() if app_path == None else app_path
         log_fpath = settings.build_log_file_path(app_path, "logger")
@@ -20,7 +20,8 @@ class DebuggerFactory:
         self.debuggers = dict()
         self.params = {"iteration_number": 0}
 
-        self.set_debugger(config)
+        if config is not None:
+            self.set_debugger(config)
 
     def set_debugger(self, config):
         for debugger_config in config:
@@ -50,3 +51,10 @@ class DebuggerFactory:
                 kwargs = {arg: self.params[arg] for arg in args}
                 msg = debugger.run(**kwargs)
                 self.react(msg)
+
+    def run_debugging(self, **kwargs):
+        self.set_parameters(**kwargs)
+        self.run()
+
+    def set_config(self, config):
+        self.set_debugger(config)
