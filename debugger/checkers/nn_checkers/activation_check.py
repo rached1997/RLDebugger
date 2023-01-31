@@ -1,6 +1,6 @@
 import torch.nn
 from debugger.debugger_interface import DebuggerInterface
-from hdebugger.utils.utils import is_activation_function, get_activation_max_min_bound
+from debugger.utils.utils import is_activation_function, get_activation_max_min_bound
 
 
 def get_config():

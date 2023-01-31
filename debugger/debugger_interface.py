@@ -1,5 +1,5 @@
-from hive.utils.registry import Registrable
-from hive.debugger.utils import settings
+from debugger.utils.registry import Registrable
+from debugger.utils import settings
 
 
 class DebuggerInterface(Registrable):

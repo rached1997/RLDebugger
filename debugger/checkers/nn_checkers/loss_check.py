@@ -1,5 +1,5 @@
-from hive.debugger.debugger_interface import DebuggerInterface
-from hive.debugger.utils.model_params_getters import get_loss, get_model_weights_and_biases
+from debugger.debugger_interface import DebuggerInterface
+from debugger.utils.model_params_getters import get_loss, get_model_weights_and_biases
 import torch
 
 

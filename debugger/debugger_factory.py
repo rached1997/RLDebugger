@@ -1,6 +1,6 @@
 from pathlib import Path
-from hive import debugger as debugger_lib
-from hive.debugger.utils import settings
+import debugger as debugger_lib
+from debugger.utils import settings
 import inspect
 
 

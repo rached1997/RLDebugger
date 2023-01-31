@@ -9,8 +9,7 @@ from debugger.checkers.nn_checkers.proper_fitting_check import ProperFittingChec
 from debugger.checkers.nn_checkers.gradient_check import GradientCheck
 from debugger.checkers.nn_checkers.weights_check import WeightsCheck
 from debugger.debugger_interface import DebuggerInterface
-from utils.registry import registry
-
+from debugger.utils.registry import registry
 # Todo
 #  registry.register_all(
 #     Debugger,

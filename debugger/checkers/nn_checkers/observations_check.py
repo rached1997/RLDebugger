@@ -1,5 +1,5 @@
-from hive.debugger.debugger_interface import DebuggerInterface
-from hive.debugger.utils.metrics import almost_equal
+from debugger.debugger_interface import DebuggerInterface
+from debugger.utils.metrics import almost_equal
 import torch
 
 
