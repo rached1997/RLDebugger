@@ -20,13 +20,14 @@ class GradientCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="Gradient", config=get_config())
 
-    def run(self, loss_fn):
+    # TODO: change to loss_fn
+    def run(self, loss):
         error_msgs = list()
 
         inputs = (torch.randn(self.config["sample_size"], dtype=torch.double, requires_grad=True),
                   torch.randn(self.config["sample_size"], dtype=torch.double, requires_grad=True))
 
-        theoretical_numerical_check = gradcheck(loss_fn, inputs, eps=self.config["delta"],
+        theoretical_numerical_check = gradcheck(loss, inputs, eps=self.config["delta"],
                                                 rtol=self.config["relative_err_max_thresh"])
 
         if not theoretical_numerical_check:
