@@ -1,0 +1,5 @@
+debugger:
+  name: 'Debugger'
+  kwargs:
+    check_type:
+      [name : "Weight", name: "Gradient"]

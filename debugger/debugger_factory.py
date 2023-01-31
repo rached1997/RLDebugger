@@ -2,6 +2,8 @@ from pathlib import Path
 import debugger as debugger_lib
 from debugger.utils import settings
 import inspect
+import yaml
+import copy
 
 
 def period(check_period, iter_num):
@@ -21,6 +23,7 @@ class DebuggerFactory:
             self.set_debugger(config)
 
     def set_debugger(self, config):
+        config = config["debugger"]["kwargs"]["check_type"]
         for debugger_config in config:
             debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
             debugger = debugger_fn()
@@ -28,7 +31,8 @@ class DebuggerFactory:
 
     def set_parameters(self, **kwargs):
         for key, value in kwargs.items():
-            self.params[key] = value
+            # TODO: change deepcopy
+            self.params[key] = copy.deepcopy(value)
 
     def react(self, messages, fail_on=False):
         if len(messages) > 0:
@@ -52,5 +56,11 @@ class DebuggerFactory:
         self.set_parameters(**kwargs)
         self.run()
 
-    def set_config(self, config):
-        self.set_debugger(config)
+    def set_config(self, config=None, config_path=None):
+        if config is not None:
+            self.set_debugger(config)
+        if config_path is not None:
+            with open(config_path) as f:
+                loaded_config = yaml.safe_load(f)
+                self.set_debugger(loaded_config)
+

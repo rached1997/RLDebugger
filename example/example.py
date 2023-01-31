@@ -1,5 +1,4 @@
 import torch
-import copy
 import hive
 from hive.runners.utils import load_config
 from hive.runners.single_agent_loop import set_up_experiment
@@ -16,12 +15,8 @@ class DebuggableDQNAgent(DQNAgent):
         if not self._training:
             return
 
-        # Add the most recent transition to the replay buffer.
         self._replay_buffer.add(**self.preprocess_update_info(update_info))
 
-        # Update the q network based on a sample batch from the replay buffer.
-        # If the replay buffer doesn't have enough samples, catch the exception
-        # and move on.
         if (
                 self._learn_schedule.update()
                 and self._replay_buffer.size() > 0
@@ -48,21 +43,9 @@ class DebuggableDQNAgent(DQNAgent):
                     1 - batch["done"]
             )
 
-            # TODO: change copy.deepcopy please
-            rl_debugger.run_debugging(observations=copy.deepcopy(current_state_inputs[0].numpy()),
-                                      model=copy.deepcopy(self._qnet),
-                                      labels=copy.deepcopy(q_targets),
-                                      predictions=copy.deepcopy(pred_qvals.detach()),
-                                      loss=copy.deepcopy(self._loss_fn),
-                                      opt=copy.deepcopy(self._optimizer),
-                                      actions=copy.deepcopy(actions),
-                                      done=copy.deepcopy(update_info["done"])
-                                      )
+            rl_debugger.run_debugging(model=self._qnet, loss=self._loss_fn)
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
-
-            if self._logger.should_log(self._timescale):
-                self._logger.log_scalar("train_loss", loss, self._timescale)
 
             loss.backward()
             if self._grad_clip is not None:
@@ -76,13 +59,15 @@ class DebuggableDQNAgent(DQNAgent):
             self._update_target()
 
 
-hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
+def main():
+    hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
+    config = load_config(config='custom_agent.yml')
 
-config = load_config(config='dqn_VR.yml')
+    rl_debugger.set_config(config_path='debugger.yml')
 
-x = rl_debugger
+    runner = set_up_experiment(config)
+    runner.run_training()
 
-rl_debugger.set_config(config["debugger"]["kwargs"]["check_type"])
 
-runner = set_up_experiment(config)
-runner.run_training()
+if __name__ == '__main__':
+    main()
