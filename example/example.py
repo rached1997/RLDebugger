@@ -4,7 +4,7 @@ import hive
 from hive.runners.utils import load_config
 from hive.runners.single_agent_loop import set_up_experiment
 from hive.agents.dqn import DQNAgent
-from debugger.debugger_factory import DebuggerFactory
+from debugger import rl_debugger
 
 
 class DebuggableDQNAgent(DQNAgent):
@@ -48,15 +48,16 @@ class DebuggableDQNAgent(DQNAgent):
                     1 - batch["done"]
             )
 
-            debugger.run_debugging(observations=copy.deepcopy(current_state_inputs[0].numpy()),
-                                   model=copy.deepcopy(self._qnet),
-                                   labels=copy.deepcopy(q_targets),
-                                   predictions=copy.deepcopy(pred_qvals.detach()),
-                                   loss=copy.deepcopy(self._loss_fn),
-                                   opt=copy.deepcopy(self._optimizer),
-                                   actions=copy.deepcopy(actions),
-                                   done=copy.deepcopy(update_info["done"])
-                                   )
+            # TODO: change copy.deepcopy please
+            rl_debugger.run_debugging(observations=copy.deepcopy(current_state_inputs[0].numpy()),
+                                      model=copy.deepcopy(self._qnet),
+                                      labels=copy.deepcopy(q_targets),
+                                      predictions=copy.deepcopy(pred_qvals.detach()),
+                                      loss=copy.deepcopy(self._loss_fn),
+                                      opt=copy.deepcopy(self._optimizer),
+                                      actions=copy.deepcopy(actions),
+                                      done=copy.deepcopy(update_info["done"])
+                                      )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 
@@ -78,9 +79,10 @@ class DebuggableDQNAgent(DQNAgent):
 hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
 
 config = load_config(config='dqn_VR.yml')
-debugger = None
-if "debugger" in config:
-    debugger_config = config["debugger"]
-    debugger = DebuggerFactory(debugger_config["kwargs"]["check_type"])
+
+x = rl_debugger
+
+rl_debugger.set_config(config["debugger"]["kwargs"]["check_type"])
+
 runner = set_up_experiment(config)
 runner.run_training()

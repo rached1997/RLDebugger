@@ -47,5 +47,5 @@ class DebuggerSingleton:
 
 
 # Create an instance of the singleton class
-my_singleton = DebuggerSingleton()
+rl_debugger = DebuggerSingleton()
 

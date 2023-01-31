@@ -10,11 +10,11 @@ def period(check_period, iter_num):
 
 class DebuggerFactory:
     def __init__(self, config=None, app_path=None):
-        # TODO: Clean this please
         app_path = Path.cwd() if app_path == None else app_path
         log_fpath = settings.build_log_file_path(app_path, "logger")
         self.logger = settings.file_logger(log_fpath, "logger")
         self.debuggers = dict()
+        # TODO: check this please
         self.params = {"iteration_number": 0}
 
         if config is not None:
