@@ -8,16 +8,16 @@ def get_model_weights_and_biases(model):
     i = 0
     for key, value in model.state_dict().items():
         if i % 2 == 0:
-            weights[str(key.split('.weight')[0])] = value.numpy()
+            weights[str(key.split('.weight')[0])] = value
         else:
-            biases[str(key.split('.bias')[0])] = value.numpy()
+            biases[str(key.split('.bias')[0])] = value
         i += 1
 
     return weights, biases
 
 
-def get_loss(original_predictions, model_predictions, loss):
-    loss_value = loss(torch.Tensor(original_predictions), torch.Tensor(model_predictions)).mean()
+def get_loss(original_predictions, model_predictions, loss_fn):
+    loss_value = loss_fn(torch.Tensor(original_predictions), torch.Tensor(model_predictions)).mean()
     return loss_value
 
 
