@@ -43,7 +43,15 @@ class DebuggableDQNAgent(DQNAgent):
                     1 - batch["done"]
             )
 
-            rl_debugger.run_debugging(model=self._qnet, loss=self._loss_fn)
+            rl_debugger.run_debugging(observations=current_state_inputs[0],
+                                      model=self._qnet,
+                                      labels=q_targets,
+                                      predictions=pred_qvals.detach(),
+                                      loss=self._loss_fn,
+                                      opt=self._optimizer,
+                                      actions=actions,
+                                      done=update_info["done"]
+                                      )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 

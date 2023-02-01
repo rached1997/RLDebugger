@@ -98,17 +98,6 @@ class Registry:
             setattr(self.__class__, f"get_{type.type_name()}", getter)
         self._registry[type.type_name()][name] = constructor
 
-    def register_all(self, base_class, class_dict):
-        """Bulk register function.
-
-        Args:
-            base_class (type): Corresponds to the `type` of the register function
-            class_dict (dict[str, callable]): A dictionary mapping from name to
-                constructor.
-        """
-        for cls in class_dict:
-            self.register(cls, class_dict[cls], base_class)
-
     def __repr__(self):
         return str(self._registry)
 

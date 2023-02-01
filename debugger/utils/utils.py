@@ -1,19 +1,8 @@
-# TODO: remove unused functions
-import scipy
-import numpy as np
 import torch.nn as nn
 import re
+import numpy as np
+from scipy.stats import mannwhitneyu
 import torch
-import scipy.stats as stats
-
-
-def add_extra_feeds(feeds, extra_feed_dict):
-    if extra_feed_dict == {}:
-        return feeds
-    d = {}
-    d.update(feeds)
-    d.update(extra_feed_dict)
-    return d
 
 
 def almost_equal(value1, value2, rtol=1e-2):
@@ -24,40 +13,41 @@ def almost_equal(value1, value2, rtol=1e-2):
         return rerr <= rtol
 
 
-def reduce_data(data, reductions, axis=None):
-    data_reductions = {}
-    for reduction_name in reductions:
-        data_reductions[reduction_name] = getattr(torch, reduction_name)(data, dim=axis)
-    return data_reductions
-
-
-def trim_data(data, trim_prop=0.1):
-    data.sort()
-    trimmed_data = scipy.stats.trimboth(data.flatten(), trim_prop)
-    return trimmed_data
-
-
-def transform_2d(array, keep='first'):
-    if keep == 'first':
-        return array.reshape(array.shape[0], -1)
-    elif keep == 'last':
-        return array.reshape(-1, array.shape[-1])
-
-
 def is_non_2d(array):
     return len(array.shape) > 2
 
 
-def readable(float_num):
-    return round(float_num, 3)
+def smoothness(data):
+    data_size = len(data)
+    if data_size < 1:
+        return 1.0
+    ratios = (data[1:] / data[:-1])
+    rate_changes = np.abs(np.diff(ratios > 1.))
+    rate_changes_count = np.count_nonzero(rate_changes)
+    return (data_size - rate_changes_count) / data_size
 
 
-def is_activation_function(layer):
-    activations_functions = [nn.ELU, nn.LeakyReLU, nn.ReLU6, nn.SELU, nn.Tanh, nn.Sigmoid, nn.ReLU]
-    for act_layer in activations_functions:
-        if isinstance(layer, act_layer):
-            return True
-    return False
+def pure_f_test(data, ref_std, alpha=0.1):
+    def _F_critical(alpha):
+        # http://socr.ucla.edu/Applets.dir/F_Table.html
+        if alpha == 0.1:
+            return 2.70554
+        elif alpha == 0.05:
+            return 3.8415
+        elif alpha == 0.025:
+            return 5.0239
+        elif alpha == 0.01:
+            return 6.635
+
+    var_1 = torch.var(data)
+    var_2 = ref_std ** 2
+    F = var_1 / var_2 if var_1 > var_2 else var_2 / var_1
+    return F, F <= _F_critical(alpha)
+
+
+def are_significantly_different(sample_1, sample_2, alpha=0.05):
+    stat, p = mannwhitneyu(sample_1, sample_2)
+    return p <= alpha
 
 
 def get_activation_max_min_bound(name):
@@ -108,4 +98,3 @@ def get_balance(targets):
     perplexity = torch.exp(torch.distributions.Categorical(labels_probas, validate_args=False).entropy())
     balance = (perplexity - 1) / (labels - 1)
     return balance
-

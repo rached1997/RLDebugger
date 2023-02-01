@@ -2,4 +2,6 @@ debugger:
   name: 'Debugger'
   kwargs:
     check_type:
-      [name : "Weight", name: "Gradient"]
+      [name : "PreTrainObservation", name: "PreTrainWeight", name: "PreTrainBias", name: "PreTrainLoss",
+       name: "PreTrainProperFitting", name: "PreTrainGradient", name: "OnTrainLoss", name: "OnTrainBias",
+       name: "OnTrainWeight", ]

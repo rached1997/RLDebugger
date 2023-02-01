@@ -6,18 +6,13 @@ import yaml
 import copy
 
 
-def period(check_period, iter_num):
-    return ((check_period != 0) and (iter_num % check_period == 0)) or ((check_period == 0) and (iter_num == 1))
-
-
 class DebuggerFactory:
     def __init__(self, config=None, app_path=None):
         app_path = Path.cwd() if app_path == None else app_path
         log_fpath = settings.build_log_file_path(app_path, "logger")
         self.logger = settings.file_logger(log_fpath, "logger")
         self.debuggers = dict()
-        # TODO: check this please
-        self.params = {"iteration_number": 0}
+        self.params = {}
 
         if config is not None:
             self.set_debugger(config)
@@ -44,13 +39,13 @@ class DebuggerFactory:
                     self.logger.warning(message)
 
     def run(self):
-        self.params["iteration_number"] += 1
         for debugger in self.debuggers.values():
-            if period(check_period=debugger.period, iter_num=self.params["iteration_number"]):
-                args = inspect.getfullargspec(debugger.run).args[1:]
-                kwargs = {arg: self.params[arg] for arg in args}
-                msg = debugger.run(**kwargs)
-                self.react(msg)
+            debugger.increment_iteration()
+            args = inspect.getfullargspec(debugger.run).args[1:]
+            kwargs = {arg: self.params[arg] for arg in args}
+            debugger.run(**kwargs)
+            self.react(debugger.error_msg)
+            debugger.reset_error_msg()
 
     def run_debugging(self, **kwargs):
         self.set_parameters(**kwargs)
