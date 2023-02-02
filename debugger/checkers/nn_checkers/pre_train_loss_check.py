@@ -14,7 +14,7 @@ class PreTrainLossCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="PreTrainLoss", config=get_config())
 
-    def run(self, labels, predictions, loss, model):
+    def run(self, labels, predictions, loss_fn, model):
         if not self.check_period():
             return
         losses = []
@@ -22,7 +22,7 @@ class PreTrainLossCheck(DebuggerInterface):
         while n <= (self.config["init_loss"]["size_growth_rate"] * self.config["init_loss"]["size_growth_iters"]):
             derived_batch_y = torch.cat([labels] * n, dim=0)
             derived_predictions = torch.cat(n * [predictions.clone().detach().cpu()], dim=0)
-            loss_value = float(get_loss(derived_predictions, derived_batch_y, loss))
+            loss_value = float(get_loss(derived_predictions, derived_batch_y, loss_fn))
             losses.append(loss_value)
             n *= self.config["init_loss"]["size_growth_rate"]
         rounded_loss_rates = [round(losses[i + 1] / losses[i]) for i in range(len(losses) - 1)]
@@ -31,7 +31,7 @@ class PreTrainLossCheck(DebuggerInterface):
         if equality_checks == len(rounded_loss_rates):
             self.error_msg.append(self.main_msgs['poor_reduction_loss'])
 
-        initial_loss = float(get_loss(predictions, labels, loss))
+        initial_loss = float(get_loss(predictions, labels, loss_fn))
         initial_weights, _ = get_model_weights_and_biases(model)
         number_of_actions = list(initial_weights.items())[-1][1].shape[0]
         expected_loss = -torch.log(torch.tensor(1 / number_of_actions))

@@ -47,7 +47,7 @@ class DebuggableDQNAgent(DQNAgent):
                                       model=self._qnet,
                                       labels=q_targets,
                                       predictions=pred_qvals.detach(),
-                                      loss=self._loss_fn,
+                                      loss_fn=self._loss_fn,
                                       opt=self._optimizer,
                                       actions=actions,
                                       done=update_info["done"]

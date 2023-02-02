@@ -27,7 +27,6 @@ class PreTrainBiasCheck(DebuggerInterface):
             for b_name, b_array in initial_biases.items():
                 checks.append(torch.sum(b_array) == 0.0)
 
-            # TODO: change this please
             targets = model(observations)
             if get_balance(targets) < self.config["labels_perp_min_thresh"]:
                 if checks[-1]:

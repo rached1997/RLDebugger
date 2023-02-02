@@ -1,5 +1,4 @@
-# TODO: reduce this file and only include functions and classes that are used in this project
-# TODO: this code was taken from rlhive
+#TODO: this code was taken from rlhive
 import argparse
 import inspect
 from copy import deepcopy

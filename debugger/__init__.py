@@ -1,4 +1,4 @@
-from debugger.checkers.nn_checkers.activation_check import ActivationCheck
+from debugger.checkers.nn_checkers.on_train_activation_check import OnTrainActivationCheck
 from debugger.checkers.nn_checkers.pre_train_bias_check import PreTrainBiasCheck
 from debugger.checkers.nn_checkers.pre_train_loss_check import PreTrainLossCheck
 from debugger.checkers.nn_checkers.pre_train_observations_check import PreTrainObservationsCheck
@@ -17,7 +17,7 @@ registry.register("PreTrainWeight", PreTrainWeightsCheck, PreTrainWeightsCheck)
 registry.register("PreTrainBias", PreTrainBiasCheck, PreTrainBiasCheck)
 registry.register("PreTrainLoss", PreTrainLossCheck, PreTrainLossCheck)
 registry.register("PreTrainProperFitting", PreTrainProperFittingCheck, PreTrainProperFittingCheck)
-registry.register("Activation", ActivationCheck, ActivationCheck)
+registry.register("OnTrainActivation", OnTrainActivationCheck, OnTrainActivationCheck)
 registry.register("PreTrainGradient", PreTrainGradientCheck, PreTrainGradientCheck)
 registry.register("OnTrainBias", OnTrainBiasCheck, OnTrainBiasCheck)
 registry.register("OnTrainWeight", OnTrainWeightsCheck, OnTrainWeightsCheck)

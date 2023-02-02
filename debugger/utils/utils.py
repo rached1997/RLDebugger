@@ -1,3 +1,6 @@
+from itertools import groupby
+from operator import itemgetter
+
 import torch.nn as nn
 import re
 import numpy as np
@@ -98,3 +101,24 @@ def get_balance(targets):
     perplexity = torch.exp(torch.distributions.Categorical(labels_probas, validate_args=False).entropy())
     balance = (perplexity - 1) / (labels - 1)
     return balance
+
+
+def compute_ro_B(activations, min_out, max_out, bins_count):
+    bin_size = (max_out - min_out) / bins_count
+    bins = np.arange(min_out, max_out, bin_size).tolist()
+    divided_values = np.digitize(activations, bins)
+    data = [(neu_act, bin_v) for neu_act, bin_v in zip(divided_values, activations)]
+    data = list(zip(divided_values, activations))
+    grouped_data = [list(map(lambda x: x[1], group)) for _, group in groupby(sorted(data), key=itemgetter(0))]
+    f_g = [(len(values), np.mean(values)) for values in grouped_data]
+    f_g_prime = np.array([(f_b, np.abs(2 * (g_b - min_out) / (max_out - min_out) - 1) * f_b) for f_b, g_b in f_g])
+    return f_g_prime[:, 1].sum() / f_g_prime[:, 0].sum()
+
+
+def transform_2d(array, keep='first'):
+    if keep == 'first':
+        return array.reshape(array.shape[0], -1)
+    elif keep == 'last':
+        return array.reshape(-1, array.shape[-1])
+
+

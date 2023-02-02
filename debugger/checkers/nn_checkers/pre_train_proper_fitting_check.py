@@ -29,17 +29,17 @@ class PreTrainProperFittingCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="PreTrainProperFitting", config=get_config())
 
-    def run(self, observations, labels, actions, opt, model, loss):
+    def run(self, observations, labels, actions, opt, model, loss_fn):
         if not self.check_period():
             return
 
-        real_losses = self.overfit_verification(model, opt, observations, labels, actions, loss)
+        real_losses = self.overfit_verification(model, opt, observations, labels, actions, loss_fn)
         if not real_losses:
             return
         if not self.regularization_verification(real_losses):
             return
 
-        fake_losses = self.input_dependency_verification(model, opt, observations, labels, actions, loss)
+        fake_losses = self.input_dependency_verification(model, opt, observations, labels, actions, loss_fn)
         if not fake_losses:
             return
 
@@ -59,7 +59,7 @@ class PreTrainProperFittingCheck(DebuggerInterface):
             return False
         return True
 
-    def input_dependency_verification(self, model, opt, derived_batch_x, derived_batch_y, actions, loss):
+    def input_dependency_verification(self, model, opt, derived_batch_x, derived_batch_y, actions, loss_fn):
         zeroed_model = copy.deepcopy(model)
         zeroed_opt = opt.__class__(zeroed_model.parameters(), )
 
@@ -70,13 +70,13 @@ class PreTrainProperFittingCheck(DebuggerInterface):
             zeroed_opt.zero_grad()
             outputs = zeroed_model(zeroed_batch_x)
             outputs = outputs[torch.arange(outputs.size(0)), actions]
-            fake_loss = float(get_loss(outputs, derived_batch_y, loss))
+            fake_loss = float(get_loss(outputs, derived_batch_y, loss_fn))
             fake_losses.append(fake_loss)
             if not (self._loss_is_stable(fake_loss)):
                 return False
         return fake_losses
 
-    def overfit_verification(self, model, opt, derived_batch_x, derived_batch_y, actions, loss):
+    def overfit_verification(self, model, opt, derived_batch_x, derived_batch_y, actions, loss_fn):
         overfit_opt = opt.__class__(model.parameters(), )
 
         real_losses = []
@@ -85,7 +85,7 @@ class PreTrainProperFittingCheck(DebuggerInterface):
             overfit_opt.zero_grad()
             outputs = model(derived_batch_x)
             outputs = outputs[torch.arange(outputs.size(0)), actions]
-            loss_value = get_loss(outputs, derived_batch_y, loss)
+            loss_value = get_loss(outputs, derived_batch_y, loss_fn)
             loss_value.backward()
             overfit_opt.step()
             real_losses.append(loss_value.item())

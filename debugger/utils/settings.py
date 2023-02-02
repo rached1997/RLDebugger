@@ -1,8 +1,5 @@
-# TODO: remove unused functions
 import os
 import logging
-import yaml
-from fastnumbers import fast_real
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -41,13 +38,3 @@ def file_logger(file_path, app_name):
     logger.addHandler(ch)
     return logger
 
-
-def console_logger(app_name):
-    logger = logging.getLogger(f'TheDeepChecker: {app_name} Logs')
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    return logger

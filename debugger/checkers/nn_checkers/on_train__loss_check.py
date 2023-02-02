@@ -23,8 +23,8 @@ class OnTrainLossCheck(DebuggerInterface):
         self.current_losses = []
         self.average_losses = []
 
-    def run(self, labels, predictions, loss):
-        loss_val = float(get_loss(predictions, labels, loss))
+    def run(self, labels, predictions, loss_fn):
+        loss_val = float(get_loss(predictions, labels, loss_fn))
         if self.check_numerical_instabilities(loss_val):
             return
         self.current_losses += [loss_val]
