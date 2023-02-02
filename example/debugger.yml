@@ -1,7 +1,19 @@
+# TODO change the name
 debugger:
   name: 'Debugger'
   kwargs:
+    params:
+      observations: 0
+      model: 0
+      labels: 0
+      predictions: 0
+      loss_fn: -1
+      opt: -1
+      actions: 0
+      done: 0
     check_type:
-      [name : "PreTrainObservation", name: "PreTrainWeight", name: "PreTrainBias", name: "PreTrainLoss",
-       name: "PreTrainProperFitting", name: "PreTrainGradient", name: "OnTrainLoss", name: "OnTrainBias",
-       name: "OnTrainWeight", ]
+        [name: "PreTrainProperFitting" ]
+#      [name : "PreTrainObservation", name: "PreTrainWeight", name: "PreTrainBias", name: "PreTrainLoss",
+#       name: "PreTrainProperFitting", name: "PreTrainGradient", name: "OnTrainLoss", name: "OnTrainBias",
+#       name: "OnTrainWeight", ]
+

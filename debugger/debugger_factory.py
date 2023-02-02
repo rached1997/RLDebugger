@@ -13,21 +13,27 @@ class DebuggerFactory:
         self.logger = settings.file_logger(log_fpath, "logger")
         self.debuggers = dict()
         self.params = {}
-
+        self.params_iters = dict()
         if config is not None:
             self.set_debugger(config)
 
     def set_debugger(self, config):
+        self.set_params_iteration(config)
         config = config["debugger"]["kwargs"]["check_type"]
         for debugger_config in config:
             debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
             debugger = debugger_fn()
             self.debuggers[debugger_config["name"]] = debugger
 
+    def set_params_iteration(self, config):
+        self.params_iters = config["debugger"]["kwargs"]["params"]
+
     def set_parameters(self, **kwargs):
         for key, value in kwargs.items():
             # TODO: change deepcopy
             self.params[key] = copy.deepcopy(value)
+            if self.params_iters[key] != -1:
+                self.params_iters[key] += 1
 
     def react(self, messages, fail_on=False):
         if len(messages) > 0:
@@ -40,12 +46,14 @@ class DebuggerFactory:
 
     def run(self):
         for debugger in self.debuggers.values():
-            debugger.increment_iteration()
             args = inspect.getfullargspec(debugger.run).args[1:]
-            kwargs = {arg: self.params[arg] for arg in args}
-            debugger.run(**kwargs)
-            self.react(debugger.error_msg)
-            debugger.reset_error_msg()
+            params_iters = [self.params_iters[key] for key in args]
+            if all(((val == -1) or (val == (debugger.iter_num + 1))) for val in params_iters):
+                debugger.increment_iteration()
+                kwargs = {arg: self.params[arg] for arg in args}
+                debugger.run(**kwargs)
+                self.react(debugger.error_msg)
+                debugger.reset_error_msg()
 
     def run_debugging(self, **kwargs):
         self.set_parameters(**kwargs)
@@ -58,4 +66,3 @@ class DebuggerFactory:
             with open(config_path) as f:
                 loaded_config = yaml.safe_load(f)
                 self.set_debugger(loaded_config)
-

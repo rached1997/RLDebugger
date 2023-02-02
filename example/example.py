@@ -52,7 +52,6 @@ class DebuggableDQNAgent(DQNAgent):
                                       actions=actions,
                                       done=update_info["done"]
                                       )
-
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 
             loss.backward()
