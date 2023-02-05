@@ -6,6 +6,13 @@ import numpy as np
 
 
 def get_config():
+    """
+    Return the configuration dictionary needed to run the checkers.
+
+    Returns:
+        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
+    """
+
     config = {
         "Period": 0,
         "Initial_Weight": {
@@ -22,6 +29,26 @@ class PreTrainWeightsCheck(DebuggerInterface):
         super().__init__(check_type="PreTrainWeight", config=get_config())
 
     def run(self, model):
+        """
+        Perform multiple checks on the initial values of the weights before training. The checks include:
+
+         1. Confirming if there is substantial differences between parameter values by computing their variance and
+        verifying it is not equal to zero.
+
+        2. Ensuring the distribution of initial random values matches the recommended distribution for the chosen
+        activation function. This is done by comparing the variance of weights with the recommended variance,
+        using the f-test. The recommended variances for different activation layers are:
+            a. Lecun initialization for sigmoid activation. (check this paper for more details
+                http://yann.lecun.org/exdb/publis/pdf/lecun-98b.pdf )
+            b. Glorot initialization for tanh activation (check this paper for more details
+                https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf )
+            c. He initialization for ReLU activation. (check this paper for more details
+                https://arxiv.org/pdf/1502.01852.pdf )
+
+        Args:
+            model (nn.Module): The model to be trained.
+
+        """
         if not self.check_period():
             return
         initial_weights, _ = get_model_weights_and_biases(model)

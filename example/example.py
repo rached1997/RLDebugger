@@ -39,9 +39,7 @@ class DebuggableDQNAgent(DQNAgent):
             next_qvals = self._target_qnet(*next_state_inputs)
             next_qvals, _ = torch.max(next_qvals, dim=1)
 
-            q_targets = batch["reward"] + self._discount_rate * next_qvals * (
-                    1 - batch["done"]
-            )
+            q_targets = batch["reward"] + self._discount_rate * next_qvals * (1 - batch["done"])
 
             rl_debugger.run_debugging(observations=current_state_inputs[0],
                                       model=self._qnet,

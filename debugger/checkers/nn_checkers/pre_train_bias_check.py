@@ -5,6 +5,13 @@ from debugger.utils.utils import get_probas, get_balance
 
 
 def get_config():
+    """
+    Return the configuration dictionary needed to run the checkers.
+
+    Returns:
+        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
+    """
+
     config = {"Period": 0,
               "labels_perp_min_thresh": 0.5
               }
@@ -17,6 +24,21 @@ class PreTrainBiasCheck(DebuggerInterface):
         super().__init__(check_type="PreTrainBias", config=get_config())
 
     def run(self, model, observations):
+        """
+        This function performs multiple checks on the bias initial values of the model:
+
+        (1) Verifies the existence of the bias
+        (2) Checks if the bias of the last layer is non-zero when the model's output in the initial observation set
+        is imbalanced.
+        (3) Validates if the bias of the last layer matches the label ratio when the output of the model in the
+        initial observation set is imbalanced, using the formula bi = log(pi / (1-pi)), where pi is the proportion of
+        observations of the label (actions) corresponding to the bias bi of unit i.
+        (4) Confirms that the bias is not set to zero.
+
+        Args:
+        model (nn.Module): The model that is being trained.
+        observations (Tensor): A sample of observations collected before the start of the training process.
+        """
         if not self.check_period():
             return
         _, initial_biases = get_model_weights_and_biases(model)
