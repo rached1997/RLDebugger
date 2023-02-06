@@ -18,6 +18,13 @@ class DebuggerFactory:
             self.set_debugger(config)
 
     def set_debugger(self, config):
+        """
+        Set the `debugger` object with the provided `config`.
+
+        Args:
+            config (dict): The dictionary of the checks names to be done.
+        """
+
         self.set_params_iteration(config)
         config = config["debugger"]["kwargs"]["check_type"]
         for debugger_config in config:
@@ -26,15 +33,30 @@ class DebuggerFactory:
             self.debuggers[debugger_config["name"]] = debugger
 
     def set_params_iteration(self, config):
+        """
+        Set the `params_iters` attribute with the provided `config`.
+        """
+
         self.params_iters = config["debugger"]["kwargs"]["params"]
 
     def set_parameters(self, **kwargs):
+        """
+        Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
+        """
         for key, value in kwargs.items():
             self.params[key] = copy.deepcopy(value)
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
 
     def react(self, messages, fail_on=False):
+        """
+        Reacts to the provided `messages` by either raising an exception or logging a warning, depending on the value of
+         `fail_on`.
+
+        Args:
+            messages (list): list of error messages to be displayed
+            fail_on (bool): if True it raises an exception otherwise it only displays the error
+        """
         if len(messages) > 0:
             for message in messages:
                 if fail_on:
@@ -44,6 +66,9 @@ class DebuggerFactory:
                     self.logger.warning(message)
 
     def run(self):
+        """
+        Runs the `debugger` objects in the `debuggers` dictionary.
+        """
         for debugger in self.debuggers.values():
             args = inspect.getfullargspec(debugger.run).args[1:]
             params_iters = [self.params_iters[key] for key in args]
@@ -55,10 +80,22 @@ class DebuggerFactory:
                 debugger.reset_error_msg()
 
     def run_debugging(self, **kwargs):
+        """
+        Calls the `set_parameters` method with the provided `kwargs`, and then calls the `run` method, to start running
+        the checks
+        """
         self.set_parameters(**kwargs)
         self.run()
 
     def set_config(self, config=None, config_path=None):
+        """
+        Set the `debugger` object with the provided `config` or `config_path`.
+
+        Args:
+            config (dict): the configuration dict
+            config_path (str): The path to the configuration dict
+        """
+
         if config is not None:
             self.set_debugger(config)
         if config_path is not None:

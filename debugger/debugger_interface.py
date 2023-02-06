@@ -12,13 +12,25 @@ class DebuggerInterface(Registrable):
         self.error_msg = list()
 
     def check_period(self):
+        """
+        Checks if the period of the check has been reached
+
+        Returns:
+            True if the period is reached. False otherwise.
+        """
         return ((self.period != 0) and (self.iter_num % self.period == 0)) or (
                     (self.period == 0) and (self.iter_num == 1))
 
     def increment_iteration(self):
+        """
+            Increments the iteration
+        """
         self.iter_num += 1
 
     def reset_error_msg(self):
+        """
+            empties the error messageslist
+        """
         self.error_msg = list()
 
     @classmethod

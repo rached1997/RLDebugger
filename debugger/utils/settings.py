@@ -9,6 +9,16 @@ LOG_DIR = 'logs'
 
 # Standard messages
 def load_messages(messages_section='Messages'):
+    """
+    Loads the messages from the `messages.properties` file.
+
+    Args:
+        messages_section (str): The section in the `messages.properties` file to load messages from. Default is
+        `Messages`.
+
+    Returns:
+        dict: A dictionary containing the messages from the specified section of the `messages.properties` file.
+    """
     messages_fpath = os.path.join(os.path.join(Path(__file__).parent, 'config'), 'messages.properties')
     config = ConfigParser()
     config.read(messages_fpath)
@@ -17,6 +27,16 @@ def load_messages(messages_section='Messages'):
 
 # Logging
 def build_log_file_path(app_path, app_name):
+    """
+    Builds the file path for the log file.
+
+    Args:
+        app_path (str): The path of the application.
+        app_name (str): The name of the application.
+
+    Returns:
+            str: The file path for the log file.
+    """
     log_dir_path = os.path.join(app_path, LOG_DIR)
     if not (os.path.exists(log_dir_path)):
         os.makedirs(log_dir_path)
@@ -24,6 +44,16 @@ def build_log_file_path(app_path, app_name):
 
 
 def file_logger(file_path, app_name):
+    """
+    Creates a logger object that writes logs to both a file and the console.
+
+    Args:
+        file_path (str): The file path for the log file.
+        app_name (str): The name of the application.
+
+    Returns:
+        logging.Logger: A logger object that writes logs to both a file and the console.
+    """
     logger = logging.getLogger(f'TheDeepChecker: {app_name} Logs')
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(file_path)
