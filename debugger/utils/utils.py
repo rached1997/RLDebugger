@@ -42,7 +42,7 @@ def pure_f_test(data, ref_std, alpha=0.1):
         elif alpha == 0.01:
             return 6.635
 
-    var_1 = torch.var(data)
+    var_1 = np.var(data)
     var_2 = ref_std ** 2
     F = var_1 / var_2 if var_1 > var_2 else var_2 / var_1
     return F, F <= _F_critical(alpha)

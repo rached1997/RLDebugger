@@ -9,8 +9,9 @@ import torch
 # TODO check the configs before the demo
 # TODO check this function
 def get_config():
-    config = {"Period": 10,
-              "start": 10,
+    config = {"buff_scale": 10,
+              "Period": 2,
+              "start": 2,
               "Dead": {"disabled": False, "act_min_thresh": 0.00001, "act_maj_percentile": 95,
                        "neurons_ratio_max_thresh": 0.5},
               "Saturation": {"disabled": False, "ro_histo_bins_count": 50, "ro_histo_min": 0.0, "ro_histo_max": 1.0,
@@ -28,7 +29,7 @@ class OnTrainActivationCheck(DebuggerInterface):
 
     def __init__(self):
         super().__init__(check_type="OnTrainActivation", config=get_config())
-        self.nn_data = {}
+        self.acts_data = {}
         self.outputs_metadata = {
             'non_zero_variance': {'status': None},
             'max_abs_greater_than_one': {'status': None},
@@ -93,7 +94,7 @@ class OnTrainActivationCheck(DebuggerInterface):
 
     def check_saturated_layers(self, acts_name, acts_array):
         if self.config['Saturation']['disabled']: return
-        acts_array = transform_2d(acts_array, keep='last').detach().numpy()
+        acts_array = transform_2d(acts_array, keep='last').numpy()
         ro_Bs = np.apply_along_axis(compute_ro_B, 0, acts_array, min_out=self.config["Saturation"]['ro_histo_min'],
                                     max_out=self.config["Saturation"]['ro_histo_max'],
                                     bins_count=self.config["Saturation"]["ro_histo_bins_count"])
@@ -106,7 +107,7 @@ class OnTrainActivationCheck(DebuggerInterface):
     def check_dead_layers(self, acts_name, acts_array):
         if self.config["Dead"]["disabled"]:
             return
-        acts_array = transform_2d(acts_array, keep='last').detach().cpu().numpy()
+        acts_array = transform_2d(acts_array, keep='last')
         major_values = np.percentile(np.abs(acts_array), q=self.config["Dead"]["act_maj_percentile"], axis=0)
         dead_count = np.count_nonzero(major_values < self.config["Dead"]["act_min_thresh"])
         dead_ratio = dead_count / major_values.shape[0]
@@ -118,7 +119,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         if self.config["Distribution"]["disabled"]:
             return
         acts_array = transform_2d(acts_array, keep='last')
-        act_std = torch.std(acts_array)
+        act_std = np.std(acts_array)
         if act_std < self.config["Distribution"]["std_acts_min_thresh"] \
                 or act_std > self.config["Distribution"]["std_acts_max_thresh"]:
             if act_std < self.config["Distribution"]["std_acts_min_thresh"]:
@@ -134,20 +135,24 @@ class OnTrainActivationCheck(DebuggerInterface):
                                     self.config["Distribution"]["std_acts_max_thresh"]))
 
     def update_buffer(self, acts_name, acts_array):
-        if acts_name not in self.nn_data.keys():
-            self.nn_data[acts_name] = acts_array
-            return self.nn_data[acts_name]
-        else:
             n = acts_array.shape[0]
-            self.nn_data[acts_name][0:-n] = self.nn_data[acts_name][-(self.nn_data.buff_scale - 1) * n:]
-            self.nn_data[acts_name][-n:] = acts_array
-            return self.nn_data[acts_name]
+            aaaa = self.acts_data[acts_name][-n:]
+            self.acts_data[acts_name][0:-n] = self.acts_data[acts_name][-(self.config['buff_scale'] - 1) * n:]
+            self.acts_data[acts_name][-n:] = acts_array.cpu().detach().numpy()
+            return self.acts_data[acts_name]
+
+    def set_acts_data(self, observations_size, activations):
+        acts_data = {}
+        for i, (acts_name, acts_array) in enumerate(activations.items()):
+            dims = [int(dim) for dim in acts_array.shape[1:]]
+            buffer_size = self.config['buff_scale'] * observations_size
+            acts_data[str(acts_name)+str(i)] = np.zeros(shape=(buffer_size, *dims))
+        self.acts_data = acts_data
 
     def run(self, observations, model):
         activations = {}
 
         def hook(module, input, output):
-            # print(f"{module} activations: {output}")
             activations[module] = output
 
         def get_activation():
@@ -157,12 +162,16 @@ class OnTrainActivationCheck(DebuggerInterface):
 
         get_activation()
         outputs = model(observations)
+        if self.acts_data == {}:
+            self.set_acts_data(observations.shape[0], activations)
+
         self.update_outs_conds(outputs)
 
         if self.iter_num % self.period == 0:
             self.check_outputs(outputs)
 
-        for acts_name, acts_array in activations.items():
+        for i, (acts_name, acts_array) in enumerate(activations.items()):
+            acts_name = str(acts_name) + str(i)
             acts_buffer = self.update_buffer(acts_name, acts_array)
             if self.iter_num < self.config["start"] or self.iter_num % self.period != 0:
                 continue
