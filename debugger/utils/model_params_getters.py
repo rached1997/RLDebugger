@@ -15,7 +15,7 @@ def get_model_weights_and_biases(model):
 
 
 def get_loss(original_predictions, model_predictions, loss_fn):
-    loss_value = loss_fn(torch.Tensor(original_predictions), torch.Tensor(model_predictions)).mean()
+    loss_value = loss_fn(original_predictions, model_predictions).mean()
     return loss_value
 
 

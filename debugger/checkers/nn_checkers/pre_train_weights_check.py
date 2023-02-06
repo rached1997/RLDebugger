@@ -70,13 +70,13 @@ class PreTrainWeightsCheck(DebuggerInterface):
                 activation_layer = list(layer_names)[list(layer_names.keys()).index(layer_name) + 1]
 
                 if isinstance(layer_names[activation_layer], torch.nn.ReLU) and not he_test:
-                    abs_std_err = np.abs(torch.std(weight_array) - np.sqrt((1.0 / fan_in)))
+                    abs_std_err = torch.abs(torch.std(weight_array) - np.sqrt((1.0 / fan_in)))
                     self.error_msg.append(self.main_msgs['need_he'].format(layer_name, abs_std_err))
                 elif isinstance(layer_names[activation_layer], torch.nn.Tanh) and not glorot_test:
-                    abs_std_err = np.abs(torch.std(weight_array) - np.sqrt((2.0 / fan_in)))
+                    abs_std_err = torch.abs(torch.std(weight_array) - np.sqrt((2.0 / fan_in)))
                     self.error_msg.append(self.main_msgs['need_glorot'].format(layer_name, abs_std_err))
                 elif isinstance(layer_names[activation_layer], torch.nn.Sigmoid) and not lecun_test:
-                    abs_std_err = np.abs(torch.std(weight_array) - np.sqrt((2.0 / (fan_in + fan_out))))
+                    abs_std_err = torch.abs(torch.std(weight_array) - np.sqrt((2.0 / (fan_in + fan_out))))
                     self.error_msg.append(self.main_msgs['need_lecun'].format(layer_name, abs_std_err))
                 elif not (lecun_test or he_test or glorot_test):
                     self.error_msg.append(self.main_msgs['need_init_well'].format(layer_name))

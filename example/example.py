@@ -65,6 +65,7 @@ class DebuggableDQNAgent(DQNAgent):
 
 
 def main():
+    print("**********GPU is currently used :", torch.cuda.is_available())
     hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
     config = load_config(config='custom_agent.yml')
 

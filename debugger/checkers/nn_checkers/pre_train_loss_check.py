@@ -46,7 +46,7 @@ class PreTrainLossCheck(DebuggerInterface):
         n = self.config["init_loss"]["size_growth_rate"]
         while n <= (self.config["init_loss"]["size_growth_rate"] * self.config["init_loss"]["size_growth_iters"]):
             derived_batch_y = torch.cat([labels] * n, dim=0)
-            derived_predictions = torch.cat(n * [predictions.clone().detach().cpu()], dim=0)
+            derived_predictions = torch.cat(n * [predictions], dim=0)
             loss_value = float(get_loss(derived_predictions, derived_batch_y, loss_fn))
             losses.append(loss_value)
             n *= self.config["init_loss"]["size_growth_rate"]

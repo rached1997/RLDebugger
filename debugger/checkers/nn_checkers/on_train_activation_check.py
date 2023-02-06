@@ -5,11 +5,12 @@ from debugger.utils.model_params_getters import is_activation_function
 import numpy as np
 import torch
 
+
 # TODO check the configs before the demo
 # TODO check this function
 def get_config():
-    config = {"Period": 1,
-              "start": 2,
+    config = {"Period": 10,
+              "start": 10,
               "Dead": {"disabled": False, "act_min_thresh": 0.00001, "act_maj_percentile": 95,
                        "neurons_ratio_max_thresh": 0.5},
               "Saturation": {"disabled": False, "ro_histo_bins_count": 50, "ro_histo_min": 0.0, "ro_histo_max": 1.0,
@@ -29,12 +30,9 @@ class OnTrainActivationCheck(DebuggerInterface):
         super().__init__(check_type="OnTrainActivation", config=get_config())
         self.nn_data = {}
         self.outputs_metadata = {
-            'non_zero_variance': {'patience': 5,
-                                  'status': None},
-            'max_abs_greater_than_one': {'patience': 5,
-                                         'status': None},
-            'can_be_negative': {'patience': 5,
-                                'status': None}}
+            'non_zero_variance': {'status': None},
+            'max_abs_greater_than_one': {'status': None},
+            'can_be_negative': {'status': None}}
 
     def update_outs_conds(self, outs_array):
         if self.outputs_metadata['non_zero_variance']['status'] is None:
@@ -53,11 +51,11 @@ class OnTrainActivationCheck(DebuggerInterface):
             self.error_msg.append(self.main_msgs['out_nan'])
             return
         if (self.outputs_metadata['non_zero_variance']['status'] == False).any():
-            self.outputs_metadata['non_zero_variance']['patience'] -= 1
+            self.config['patience'] -= 1
             if self.outputs_metadata['non_zero_variance']['patience'] <= 0:
                 self.error_msg.append(self.main_msgs['out_cons'])
         else:
-            self.outputs_metadata['non_zero_variance']['patience'] = 5
+            self.config['patience'] = 5
 
         if outs_array.shape[1] == 1:
             positive = (outs_array >= 0.).all() and (outs_array <= 1.).all()
@@ -108,7 +106,7 @@ class OnTrainActivationCheck(DebuggerInterface):
     def check_dead_layers(self, acts_name, acts_array):
         if self.config["Dead"]["disabled"]:
             return
-        acts_array = transform_2d(acts_array, keep='last').detach().numpy()
+        acts_array = transform_2d(acts_array, keep='last').detach().cpu().numpy()
         major_values = np.percentile(np.abs(acts_array), q=self.config["Dead"]["act_maj_percentile"], axis=0)
         dead_count = np.count_nonzero(major_values < self.config["Dead"]["act_min_thresh"])
         dead_ratio = dead_count / major_values.shape[0]
@@ -131,8 +129,9 @@ class OnTrainActivationCheck(DebuggerInterface):
                                             self.config["Distribution"]["f_test_alpha"])
             if not (f_test_result[1]):
                 main_msg = self.main_msgs['fc_act_unstable']
-                self.error_msg.append(main_msg.format(acts_name, act_std, self.config["Distribution"]["std_acts_min_thresh"],
-                                                      self.config["Distribution"]["std_acts_max_thresh"]))
+                self.error_msg.append(
+                    main_msg.format(acts_name, act_std, self.config["Distribution"]["std_acts_min_thresh"],
+                                    self.config["Distribution"]["std_acts_max_thresh"]))
 
     def update_buffer(self, acts_name, acts_array):
         if acts_name not in self.nn_data.keys():
@@ -157,7 +156,7 @@ class OnTrainActivationCheck(DebuggerInterface):
                     layer.register_forward_hook(hook)
 
         get_activation()
-        outputs = model(torch.tensor(observations))
+        outputs = model(observations)
         self.update_outs_conds(outputs)
 
         if self.iter_num % self.period == 0:

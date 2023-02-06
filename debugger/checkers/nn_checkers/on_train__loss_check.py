@@ -6,11 +6,11 @@ from debugger.utils.utils import smoothness
 
 def get_config():
     config = {
-              "Period": 1,
+              "Period": 3,
               "numeric_ins": {"disabled": False},
               "non_dec": {"disabled": False, "window_size": 5, "decr_percentage": 0.05},
               "div": {"disabled": False, "incr_abs_rate_max_thresh": 2},
-              "fluct": {"disabled": False, "window_size": 2, "smoothness_ratio_min_thresh": 0.5}
+              "fluct": {"disabled": False, "window_size": 50, "smoothness_ratio_min_thresh": 0.5}
               }
     return config
 

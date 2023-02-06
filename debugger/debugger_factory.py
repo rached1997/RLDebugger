@@ -30,7 +30,6 @@ class DebuggerFactory:
 
     def set_parameters(self, **kwargs):
         for key, value in kwargs.items():
-            # TODO: change deepcopy
             self.params[key] = copy.deepcopy(value)
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
