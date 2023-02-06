@@ -5,6 +5,12 @@ from debugger.utils.utils import smoothness
 
 
 def get_config():
+    """
+    Return the configuration dictionary needed to run the checkers.
+
+    Returns:
+        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
+    """
     config = {
               "Period": 3,
               "numeric_ins": {"disabled": False},
@@ -16,6 +22,9 @@ def get_config():
 
 
 class OnTrainLossCheck(DebuggerInterface):
+    """
+    The check is in charge of verifying the loss function during training.
+    """
 
     def __init__(self):
         super().__init__(check_type="OnTrainLoss", config=get_config())
@@ -24,6 +33,18 @@ class OnTrainLossCheck(DebuggerInterface):
         self.average_losses = []
 
     def run(self, labels, predictions, loss_fn):
+        """
+        This function performs multiple checks on the loss function during the training:
+
+        (1) Check the numerical instabilities of loss values. (check the function check_numerical_instabilities
+        for more details)
+        (2) Check the abnormal loss curvature of the loss (check the function check_loss_curve for more details)
+
+        Args:
+        labels (Tensor): A sample of labels collected periodically during the training.
+        predictions (Tensor): A sample of predictions collected periodically during the training.
+        loss_fn (torch.nn.Module): the loss function of the model.
+        """
         loss_val = float(get_loss(predictions, labels, loss_fn))
         if self.check_numerical_instabilities(loss_val):
             return
@@ -34,11 +55,29 @@ class OnTrainLossCheck(DebuggerInterface):
             self.current_losses = []
 
     def update_losses(self, curr_loss):
+        """
+        Updates the array of average loss values with new averaged loss value (over a window size).
+
+        Args:
+            curr_loss: the average loss values over a window size.
+
+        Returns: (numpy.ndarray) : The array of all average (smoothed) loss values.
+
+        """
         self.min_loss = min(curr_loss, self.min_loss)
         self.average_losses += [curr_loss]
         return np.array(self.average_losses)
 
     def check_numerical_instabilities(self, loss_value):
+        """
+        Validates the numerical stability of loss value during training.
+
+        Args:
+            loss_value: the current loss value.
+
+        Returns:
+            (bool): True if there is any NaN or infinite value present, False otherwise.
+        """
         if self.config['numeric_ins']['disabled']:
             return
         if np.isnan(loss_value):
@@ -50,6 +89,21 @@ class OnTrainLossCheck(DebuggerInterface):
         return False
 
     def check_loss_curve(self, losses):
+        """
+        Check the abnormal loss curvature of the loss. The shape and dynamics of a loss curve can help diagnose
+        the behavior of the optimizer against the learning problem (more details can be found
+        here: https://cs231n.github.io/neural-networks-3/. This check verify the following abnormalities:
+            - Non- or Slow-Decreasing loss.
+            - Diverging loss
+            - Highly-Fluctuating loss
+
+        Args:
+            losses: (numpy.ndarray) : average (smoothed) loss values.
+
+        Returns:
+            None
+
+        """
         n_losses = len(losses)
         if n_losses >= self.config['non_dec']['window_size']:
             dec_pers = np.array(

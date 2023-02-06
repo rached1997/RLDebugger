@@ -16,6 +16,9 @@ def get_config():
 
 
 class PreTrainLossCheck(DebuggerInterface):
+    """
+        The check in charge of verifying the loss function during pre-training.
+    """
 
     def __init__(self):
         super().__init__(check_type="PreTrainLoss", config=get_config())
@@ -34,9 +37,10 @@ class PreTrainLossCheck(DebuggerInterface):
         calculated approximation.
 
         Args:
+            model: (nn.model) The model being trained
+            loss_fn: (torch.nn.Module) the loss function of the model.
             labels (Tensor): The ground truth of the initial observationsTargets used in the loss function (for
              example the labels in the DQN are the Q_target).
-
             predictions (Tensor): The outputs of the model in the initial set of observations. loss_fn (function):
             The loss function. model (nn.Module): The model to be trained.
         """

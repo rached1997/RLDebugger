@@ -18,6 +18,9 @@ def get_config():
 
 
 class PreTrainObservationsCheck(DebuggerInterface):
+    """
+    The check in charge of verifying the observations during pre-training.
+    """
 
     def __init__(self):
         super().__init__(check_type="PreTrainObservation", config=get_config())
@@ -28,7 +31,8 @@ class PreTrainObservationsCheck(DebuggerInterface):
         This function checks:
             1. If the observations are changing or if they all have the same value.
             2. If the observations are normalized.Normalization is highly recommended, as stated in the
-             `Stable Baselines` documentation (https://stable-baselines.readthedocs.io/en/master/guide/rl_tips.html#tips-and-tricks-when-creating-a-custom-environment).
+             `Stable Baselines` documentation:
+              (https://stable-baselines.readthedocs.io/en/master/guide/rl_tips.html#tips-and-tricks-when-creating-a-custom-environment).
 
         Args:
             observations (Tensor): A collection of observations gathered prior to the model's training.

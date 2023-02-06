@@ -11,6 +11,12 @@ import torch
 # TODO check the configs before the demo
 # TODO check this function
 def get_config():
+    """
+        Return the configuration dictionary needed to run the checkers.
+
+        Returns:
+            config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
+    """
     config = {"buff_scale": 5,
               "Period": 5,
               "start": 5,
@@ -28,6 +34,9 @@ def get_config():
 
 
 class OnTrainActivationCheck(DebuggerInterface):
+    """
+       The check is in charge of verifying the activation functions during training.
+    """
 
     def __init__(self):
         super().__init__(check_type="OnTrainActivation", config=get_config())
@@ -38,6 +47,16 @@ class OnTrainActivationCheck(DebuggerInterface):
             'can_be_negative': {'status': None}}
 
     def update_outs_conds(self, outs_array):
+        """
+        updates the metadata needed in the activation functions checks.
+
+        Args:
+            outs_array: (Tensor) The activations of the output layer.
+
+        Returns:
+            None
+
+        """
         if self.outputs_metadata['non_zero_variance']['status'] is None:
             self.outputs_metadata['non_zero_variance']['status'] = (outs_array.var(dim=0) > 0)
             self.outputs_metadata['max_abs_greater_than_one']['status'] = (torch.abs(outs_array) > 1).any(dim=0)
@@ -53,7 +72,7 @@ class OnTrainActivationCheck(DebuggerInterface):
 
         1. Numerical Stability of the output activation by verifying if there are any NaN or infinite values.
         2. Variance of the output layer's activations to ensure that they are constantly changing.
-        3. Outputs are probabilities, i.e., positive values within [0, 1] and summing to one for multi-dimensional
+        3. Outputs are probabilities, i.e., positive values within [0, 1] and summing to one for multidimensional
         outputs.
 
         Args:
@@ -133,6 +152,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         """
         Detects saturation in the activation values for bounded activation functions using the 𝜌𝐵 metric as proposed in
         the paper "Measuring Saturation in Neural Networks" by Rakitianskaia and Engelbrecht.
+            - link: https://ieeexplore.ieee.org/document/7376778
 
         Args:
             acts_name (str): The name of the activation layer to be validated. The name should include the name of the
@@ -176,7 +196,7 @@ class OnTrainActivationCheck(DebuggerInterface):
     def check_acts_distribution(self, acts_name, acts_array):
         """
         Checks the stability of the activation values over multiple iterations. To do this we watch the histograms of
-        sampled ofte activation layer while expecting to have normally-distributed values with unit standard deviation,
+        sampled activation layer while expecting to have normally-distributed values with unit standard deviation,
          e.g., a value within [0.5, 2]. the test would pass the actual std belongs to the range of [0.5, 2]; otherwise,
          we perform an f-test to compare std with either the low-bound 0.5 if std < 0.5 or 2.0 if std > 2.0.
 
@@ -204,8 +224,8 @@ class OnTrainActivationCheck(DebuggerInterface):
                                     self.config["Distribution"]["std_acts_max_thresh"]))
 
     def update_buffer(self, acts_name, acts_array):
-            """
-            Updates the buffer for a given activation layer with new activations data.
+        """
+            Updates the buffer for a given activation layer with new activations' data.
 
             Args:
             acts_name (str): The name of the activation layer to be validated. The name should include the name of the
@@ -213,16 +233,16 @@ class OnTrainActivationCheck(DebuggerInterface):
             acts_array (Tensor): The activations obtained from the specified activation layer.
 
             Returns:
-            (numpy.ndarray) : The updated buffer containing the activations data of the specified activation layer.
-            """
-            n = acts_array.shape[0]
-            self.acts_data[acts_name][0:-n] = self.acts_data[acts_name][-(self.config['buff_scale'] - 1) * n:]
-            self.acts_data[acts_name][-n:] = acts_array.cpu().detach().numpy()
-            return self.acts_data[acts_name]
+            (numpy.ndarray) : The updated buffer containing the activations' data of the specified activation layer.
+        """
+        n = acts_array.shape[0]
+        self.acts_data[acts_name][0:-n] = self.acts_data[acts_name][-(self.config['buff_scale'] - 1) * n:]
+        self.acts_data[acts_name][-n:] = acts_array.cpu().detach().numpy()
+        return self.acts_data[acts_name]
 
     def set_acts_data(self, observations_size, activations):
         """
-        Creates the buffer that will contain the activations history.
+        Creates the buffer that will contain the activations' history.
 
         Args:
         acts_name (str): The name of the activation layer to be stored in the buffer. The name should include the name
@@ -230,7 +250,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         acts_array (Tensor): The activations obtained from the specified activation layer.
 
         Returns:
-        numpy.ndarray: The updated buffer containing the activations history.
+        numpy.ndarray: The updated buffer containing the activations' history.
         """
         acts_data = {}
         for i, (acts_name, acts_array) in enumerate(activations.items()):
@@ -242,7 +262,7 @@ class OnTrainActivationCheck(DebuggerInterface):
 
     def run(self, observations, model):
         """
-        Does multiple checks on the activation values during the training. Thechecks it does are :
+        Does multiple checks on the activation values during the training. The checks it does are :
 
         (1) checks the outputs (check the function check_outputs for more details)
         Per activation layer it does the following checks :
@@ -250,7 +270,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         (3) checks numerical instabilities (check the function check_numerical_instabilities for more details)
         (4) checks saturated layers in the case of a bounded activation layer (check the function check_saturated_layers
         for more details)
-        (5) checks dead layers in the case of an activation function that can stagnate to zero (e.g Relu) (check the
+        (5) checks dead layers in the case of an activation function that can stagnate to zero (e.g. Relu) (check the
          function check_dead_layers for more details)
         (6) checks acts distribution (check the function check_acts_distribution for more details)
 

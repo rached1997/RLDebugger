@@ -24,6 +24,9 @@ def get_config():
 
 
 class PreTrainWeightsCheck(DebuggerInterface):
+    """
+    The check in charge of verifying the weight values during pre-training.
+    """
 
     def __init__(self):
         super().__init__(check_type="PreTrainWeight", config=get_config())
@@ -38,11 +41,11 @@ class PreTrainWeightsCheck(DebuggerInterface):
         2. Ensuring the distribution of initial random values matches the recommended distribution for the chosen
         activation function. This is done by comparing the variance of weights with the recommended variance,
         using the f-test. The recommended variances for different activation layers are:
-            a. Lecun initialization for sigmoid activation. (check this paper for more details
+            A. Lecun initialization for sigmoid activation. (check this paper for more details
                 http://yann.lecun.org/exdb/publis/pdf/lecun-98b.pdf )
-            b. Glorot initialization for tanh activation (check this paper for more details
+            B. Glorot initialization for tanh activation (check this paper for more details
                 https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf )
-            c. He initialization for ReLU activation. (check this paper for more details
+            C. He initialization for ReLU activation. (check this paper for more details
                 https://arxiv.org/pdf/1502.01852.pdf )
 
         Args:
@@ -82,6 +85,17 @@ class PreTrainWeightsCheck(DebuggerInterface):
                     self.error_msg.append(self.main_msgs['need_init_well'].format(layer_name))
 
     def compute_f_test(self, weight_array):
+        """
+        This function compute the f-test [1] to verify the equality between the actual variance of each weight and
+        its recommended variance given the input size.
+            - [1] : (https://history.wisc.edu/publications/correlation-and-regression-analysis-a-historians-guide/)
+
+        Args:
+            weight_array: (Tensor) The weights obtained from the specified layer.
+
+        Returns:
+
+        """
         fan_in, fan_out = torch.nn.init._calculate_fan_in_and_fan_out(weight_array)
         lecun_F, lecun_test = pure_f_test(weight_array, np.sqrt((1.0 / fan_in)),
                                           self.config["Initial_Weight"]["f_test_alpha"])

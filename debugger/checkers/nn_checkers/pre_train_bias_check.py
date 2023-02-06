@@ -19,6 +19,9 @@ def get_config():
 
 
 class PreTrainBiasCheck(DebuggerInterface):
+    """
+    The check is in charge of verifying the bias values during pre-training.
+    """
 
     def __init__(self):
         super().__init__(check_type="PreTrainBias", config=get_config())

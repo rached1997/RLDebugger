@@ -32,6 +32,9 @@ def get_config():
 
 
 class PreTrainProperFittingCheck(DebuggerInterface):
+    """
+    The check in charge of verifying the proper fitting of the DNN before training.
+    """
 
     def __init__(self):
         super().__init__(check_type="PreTrainProperFitting", config=get_config())
