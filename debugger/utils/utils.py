@@ -54,7 +54,7 @@ def are_significantly_different(sample_1, sample_2, alpha=0.05):
 
 
 def get_activation_max_min_bound(name):
-    name = re.sub(r'\([^()]*\)', '', name)
+    name = name[:name.rfind('_')]
     if name == 'ELU':
         activation_max_bound = +np.inf
         activation_min_bound = -1.0

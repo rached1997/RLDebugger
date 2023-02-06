@@ -1,3 +1,5 @@
+import re
+
 import torch.nn
 from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.utils import get_activation_max_min_bound, transform_2d, compute_ro_B, pure_f_test
@@ -10,8 +12,8 @@ import torch
 # TODO check this function
 def get_config():
     config = {"buff_scale": 10,
-              "Period": 2,
-              "start": 2,
+              "Period": 10,
+              "start": 10,
               "Dead": {"disabled": False, "act_min_thresh": 0.00001, "act_maj_percentile": 95,
                        "neurons_ratio_max_thresh": 0.5},
               "Saturation": {"disabled": False, "ro_histo_bins_count": 50, "ro_histo_min": 0.0, "ro_histo_max": 1.0,
@@ -48,15 +50,16 @@ class OnTrainActivationCheck(DebuggerInterface):
     def check_outputs(self, outs_array):
         if torch.isinf(outs_array).any():
             self.error_msg.append(self.main_msgs['out_inf'])
+            return
         elif torch.isnan(outs_array).any():
             self.error_msg.append(self.main_msgs['out_nan'])
             return
         if (self.outputs_metadata['non_zero_variance']['status'] == False).any():
             self.config['patience'] -= 1
-            if self.outputs_metadata['non_zero_variance']['patience'] <= 0:
+            if self.config['patience']['patience'] <= 0:
                 self.error_msg.append(self.main_msgs['out_cons'])
         else:
-            self.config['patience'] = 5
+            self.config['patience'] = self.config['Output']['patience']
 
         if outs_array.shape[1] == 1:
             positive = (outs_array >= 0.).all() and (outs_array <= 1.).all()
@@ -74,7 +77,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         if self.config["Range"]["disabled"]:
             return
         acts_max_bound, acts_min_bound = get_activation_max_min_bound(str(acts_name))
-        if (acts_array < acts_max_bound).any():
+        if (acts_array < acts_min_bound).any():
             main_msg = self.main_msgs['act_ltn'].format(acts_name, acts_min_bound)
             self.error_msg.append(main_msg)
         if (acts_array > acts_max_bound).any():
@@ -136,7 +139,6 @@ class OnTrainActivationCheck(DebuggerInterface):
 
     def update_buffer(self, acts_name, acts_array):
             n = acts_array.shape[0]
-            aaaa = self.acts_data[acts_name][-n:]
             self.acts_data[acts_name][0:-n] = self.acts_data[acts_name][-(self.config['buff_scale'] - 1) * n:]
             self.acts_data[acts_name][-n:] = acts_array.cpu().detach().numpy()
             return self.acts_data[acts_name]
@@ -144,9 +146,10 @@ class OnTrainActivationCheck(DebuggerInterface):
     def set_acts_data(self, observations_size, activations):
         acts_data = {}
         for i, (acts_name, acts_array) in enumerate(activations.items()):
+            acts_name = re.sub(r'\([^()]*\)', '', str(acts_name)) + "_" + str(i)
             dims = [int(dim) for dim in acts_array.shape[1:]]
             buffer_size = self.config['buff_scale'] * observations_size
-            acts_data[str(acts_name)+str(i)] = np.zeros(shape=(buffer_size, *dims))
+            acts_data[acts_name] = np.zeros(shape=(buffer_size, *dims))
         self.acts_data = acts_data
 
     def run(self, observations, model):
@@ -171,7 +174,7 @@ class OnTrainActivationCheck(DebuggerInterface):
             self.check_outputs(outputs)
 
         for i, (acts_name, acts_array) in enumerate(activations.items()):
-            acts_name = str(acts_name) + str(i)
+            acts_name = re.sub(r'\([^()]*\)', '', str(acts_name)) + "_" + str(i)
             acts_buffer = self.update_buffer(acts_name, acts_array)
             if self.iter_num < self.config["start"] or self.iter_num % self.period != 0:
                 continue
@@ -181,4 +184,5 @@ class OnTrainActivationCheck(DebuggerInterface):
                 self.check_saturated_layers(acts_name, acts_buffer)
             else:
                 self.check_dead_layers(acts_name, acts_buffer)
+
             self.check_acts_distribution(acts_name, acts_buffer)
