@@ -79,7 +79,7 @@ class OnTrainWeightsCheck(DebuggerInterface):
                                                   self.config['div']['mav_max_thresh']))
         elif len(weight_reductions) >= self.config['div']['window_size']:
             inc_rates = np.array(
-                [weight_reductions[-i] / weight_reductions[-i - 1] for i in
+                [weight_reductions[-i].cpu().numpy() / weight_reductions[-i - 1].cpu().numpy() for i in
                  range(1, self.config['div']['window_size'])])
             if (inc_rates >= self.config['div']['inc_rate_max_thresh']).all():
                 main_msg = self.main_msgs['conv_w_div_2'] if is_conv else self.main_msgs['fc_w_div_2']

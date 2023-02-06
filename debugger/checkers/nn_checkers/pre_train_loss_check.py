@@ -56,11 +56,11 @@ class PreTrainLossCheck(DebuggerInterface):
         if equality_checks == len(rounded_loss_rates):
             self.error_msg.append(self.main_msgs['poor_reduction_loss'])
 
-        initial_loss = float(get_loss(predictions, labels, loss_fn))
-        initial_weights, _ = get_model_weights_and_biases(model)
-        number_of_actions = list(initial_weights.items())[-1][1].shape[0]
-        expected_loss = -torch.log(torch.tensor(1 / number_of_actions))
-        err = torch.abs(initial_loss - expected_loss)
-        # TODO: this function may only work on the cross entropy loss
-        if err >= self.config["init_loss"]["dev_ratio"] * expected_loss:
-            self.error_msg.append(self.main_msgs['poor_init_loss'].format(round((err / expected_loss), 3)))
+        if isinstance(loss_fn, torch.nn.CrossEntropyLoss):
+            initial_loss = float(get_loss(predictions, labels, loss_fn))
+            initial_weights, _ = get_model_weights_and_biases(model)
+            number_of_actions = list(initial_weights.items())[-1][1].shape[0]
+            expected_loss = -torch.log(torch.tensor(1 / number_of_actions))
+            err = torch.abs(initial_loss - expected_loss)
+            if err >= self.config["init_loss"]["dev_ratio"] * expected_loss:
+                self.error_msg.append(self.main_msgs['poor_init_loss'].format(round((err / expected_loss), 3)))

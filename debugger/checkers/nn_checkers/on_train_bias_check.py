@@ -54,7 +54,8 @@ class OnTrainBiasCheck(DebuggerInterface):
                                                                    self.config.div.mav_max_thresh))
         elif len(bias_reductions) >= self.config['div']['window_size']:
             inc_rates = np.array(
-                [bias_reductions[-i] / bias_reductions[-i - 1] for i in range(1, self.config['div']['window_size'])])
+                [bias_reductions[-i].cpu().numpy() / bias_reductions[-i - 1].cpu().numpy() for i in
+                 range(1, self.config['div']['window_size'])])
             if (inc_rates >= self.config['div']['inc_rate_max_thresh']).all():
                 self.error_msg.append(self.main_msgs['b_div_2'].format(bias_name, max(inc_rates),
                                                                        self.config['div']['inc_rate_max_thresh']))

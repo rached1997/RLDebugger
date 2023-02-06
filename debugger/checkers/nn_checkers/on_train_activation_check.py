@@ -100,7 +100,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         saturated_count = np.count_nonzero(ro_Bs > self.config["Saturation"]['ro_max_thresh'])
         saturated_ratio = saturated_count / ro_Bs.shape[0]
         if saturated_ratio > self.config.sat.neurons_ratio_max_thresh:
-            main_msg = self.main_msgs['fc_act_sat']
+            main_msg = self.main_msgs['act_sat']
             self.error_msg.append(main_msg.format(saturated_count, ro_Bs.size, acts_name))
 
     def check_dead_layers(self, acts_name, acts_array):
@@ -111,7 +111,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         dead_count = np.count_nonzero(major_values < self.config["Dead"]["act_min_thresh"])
         dead_ratio = dead_count / major_values.shape[0]
         if dead_ratio > self.config["Dead"]["neurons_ratio_max_thresh"]:
-            main_msg = self.main_msgs['fc_act_dead']
+            main_msg = self.main_msgs['act_dead']
             self.error_msg.append(main_msg.format(dead_count, major_values.size, acts_name))
 
     def check_acts_distribution(self, acts_name, acts_array):
@@ -128,7 +128,7 @@ class OnTrainActivationCheck(DebuggerInterface):
                 f_test_result = pure_f_test(acts_array, self.config["Distribution"]["std_acts_max_thresh"],
                                             self.config["Distribution"]["f_test_alpha"])
             if not (f_test_result[1]):
-                main_msg = self.main_msgs['fc_act_unstable']
+                main_msg = self.main_msgs['act_unstable']
                 self.error_msg.append(
                     main_msg.format(acts_name, act_std, self.config["Distribution"]["std_acts_min_thresh"],
                                     self.config["Distribution"]["std_acts_max_thresh"]))

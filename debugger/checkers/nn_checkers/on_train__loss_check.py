@@ -62,7 +62,8 @@ class OnTrainLossCheck(DebuggerInterface):
             abs_loss_incrs = [losses[n_losses - i] / self.min_loss for i in range(self.config['non_dec']['window_size'],
                                                                                   0, -1)]
             inc_rates = np.array(
-                [abs_loss_incrs[-i] / abs_loss_incrs[-i - 1] for i in range(1, self.config['non_dec']['window_size'])])
+                [abs_loss_incrs[-i] / abs_loss_incrs[-i - 1] for i in
+                 range(1, self.config['non_dec']['window_size'])])
             if (inc_rates >= self.config['div']['incr_abs_rate_max_thresh']).all() and not (
                     self.config['div']['disabled']):
                 self.error_msg.append(self.main_msgs['div_loss'].format(max(inc_rates)))

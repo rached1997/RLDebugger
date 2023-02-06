@@ -1,4 +1,3 @@
-# TODO change the name
 debugger:
   name: 'Debugger'
   kwargs:
@@ -12,8 +11,14 @@ debugger:
       actions: 0
       done: 0
     check_type:
-#        [name: "PreTrainBias" ]
-      [name : "PreTrainObservation", name: "PreTrainWeight", name: "PreTrainBias", name: "PreTrainLoss",
-       name: "PreTrainProperFitting", name: "PreTrainGradient", name: "OnTrainLoss", name: "OnTrainBias",
-       name: "OnTrainWeight", name: "OnTrainActivation"]
+      - name: PreTrainObservation
+      - name: PreTrainWeight
+      - name: PreTrainBias
+      - name: PreTrainLoss
+      - name: PreTrainProperFitting
+      - name: PreTrainGradient
+      - name: OnTrainLoss
+      - name: OnTrainBias
+      - name: OnTrainWeight
+      - name: OnTrainActivation
 
