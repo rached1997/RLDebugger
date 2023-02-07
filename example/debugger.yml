@@ -2,6 +2,7 @@ debugger:
   name: 'Debugger'
   kwargs:
     params:
+      # TODO: change 0, 1 to variables and constant
       observations: 0
       model: 0
       labels: 0

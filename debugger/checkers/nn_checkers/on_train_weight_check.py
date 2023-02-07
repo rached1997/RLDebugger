@@ -6,7 +6,7 @@ from debugger.utils.utils import is_non_2d
 from debugger.utils.model_params_getters import get_model_weights_and_biases
 
 
-def get_config():
+def get_config() -> dict:
     """
     Return the configuration dictionary needed to run the checkers.
 
@@ -32,7 +32,7 @@ class OnTrainWeightsCheck(DebuggerInterface):
         super().__init__(check_type="OnTrainWeight", config=get_config())
         self.w_reductions = dict()
 
-    def run(self, model):
+    def run(self, model: torch.nn.Module) -> None:
         """
         This function performs multiple checks on the weight during the training:
 
@@ -41,7 +41,7 @@ class OnTrainWeightsCheck(DebuggerInterface):
         (2) Check the divergence of weight values (check the function check_divergence for more details)
 
         Args:
-            model: (nn.model) The model being trained
+            model (torch.nn.Module): The model being trained
 
         Returns:
             None
@@ -58,15 +58,13 @@ class OnTrainWeightsCheck(DebuggerInterface):
                 self.check_dead(w_name, w_array, is_conv)
                 self.check_divergence(w_name, w_reductions, is_conv)
 
-    def update_w_reductions(self, weight_name, weight_array):
+    def update_w_reductions(self, weight_name: str, weight_array: torch.Tensor) -> torch.Tensor:
         """
         Updates and save the weights periodically. At each step, the mean value of the weights is stored.
 
         Args:
-            # TODO: check this affirmation.
-            weight_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'weight'.
-            weight_array: (Tensor): The weights obtained from the specified layer.
+            weight_name (str): The name of the layer to be validated.
+            weight_array (Tensor): The weights obtained from the specified layer.
 
         Returns:
             None
@@ -76,21 +74,19 @@ class OnTrainWeightsCheck(DebuggerInterface):
         self.w_reductions[weight_name].append(torch.mean(torch.abs(weight_array)))
         return self.w_reductions[weight_name]
 
-    def check_numerical_instabilities(self, weight_name, weight_array):
+    def check_numerical_instabilities(self, weight_name: str, weight_array: torch.Tensor) -> bool:
         """
         Validates the numerical stability of bias values during training.
 
         Args:
-            # TODO: check this affirmation.
-            weight_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'weight'.
-            weight_array: (Tensor): The weights obtained from the specified layer.
+            weight_name (str): The name of the layer to be validated.
+            weight_array (torch.Tensor): The weights obtained from the specified layer.
 
         Returns:
-            None
+            (bool)
         """
         if self.config['numeric_ins']['disabled']:
-            return
+            return False
         if torch.isinf(weight_array).any():
             self.error_msg.append(self.main_msgs['w_inf'].format(weight_name))
             return True
@@ -99,7 +95,7 @@ class OnTrainWeightsCheck(DebuggerInterface):
             return True
         return False
 
-    def check_sign(self, weight_name, weight_array, is_conv):
+    def check_sign(self, weight_name: str, weight_array: torch.Tensor, is_conv: bool) -> None:
         """
         This function check Over-Negative weight in each layer. A layer’s weights are considered over-negative,
         when, the ratio of negative values in the tensor elements is very high. This state of weights are likely
@@ -108,14 +104,12 @@ class OnTrainWeightsCheck(DebuggerInterface):
             - https://arxiv.org/abs/1806.06068
 
         Args:
-            # TODO: check this affirmation.
-            weight_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'weight'.
-            weight_array: (Tensor): The weights obtained from the specified layer.
-            is_conv: (bool) a boolean indicating whether or not the current layer is a Conv layer.
+            weight_name (str): The name of the layer to be validated.
+            weight_array (Tensor): The weights obtained from the specified layer.
+            is_conv (bool): a boolean indicating whether the current layer is a Conv layer.
 
         Returns:
-
+            None
         """
         if self.config['neg']['disabled']:
             return
@@ -124,7 +118,7 @@ class OnTrainWeightsCheck(DebuggerInterface):
             main_msg = self.main_msgs['conv_w_sign'] if is_conv else self.main_msgs['fc_w_sign']
             self.error_msg.append(main_msg.format(weight_name, neg_ratio, self.config['neg']['ratio_max_thresh']))
 
-    def check_dead(self, weight_name, weight_array, is_conv):
+    def check_dead(self, weight_name: str, weight_array: torch.Tensor, is_conv: bool) -> None:
         """
         This function check Dead weight in each layer. A layer’s weights are considered dead, when, the ratio of zeros
         values in the tensor elements is very high. This state of weights are likely to be problematic for the learning
@@ -132,11 +126,9 @@ class OnTrainWeightsCheck(DebuggerInterface):
             - https://arxiv.org/abs/1806.06068
 
         Args:
-            # TODO: check this affirmation.
-            weight_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'weight'.
-            weight_array: (Tensor): The weights obtained from the specified layer.
-            is_conv: (bool) a boolean indicating whether or not the current layer is a Conv layer.
+            weight_name (str): The name of the layer to be validated.
+            weight_array (Tensor): The weights obtained from the specified layer.
+            is_conv: (bool): a boolean indicating whether the current layer is a Conv layer.
 
         Returns:
 
@@ -149,7 +141,7 @@ class OnTrainWeightsCheck(DebuggerInterface):
             main_msg = self.main_msgs['conv_w_dead'] if is_conv else self.main_msgs['fc_w_dead']
             self.error_msg.append(main_msg.format(weight_name, dead_ratio, self.config['dead']['val_min_thresh']))
 
-    def check_divergence(self, weight_name, weight_reductions, is_conv):
+    def check_divergence(self, weight_name: str, weight_reductions: list[torch.Tensor], is_conv: bool):
         """
         This function check weight divergence, as weights risk divergence, and may go towards inf.
         High initial weights or learning rate coupled with a lack of or inadequate regularization results in rapidly
@@ -159,14 +151,12 @@ class OnTrainWeightsCheck(DebuggerInterface):
             - https://arxiv.org/pdf/2204.00694.pdf
 
         Args:
-            # TODO: check this affirmation.
-            weight_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'weight'.
+            weight_name: (str) The name of the layer to be validated.
             weight_reductions: (Tensor): The weights obtained from the specified layer.
             is_conv: (bool) a boolean indicating whether or not the current layer is a Conv layer.
 
         Returns:
-
+            None
         """
         if self.config['div']['disabled']:
             return

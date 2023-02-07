@@ -4,7 +4,7 @@ from debugger.utils.model_params_getters import get_model_weights_and_biases
 from debugger.utils.utils import get_probas, get_balance
 
 
-def get_config():
+def get_config() -> dict:
     """
     Return the configuration dictionary needed to run the checkers.
 
@@ -26,7 +26,7 @@ class PreTrainBiasCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="PreTrainBias", config=get_config())
 
-    def run(self, model, observations):
+    def run(self, model: torch.nn.Module, observations: torch.Tensor) -> None:
         """
         This function performs multiple checks on the bias initial values of the model:
 
@@ -39,8 +39,8 @@ class PreTrainBiasCheck(DebuggerInterface):
         (4) Confirms that the bias is not set to zero.
 
         Args:
-        model (nn.Module): The model that is being trained.
-        observations (Tensor): A sample of observations collected before the start of the training process.
+        model (torch.nn.Module): The model that is being trained.
+        observations (torch.Tensor): A sample of observations collected before the start of the training process.
         """
         if not self.check_period():
             return

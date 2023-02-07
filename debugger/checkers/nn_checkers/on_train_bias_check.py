@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 
-def get_config():
+def get_config() -> dict:
     """
     Return the configuration dictionary needed to run the checkers.
 
@@ -28,7 +28,7 @@ class OnTrainBiasCheck(DebuggerInterface):
         super().__init__(check_type="OnTrainBias", config=get_config())
         self.b_reductions = dict()
 
-    def run(self, model):
+    def run(self, model: torch.nn.Module) -> None:
         """
         This function performs multiple checks on the bias during the training:
 
@@ -37,7 +37,7 @@ class OnTrainBiasCheck(DebuggerInterface):
         (2) Check the divergence of bias values (check the function check_divergence for more details)
 
         Args:
-            model: (nn.model): The model being trained
+            model (nn.model): The model being trained
 
         Returns:
             None
@@ -51,14 +51,12 @@ class OnTrainBiasCheck(DebuggerInterface):
             if self.iter_num < self.config['start'] or self.check_period():
                 self.check_divergence(b_name, b_reductions)
 
-    def update_b_reductions(self, bias_name, bias_array):
+    def update_b_reductions(self, bias_name: str, bias_array: torch.Tensor) -> torch.Tensor:
         """
         Updates and save the biases periodically. At each step, the mean value of the biases is stored.
 
         Args:
-            # TODO: check this affirmation.
-            bias_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'bias'.
+            bias_name (str): The name of the layer to be validated.
             bias_array (Tensor): The biases obtained from the specified layer.
 
         Returns:
@@ -69,21 +67,19 @@ class OnTrainBiasCheck(DebuggerInterface):
         self.b_reductions[bias_name].append(torch.mean(torch.abs(bias_array)))
         return self.b_reductions[bias_name]
 
-    def check_numerical_instabilities(self, bias_name, bias_array):
+    def check_numerical_instabilities(self, bias_name: str, bias_array: torch.Tensor) -> bool:
         """
         Validates the numerical stability of bias values during training.
 
         Args:
-            # TODO: check this affirmation.
-            bias_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'bias'.
+            bias_name: (str) The name of the layer to be validated.
             bias_array: (Tensor): The biases obtained from the specified layer.
 
         Returns:
             (bool): True if there is any NaN or infinite value present, False otherwise.
         """
         if self.config['numeric_ins']['disabled']:
-            return
+            return False
         if torch.isinf(bias_array).any():
             self.error_msg.append(self.main_msgs['b_inf'].format(bias_name))
             return True
@@ -92,7 +88,7 @@ class OnTrainBiasCheck(DebuggerInterface):
             return True
         return False
 
-    def check_divergence(self, bias_name, bias_reductions):
+    def check_divergence(self, bias_name: str, bias_reductions: torch.Tensor) -> None:
         """
         This function check bias divergence, as biases risk divergence, and may go towards inf. Biases can become
         huge in cases when features (observation) do not adequately explain the predicted outcome or are ineffective.
@@ -101,9 +97,7 @@ class OnTrainBiasCheck(DebuggerInterface):
             - https://arxiv.org/pdf/2204.00694.pdf
 
         Args:
-            # TODO: check this affirmation.
-            bias_name: (str) The name of the layer to be validated. The name should include the name of the
-            layer followed with a prefix 'bias'.
+            bias_name: (str) The name of the layer to be validated.
             bias_reductions:
 
         Returns:

@@ -80,6 +80,8 @@ def pure_f_test(data, ref_std, alpha=0.1):
         elif alpha == 0.01:
             return 6.635
 
+    if isinstance(data, torch.Tensor):
+        data = data.detach().cpu().numpy()
     var_1 = np.std(data)**2
     var_2 = ref_std ** 2
     F = var_1 / var_2 if var_1 > var_2 else var_2 / var_1
