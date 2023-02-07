@@ -9,6 +9,9 @@
 To integrate the tool you have to do the following 4 steps : 
 
 ### Step 1. Prepare the config file
+
+***
+
 Create a .yml config file and copy the following lines :
 ```yml
 debugger:
@@ -41,6 +44,8 @@ of the debugger should be one of the following checks: `PreTrainObservation`, `P
 it should be one of the checks listed.
 
 ### 2. Installation and Importing
+***
+
 > Please note that this step is temporary, as the project is still in development.
 
 ##### To set up the debugger in your python environment, follow these steps:
@@ -56,6 +61,8 @@ rl_debugger.set_config(config_path="the path to your debugger config.yml file")
 ```
 
 ### 3. Configuring each Debugger (Optional)
+***
+
 If you only need to deactivate a specific check for a particular debugger, this step is useful.
 You can modify the configuration of each debugger by changing the parameters in the
 get_config function.
@@ -72,7 +79,7 @@ def get_config():
         "Period": 3,
         "numeric_ins": {"disabled": False},
         "neg": {"disabled": False, "ratio_max_thresh": 0.95},
-        "dead": {"disabled": False, "val_min_thresh": 0.00001, "ratio_max_thresh": 0.95},
+        "dead ": {"disabled": False, "val_min_thresh": 0.00001, "ratio_max_thresh": 0.95},
         "div": {"disabled": False, "window_size": 5, "mav_max_thresh": 100000000, "inc_rate_max_thresh": 2}
     }
     return config
@@ -80,6 +87,8 @@ def get_config():
 
 
 ### 4. Run the debugging
+***
+
 To run the debugging, use the following code:
 
 ```python
@@ -113,10 +122,58 @@ To help you better understand the results of the debugging process, it's importa
 to carefully review these messages and take the necessary actions to resolve any 
 issues that they highlight.
 
-[//]: # (## How to create you new )
+## Creating a new Debugger
 
-[//]: # (### Create the checker class)
+### 1. Create the Debugger Class
 
-[//]: # (### Add the error messages to the message.properties)
+To create a new debugger, you can follow the structure outlined in the code snippet below:
 
-[//]: # (### Register it)
+```python
+def get_config():
+    config = {"Period": ..., "other_data": ...}
+    return config
+
+
+class YourDebuggerName(DebuggerInterface):
+    def __init__(self):
+        super().__init__(check_type="YourDebuggerName", config=get_config())
+        # you can add other attributes    
+    
+    #  You can define other functions
+    
+    def run(self, put_the_parameters_you_need):
+        if not self.check_period():
+            # Do some instructions ....
+        
+        # You can do your debugging logic here ....
+        
+        self.error_msg.append("your error message")
+```
+
+To create a new debugger, you need to include the following elements in your class:
+1. `get_config` function: This function is mandatory and defines all the configurations 
+necessary for running your custom debugger. In the `config` dictionary, it is important to
+include the `period` element, which determines the periodicity of the debugging 
+(if you want the debugger to run only before the training, set its value to 0).
+
+2. Your debugger class: Your debugger should inherit from the `DebuggerInterface` class and
+initialize itself by calling `super()` and providing the name of your debugger
+of your debugger 
+
+3. The `run` function: The function should include three important elements: 
+the parameters you need (as mentioned in the `params` in the config.yml file), 
+the periodicity check using the predefined `check_period()` function, 
+and appending the messages you want to display to the `self.error_msg list.`
+
+Note: If you need to know the number of times the debugger has run, you can check 
+it using the `self.iter_num` variable.
+
+### Register the Debugger
+To run your new debugger, you need to register it by adding the following line
+in the `__init__.py` file under the debugger:
+
+```python
+registry.register("YourDebuggerName", YourDebuggerName, YourDebuggerName)
+```
+Finally, to run your debugger, all you have to do is add "YourDebuggerName"
+to the `config.yml` file and run the training.
