@@ -1,14 +1,14 @@
 # DRLDebugger
 
 ## Introduction to the DRL Debugger Tool
-***
+
 This package provides a debugging tool for Deep Reinforcement Learning (DRL) frameworks,
 designed to detect and address various issues that may arise during training. 
 The tool allows you to monitor your training process in real-time, identifying any 
 potential flaws and making it easier to improve the performance of your DRL models.
 
 ### Debuggers Included in this Package
-***
+
 > Note : This first version of the debugger contains checks for 
 various aspects of the neural network, as adapted from the paper
 "Testing Feedforward Neural Networks Training Programs" [^1].
@@ -20,11 +20,9 @@ package, please refer to the [Debugger Details](./Debugger.md)
 section.
 
 ## Integrating the Debugger tool in your DRL framework
-***
 To integrate the tool you have to do the following 4 steps : 
 
 ### Step 1. Prepare the config file
-
 ***
 
 Create a .yml config file and copy the following lines :
