@@ -125,7 +125,7 @@ issues that they highlight.
 ## Creating a new Debugger
 
 ### 1. Create the Debugger Class
-
+***
 To create a new debugger, you can follow the structure outlined in the code snippet below:
 
 ```python
@@ -168,7 +168,8 @@ and appending the messages you want to display to the `self.error_msg list.`
 Note: If you need to know the number of times the debugger has run, you can check 
 it using the `self.iter_num` variable.
 
-### Register the Debugger
+### 2. Register the Debugger
+***
 To run your new debugger, you need to register it by adding the following line
 in the `__init__.py` file under the debugger:
 
