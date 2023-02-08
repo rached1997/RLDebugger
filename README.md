@@ -7,7 +7,7 @@ designed to detect and address various issues that may arise during training.
 The tool allows you to monitor your training process in real-time, identifying any 
 potential flaws and making it easier to improve the performance of your DRL models.
 
-### Debuggers Included in this Package
+### Checkers Included in this Package
 
 > Note : This first version of the debugger contains checks for 
 various aspects of the neural network, as adapted from the paper
@@ -15,11 +15,13 @@ various aspects of the neural network, as adapted from the paper
 
 [^1]: https://arxiv.org/pdf/2204.00694.pdf
 
-For more information on the specific debuggers included in this 
-package, please refer to the [Debugger Details](./Debugger.md) 
-section.
+[//]: # (For more information on the specific Checkers included in this )
 
-## Integrating the Debugger tool in your DRL framework
+[//]: # (package, please refer to the [Debugger Details]&#40;./Debugger.md&#41; )
+
+[//]: # (section.)
+
+## Integrating the Debugger tool in your DRL Pytorch Application
 To integrate the tool you have to do the following 4 steps : 
 
 ### Step 1. Prepare the config file
@@ -42,18 +44,18 @@ debugger:
       done: "variable"
       
     check_type:
-      - name: #Debugger_Name_1
-      - name: #Debugger_Name_2
+      - name: #Checker_Name_1
+      - name: #Checker_Name_2
 ```
 The debugger config should have the same structure and includes the following elements:
 
-* **params (only change it when you will develop a new debugger)** : contains the elements 
-required for the debugger. The names of the parameters should not be changed, as the debuggers
+* **params (only change it when you will develop a new Checker)** : contains the elements 
+required for the Checker. The names of the parameters should not be changed, as the Checkers
 will track these variables using the same names provided in this code snippet. constant or 
 variable indicates if the nature of the variable.
 * **check_type** : Mention the name of the check you want to do, by replacing 
-`#Debugger_Name_1` and `#Debugger_Name_2` (you can add as many debuggers as you want). The names
-of the debugger should be one of the following checks: `PreTrainObservation`, `PreTrainWeight`,
+`#Checker_Name_1` and `#Checker_Name_2` (you can add as many Checkers as you want). The names
+of the Checker should be one of the following: `PreTrainObservation`, `PreTrainWeight`,
 `PreTrainBias`, `PreTrainLoss`, `PreTrainProperFitting`, `PreTrainGradient`, `OnTrainLoss`, 
 `OnTrainBias`, `OnTrainWeight`, `OnTrainActivation`. Be careful when choosing the name, 
 it should be one of the checks listed.
@@ -65,8 +67,9 @@ it should be one of the checks listed.
 
 ##### To set up the debugger in your python environment, follow these steps:
 1. Clone the repository
-2. Run the command pip install -e . in the terminal
-3. Import the debugger in your code with the following line:
+2. cd 'path to RLDebugger repo'
+3. Run the command `pip install -e .`
+4. Import the debugger in your code with the following line:
 ```python
 from debugger import rl_debugger
 ```
@@ -75,18 +78,18 @@ from debugger import rl_debugger
 rl_debugger.set_config(config_path="the path to your debugger config.yml file")
 ```
 
-### 3. Configuring each Debugger (Optional)
+### 3. Configuring each Checker (Optional)
 ***
 
-If you only need to deactivate a specific check for a particular debugger, this step is useful.
-You can modify the configuration of each debugger by changing the parameters in the
+If you only need to deactivate a specific check for a particular Checker, this step is useful.
+You can modify the configuration of each Checker by changing the parameters in the
 get_config function.
 
-For instance, when debugging the weights during training (i.e `OnTrainWeight` debugger),
+For instance, when debugging the weights during training (i.e `OnTrainWeight` Checker),
 three different types of checks can be performed, but you may want to modify the thresholds or
 deactivate a specific check. To do so, all you have to do is
 modify the parameters you find in the config dict in the  function get_config function,
-which you will find in the class of the targeted debugger, as shown below :
+which you will find in the class of the targeted Checker, as shown below :
 ```python
 def get_config():
     config = {
@@ -115,19 +118,19 @@ rl_debugger.run_debugging(observations= ...,
                           predictions= ....
                           )
 ```
-This function will run the debuggers shosen by the user in the config file. 
+This function will run the Checkers shosen by the user in the config file. 
 It can be called from any class or file in your project ( you can imagine it as a
 global function).
 
-For example, to run the debugger PreTrainLoss, the `run_debugging` function should receive
+For example, to run the Checker PreTrainLoss, the `run_debugging` function should receive
 four parameters: labels, predictions, loss_fn, and model. However,The function 
 `run_debugging` can be called  in different parts of the code and be provided with 
-the parameters available at that point, but the debugger will wait until all the 
+the parameters available at that point, but the Checker will wait until all the 
 parameters are received, so it can start running.
 
 It is important to note that while calling `run_debugging`, the key for the parameters 
 (args) must match exactly as mentioned in the configuration file under `params`. If there 
-are parameters that are not required (i.e., not used by any of the debugger), 
+are parameters that are not required (i.e., not used by any of the Checkers), 
 they can be omitted.
 
 ### 5. how to interpret the results
@@ -137,59 +140,62 @@ To help you better understand the results of the debugging process, it's importa
 to carefully review these messages and take the necessary actions to resolve any 
 issues that they highlight.
 
-## Creating a new Debugger
+## Creating a new Checker
 
-### 1. Create the Debugger Class
+### 1. Create the Checker Class
 ***
-To create a new debugger, you can follow the structure outlined in the code snippet below:
+To create a new checker, you can follow the structure outlined in the code snippet below:
 
 ```python
+from debugger import DebuggerInterface
+
+
 def get_config():
     config = {"Period": ..., "other_data": ...}
     return config
 
 
-class YourDebuggerName(DebuggerInterface):
+class CustomChecker(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="YourDebuggerName", config=get_config())
-        # you can add other attributes    
-    
+        super().__init__(check_type="CustomChecker", config=get_config())
+        # you can add other attributes
+
     #  You can define other functions
-    
-    def run(self, put_the_parameters_you_need):
-        if not self.check_period():
+
+    def run(self, observed_param):
+        if self.check_period():
             # Do some instructions ....
-        
-        # You can do your debugging logic here ....
-        
-        self.error_msg.append("your error message")
+            self.error_msg.append("your error message")
+
 ```
 
-To create a new debugger, you need to include the following elements in your class:
+To create a new Checker, you need to include the following elements in your class:
 1. `get_config` function: This function is mandatory and defines all the configurations 
-necessary for running your custom debugger. In the `config` dictionary, it is important to
+necessary for running your custom Checker. In the `config` dictionary, it is important to
 include the `period` element, which determines the periodicity of the debugging 
-(if you want the debugger to run only before the training, set its value to 0).
+(if you want the Checker to run only before the training, set its value to 0).
 
-2. Your debugger class: Your debugger should inherit from the `DebuggerInterface` class and
-initialize itself by calling `super()` and providing the name of your debugger
-of your debugger 
+2. Your Checker class: Your Checker should inherit from the `DebuggerInterface` class and
+initialize itself by calling `super()` and providing the name of your Checker
+of your Checker 
 
 3. The `run` function: The function should include three important elements: 
 the parameters you need (as mentioned in the `params` in the config.yml file), 
 the periodicity check using the predefined `check_period()` function, 
 and appending the messages you want to display to the `self.error_msg list.`
 
-Note: If you need to know the number of times the debugger has run, you can check 
+Note: If you need to know the number of times the Checker has run, you can check 
 it using the `self.iter_num` variable.
 
-### 2. Register the Debugger
+### 2. Register the Checker
 ***
-To run your new debugger, you need to register it by adding the following line
-in the `__init__.py` file under the debugger:
+To run your new Checker, you need to register it by adding the following line
+in your `main.py`:
 
 ```python
-registry.register("YourDebuggerName", YourDebuggerName, YourDebuggerName)
+rl_debugger.register(checker_name="CustomChecker", checker_class=CustomChecker)
+# the register method should be called before the set_config method
+rl_debugger.set_config(...)
 ```
-Finally, to run your debugger, all you have to do is add "YourDebuggerName"
+Finally, to run your Checker, all you have to do is add "CustomChecker"
 to the `config.yml` file and run the training.

@@ -1,6 +1,8 @@
 from pathlib import Path
+import debugger
 import debugger as debugger_lib
 from debugger.utils import settings
+from debugger.utils.registry import registry
 import inspect
 import yaml
 import copy
@@ -103,3 +105,9 @@ class DebuggerFactory:
             with open(config_path) as f:
                 loaded_config = yaml.safe_load(f)
                 self.set_debugger(loaded_config)
+
+    @staticmethod
+    def register(checker_name: str, checker_class: debugger.DebuggerInterface) -> None:
+        registry.register(checker_name, checker_class, checker_class)
+
+

@@ -14,9 +14,9 @@ def get_config() -> dict:
         Returns:
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {"buff_scale": 200,
-              "Period": 200,
-              "start": 200,
+    config = {"buff_scale": 300,
+              "Period": 300,
+              "start": 300,
               "patience": 5,
               "Dead": {"disabled": False, "act_min_thresh": 0.00001, "act_maj_percentile": 95,
                        "neurons_ratio_max_thresh": 0.5},
