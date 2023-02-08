@@ -37,7 +37,8 @@ class DebuggerFactory:
         Set the `params_iters` attribute with the provided `config`.
         """
 
-        self.params_iters = config["debugger"]["kwargs"]["params"]
+        params = config["debugger"]["kwargs"]["params"]
+        self.params_iters = {key: -1 if val == "constant" else 0 for key, val in params.items()}
 
     def set_parameters(self, **kwargs):
         """

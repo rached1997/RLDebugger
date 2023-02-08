@@ -1,6 +1,6 @@
 import torch
 from debugger.debugger_interface import DebuggerInterface
-from debugger.utils.model_params_getters import get_model_weights_and_biases
+from debugger.utils.model_params_getters import get_model_weights_and_biases, get_last_layer_activation
 from debugger.utils.utils import get_probas, get_balance
 
 
@@ -52,15 +52,16 @@ class PreTrainBiasCheck(DebuggerInterface):
             for b_name, b_array in initial_biases.items():
                 checks.append(torch.sum(b_array) == 0.0)
 
-            targets = model(observations)
-            if get_balance(targets) < self.config["labels_perp_min_thresh"]:
-                if checks[-1]:
-                    self.error_msg.append(self.main_msgs['last_bias'])
-                elif not checks[-1]:
-                    bias_indices = torch.argsort(b_array)
-                    probas_indices = torch.argsort(get_probas(targets))
-                    if not torch.equal(bias_indices, probas_indices):
-                        self.error_msg.append(self.main_msgs['ineff_bias_cls'])
+            if get_last_layer_activation(model) in ['Softmax', 'Sigmoid']:
+                targets = model(observations)
+                if get_balance(targets) < self.config["labels_perp_min_thresh"]:
+                    if checks[-1]:
+                        self.error_msg.append(self.main_msgs['last_bias'])
+                    elif not checks[-1]:
+                        bias_indices = torch.argsort(b_array)
+                        probas_indices = torch.argsort(get_probas(targets))
+                        if not torch.equal(bias_indices, probas_indices):
+                            self.error_msg.append(self.main_msgs['ineff_bias_cls'])
 
             if not torch.tensor(checks).all():
                 self.error_msg.append(self.main_msgs['zero_bias'])

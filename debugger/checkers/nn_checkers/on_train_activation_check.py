@@ -2,7 +2,7 @@ import re
 import torch.nn
 from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.utils import get_activation_max_min_bound, transform_2d, compute_ro_B, pure_f_test
-from debugger.utils.model_params_getters import is_activation_function
+from debugger.utils.model_params_getters import is_activation_function, get_last_layer_activation
 import numpy as np
 import torch
 
@@ -14,15 +14,16 @@ def get_config() -> dict:
         Returns:
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {"buff_scale": 5,
-              "Period": 5,
-              "start": 5,
+    config = {"buff_scale": 200,
+              "Period": 200,
+              "start": 200,
+              "patience": 5,
               "Dead": {"disabled": False, "act_min_thresh": 0.00001, "act_maj_percentile": 95,
                        "neurons_ratio_max_thresh": 0.5},
               "Saturation": {"disabled": False, "ro_histo_bins_count": 50, "ro_histo_min": 0.0, "ro_histo_max": 1.0,
                              "ro_max_thresh": 0.85, "neurons_ratio_max_thresh": 0.5},
               "Distribution": {"disabled": False, "std_acts_min_thresh": 0.5, "std_acts_max_thresh": 2.0,
-                               "f_test_alpha": 0.1},
+                               "f_test_alpha": 0.025},
               "Range": {"disabled": False},
               "Output": {"patience": 5},
               "Numerical_Instability": {"disabled": False}
@@ -63,6 +64,9 @@ class OnTrainActivationCheck(DebuggerInterface):
         Returns:
             None
         """
+        a = model.base_network.network[3]
+        b = a(observations)
+        c = b.cpu().numpy()
         activations = {}
 
         def hook(module, input, output):
@@ -81,7 +85,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         self.update_outs_conds(outputs)
 
         if self.iter_num % self.period == 0:
-            self.check_outputs(outputs)
+            self.check_outputs(outputs, get_last_layer_activation(model))
 
         for i, (acts_name, acts_array) in enumerate(activations.items()):
             acts_name = re.sub(r'\([^()]*\)', '', str(acts_name)) + "_" + str(i)
@@ -117,7 +121,7 @@ class OnTrainActivationCheck(DebuggerInterface):
             self.outputs_metadata['max_abs_greater_than_one']['status'] |= (torch.abs(outs_array) > 1).any(dim=0)
             self.outputs_metadata['can_be_negative']['status'] |= (outs_array < 0).any(dim=0)
 
-    def check_outputs(self, outs_array: torch.Tensor) -> None:
+    def check_outputs(self, outs_array: torch.Tensor, last_layer_activation_name: str) -> None:
         """
         Validate the Output Activation Domain of the model. This function performs the following checks:
 
@@ -127,6 +131,7 @@ class OnTrainActivationCheck(DebuggerInterface):
         outputs.
 
         Args:
+            last_layer_activation_name: last layer activation name.
             outs_array (Tensor): The activations of the output layer.
         Returns:
             None
@@ -140,24 +145,24 @@ class OnTrainActivationCheck(DebuggerInterface):
             return
         if (self.outputs_metadata['non_zero_variance']['status'] == False).any():
             self.config['patience'] -= 1
-            if self.config['patience']['patience'] <= 0:
+            if self.config['patience'] <= 0:
                 self.error_msg.append(self.main_msgs['out_cons'])
         else:
             self.config['patience'] = self.config['Output']['patience']
 
-        if outs_array.shape[1] == 1:
-            positive = (outs_array >= 0.).all() and (outs_array <= 1.).all()
-            if not positive:
-                self.error_msg.append(self.main_msgs['output_invalid'])
-        else:
-            # cannot check sum to 1.0 because of https://randomascii.wordpress.com/2012/02/25/comparing-floating
-            # -point-numbers-2012-edition/
-            # TODO: change these hardcoded values
-            sum_to_one = (torch.sum(outs_array, dim=1) > 0.95).all() and (torch.sum(outs_array, dim=1) < 1.05).all()
-            positive = (outs_array >= 0.).all()
-            valid_n_outs = outs_array.shape[1]
-            if not (positive and sum_to_one and valid_n_outs):
-                self.error_msg.append(self.main_msgs['output_invalid'])
+        if 'Softmax' in last_layer_activation_name:
+            if outs_array.shape[1] == 1:
+                positive = (outs_array >= 0.).all() and (outs_array <= 1.).all()
+                if not positive:
+                    self.error_msg.append(self.main_msgs['output_invalid'])
+            else:
+                # cannot check sum to 1.0 because of https://randomascii.wordpress.com/2012/02/25/comparing-floating
+                # -point-numbers-2012-edition/
+                sum_to_one = (torch.sum(outs_array, dim=1) > 0.95).all() and (torch.sum(outs_array, dim=1) < 1.05).all()
+                positive = (outs_array >= 0.).all()
+                valid_n_outs = outs_array.shape[1]
+                if not (positive and sum_to_one and valid_n_outs):
+                    self.error_msg.append(self.main_msgs['output_invalid'])
 
     def check_activations_range(self, acts_name: str, acts_array: np.ndarray) -> None:
         """

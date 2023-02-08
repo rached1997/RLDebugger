@@ -2,17 +2,16 @@ debugger:
   name: 'Debugger'
   kwargs:
     params:
-      # TODO: change 0, 1 to variables and constant
-      observations: 0
-      model: 0
-      labels: 0
-      predictions: 0
-      loss_fn: -1
-      opt: -1
-      actions: 0
-      done: 0
+      # variable and constant indicate the nature of the observed parameter.
+      observations: "variable"
+      model: "variable"
+      labels: "variable"
+      predictions: "variable"
+      loss_fn: "constant"
+      opt: "constant"
+      actions: "variable"
+      done: "variable"
     check_type:
-      - name: PreTrainObservation
       - name: PreTrainWeight
       - name: PreTrainBias
       - name: PreTrainLoss

@@ -13,10 +13,10 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-              "Period": 3,
+              "Period": 200,
               "numeric_ins": {"disabled": False},
               "non_dec": {"disabled": False, "window_size": 5, "decr_percentage": 0.05},
-              "div": {"disabled": False, "incr_abs_rate_max_thresh": 2},
+              "div": {"disabled": False, "incr_abs_rate_max_thresh": 2, "window_size": 5},
               "fluct": {"disabled": False, "window_size": 50, "smoothness_ratio_min_thresh": 0.5}
               }
     return config
@@ -114,19 +114,19 @@ class OnTrainLossCheck(DebuggerInterface):
             if (dec_pers < self.config['non_dec']['decr_percentage']).all() and not (
                     self.config['non_dec']['disabled']):
                 self.error_msg.append(self.main_msgs['stagnated_loss'])
-        if n_losses >= self.config['non_dec']['window_size']:
-            abs_loss_incrs = [losses[n_losses - i] / self.min_loss for i in range(self.config['non_dec']['window_size'],
+        if n_losses >= self.config['div']['window_size']:
+            abs_loss_incrs = [losses[n_losses - i] / self.min_loss for i in range(self.config['div']['window_size'],
                                                                                   0, -1)]
             inc_rates = np.array(
                 [abs_loss_incrs[-i] / abs_loss_incrs[-i - 1] for i in
-                 range(1, self.config['non_dec']['window_size'])])
+                 range(1, self.config['div']['window_size'])])
             if (inc_rates >= self.config['div']['incr_abs_rate_max_thresh']).all() and not (
                     self.config['div']['disabled']):
                 self.error_msg.append(self.main_msgs['div_loss'].format(max(inc_rates)))
-        if n_losses >= self.config['fluct']['window_size']:
-            smoothness_val = smoothness(losses[-self.config['fluct']['window_size']:])
-            if smoothness_val < self.config['fluct']['smoothness_ratio_min_thresh'] and not (
-                    self.config['fluct']['disabled']):
-                self.error_msg.append(self.main_msgs['fluctuated_loss'].format(smoothness_val,
-                                                                               self.config['fluct'][
-                                                                                   'smoothness_ratio_min_thresh']))
+        # if n_losses >= self.config['fluct']['window_size']:
+        smoothness_val = smoothness(losses[-self.config['fluct']['window_size']:])
+        if smoothness_val < self.config['fluct']['smoothness_ratio_min_thresh'] and not (
+                self.config['fluct']['disabled']):
+            self.error_msg.append(self.main_msgs['fluctuated_loss'].format(smoothness_val,
+                                                                           self.config['fluct'][
+                                                                               'smoothness_ratio_min_thresh']))

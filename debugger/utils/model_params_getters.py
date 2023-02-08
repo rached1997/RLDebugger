@@ -29,3 +29,17 @@ def is_activation_function(layer):
         if isinstance(layer, act_layer):
             return True
     return False
+
+
+def get_last_layer_activation(model):
+    # Get the last layer of the model
+    layers = list(model.children())
+    last_layer = layers[-1]
+
+    # Check if the last layer has an activation function
+    if isinstance(last_layer, nn.Module) and hasattr(last_layer, 'activation'):
+        # Get the name of the activation function
+        activation_name = last_layer.activation.__class__.__name__
+    else:
+        activation_name = 'None'
+    return activation_name

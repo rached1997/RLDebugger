@@ -66,7 +66,7 @@ class DebuggableDQNAgent(DQNAgent):
 
 def main():
     hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
-    config = load_config(config='custom_agent.yml')
+    config = load_config(config='agent_configs/custom_agent_cartpole.yml')
 
     rl_debugger.set_config(config_path='debugger.yml')
 
