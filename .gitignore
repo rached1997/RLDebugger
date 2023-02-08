@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+example/logs
+example/experiment
+.idea
+/example/wandb/
