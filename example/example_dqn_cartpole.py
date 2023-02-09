@@ -4,7 +4,8 @@ from hive.runners.utils import load_config
 from hive.runners.single_agent_loop import set_up_experiment
 from hive.agents.dqn import DQNAgent
 from debugger import rl_debugger
-from custom_checker import CustomChecker
+# uncomment the following line if you want to use the custom check provided in the example folder
+# from custom_checker import CustomChecker
 
 
 class DebuggableDQNAgent(DQNAgent):
@@ -42,10 +43,19 @@ class DebuggableDQNAgent(DQNAgent):
 
             q_targets = batch["reward"] + self._discount_rate * next_qvals * (1 - batch["done"])
 
-            loss = self._loss_fn(pred_qvals, q_targets).mean()
-
-            rl_debugger.run_debugging(observed_param=loss.detach()
+            rl_debugger.run_debugging(observations=current_state_inputs[0],
+                                      model=self._qnet,
+                                      targets=q_targets,
+                                      predictions=pred_qvals.detach(),
+                                      loss_fn=self._loss_fn,
+                                      opt=self._optimizer,
+                                      actions=actions,
+                                      done=update_info["done"],
+                                      # uncomment the following line if you want to use the custom checker
+                                      # observed_param=self._loss_fn(pred_qvals, q_targets).mean().detach().cpu()
                                       )
+
+            loss = self._loss_fn(pred_qvals, q_targets).mean()
 
             loss.backward()
             if self._grad_clip is not None:
@@ -63,8 +73,10 @@ def main():
     hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
     config = load_config(config='agent_configs/custom_agent_cartpole.yml')
 
-    rl_debugger.register(checker_name="CustomChecker", checker_class=CustomChecker)
-    rl_debugger.set_config(config_path='debugger.yml')
+    # uncomment the following line if you want to use the custom checker
+    # the register method should be called before the set_config method
+    # rl_debugger.register(checker_name="CustomChecker", checker_class=CustomChecker)
+    rl_debugger.set_config(config_path="debugger.yml")
 
     runner = set_up_experiment(config)
     runner.run_training()

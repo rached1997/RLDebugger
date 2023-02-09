@@ -153,12 +153,12 @@ def get_probas(targets):
         the probabilities of the different targets
     """
     if targets.shape[1] == 1:
-        labels_probas = np.zeros(2)
-        labels_probas[0] = torch.mean(1.0 - targets)
-        labels_probas[1] = torch.mean(targets)
+        targets_probas = np.zeros(2)
+        targets_probas[0] = torch.mean(1.0 - targets)
+        targets_probas[1] = torch.mean(targets)
     else:
-        labels_probas = torch.mean(targets, dim=0)
-    return labels_probas
+        targets_probas = torch.mean(targets, dim=0)
+    return targets_probas
 
 
 def get_balance(targets):
@@ -172,12 +172,12 @@ def get_balance(targets):
         the balance of the targets
     """
     if targets.shape[1] == 1:
-        labels = 2
+        targets = 2
     else:
-        labels = targets.shape[1]
-    labels_probas = get_probas(targets)
-    perplexity = torch.exp(torch.distributions.Categorical(labels_probas, validate_args=False).entropy())
-    balance = (perplexity - 1) / (labels - 1)
+        targets = targets.shape[1]
+    targets_probas = get_probas(targets)
+    perplexity = torch.exp(torch.distributions.Categorical(targets_probas, validate_args=False).entropy())
+    balance = (perplexity - 1) / (targets - 1)
     return balance
 
 

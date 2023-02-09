@@ -23,7 +23,7 @@ class PreTrainLossCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="PreTrainLoss", config=get_config())
 
-    def run(self, labels, predictions, loss_fn, model):
+    def run(self, targets, predictions, loss_fn, model):
         """
         Run multiple checks on the loss function and its generated values. This checker runs before the training and
         does the following checks on the initial loss outputs :
@@ -39,17 +39,18 @@ class PreTrainLossCheck(DebuggerInterface):
         Args:
             model: (nn.model) The model being trained
             loss_fn: (torch.nn.Module) the loss function of the model.
-            labels (Tensor): The ground truth of the initial observationsTargets used in the loss function (for
-             example the labels in the DQN are the Q_target).
-            predictions (Tensor): The outputs of the model in the initial set of observations. loss_fn (function):
-            The loss function. model (nn.Module): The model to be trained.
+            targets (Tensor): The ground truth of the initial observationsTargets used in the loss function (for
+             example the targets in the DQN are the Q_target).
+            predictions (Tensor): The outputs of the model in the initial set of observations.
+            loss_fn (function): The loss function.
+            model (nn.Module): The model to be trained.
         """
         if not self.check_period():
             return
         losses = []
         n = self.config["init_loss"]["size_growth_rate"]
         while n <= (self.config["init_loss"]["size_growth_rate"] * self.config["init_loss"]["size_growth_iters"]):
-            derived_batch_y = torch.cat([labels] * n, dim=0)
+            derived_batch_y = torch.cat([targets] * n, dim=0)
             derived_predictions = torch.cat(n * [predictions], dim=0)
             loss_value = float(get_loss(derived_predictions, derived_batch_y, loss_fn))
             losses.append(loss_value)
@@ -61,7 +62,7 @@ class PreTrainLossCheck(DebuggerInterface):
             self.error_msg.append(self.main_msgs['poor_reduction_loss'])
 
         if isinstance(loss_fn, torch.nn.CrossEntropyLoss):
-            initial_loss = float(get_loss(predictions, labels, loss_fn))
+            initial_loss = float(get_loss(predictions, targets, loss_fn))
             initial_weights, _ = get_model_weights_and_biases(model)
             number_of_actions = list(initial_weights.items())[-1][1].shape[0]
             expected_loss = -torch.log(torch.tensor(1 / number_of_actions))

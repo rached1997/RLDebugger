@@ -10,7 +10,6 @@ import torch
 def get_config() -> dict:
     """
         Return the configuration dictionary needed to run the checkers.
-
         Returns:
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
@@ -47,7 +46,6 @@ class OnTrainActivationCheck(DebuggerInterface):
     def run(self, observations: torch.Tensor, model: torch.nn.Module) -> None:
         """
         Does multiple checks on the activation values during the training. The checks it does are :
-
         (1) checks the outputs (check the function check_outputs for more details)
         Per activation layer it does the following checks :
         (2) checks the activation per activation layer (check the function check_activations_range for more details)
@@ -57,7 +55,6 @@ class OnTrainActivationCheck(DebuggerInterface):
         (5) checks dead layers in the case of an activation function that can stagnate to zero (e.g. Relu) (check the
          function check_dead_layers for more details)
         (6) checks acts distribution (check the function check_acts_distribution for more details)
-
         Args:
             observations (Tensor): A sample of observations collected during the training
             model (torch.nn.Module)): The model being trained
@@ -104,13 +101,10 @@ class OnTrainActivationCheck(DebuggerInterface):
     def update_outs_conds(self, outs_array: torch.Tensor) -> None:
         """
         updates the metadata needed in the activation functions checks.
-
         Args:
             outs_array (Tensor): The activations of the output layer.
-
         Returns:
             None
-
         """
         if self.outputs_metadata['non_zero_variance']['status'] is None:
             self.outputs_metadata['non_zero_variance']['status'] = (outs_array.var(dim=0) > 0)
@@ -124,18 +118,15 @@ class OnTrainActivationCheck(DebuggerInterface):
     def check_outputs(self, outs_array: torch.Tensor, last_layer_activation_name: str) -> None:
         """
         Validate the Output Activation Domain of the model. This function performs the following checks:
-
         1. Numerical Stability of the output activation by verifying if there are any NaN or infinite values.
         2. Variance of the output layer's activations to ensure that they are constantly changing.
         3. Outputs are probabilities, i.e., positive values within [0, 1] and summing to one for multidimensional
         outputs.
-
         Args:
             last_layer_activation_name: last layer activation name.
             outs_array (Tensor): The activations of the output layer.
         Returns:
             None
-
         """
         if torch.isinf(outs_array).any():
             self.error_msg.append(self.main_msgs['out_inf'])
@@ -168,7 +159,6 @@ class OnTrainActivationCheck(DebuggerInterface):
         """
         Checks if the activations produced by the specified activation layer are within the expected range
         of values based on the activation function used.
-
         Args:
             acts_name (str): The name of the activation layer to be checked. The name should contain the name of the
             activation function used, e.g. "Relu", "Tanh", "Sigmoid", etc.
@@ -189,12 +179,10 @@ class OnTrainActivationCheck(DebuggerInterface):
     def check_numerical_instabilities(self, acts_name: str, acts_array: torch.Tensor) -> bool:
         """
         Validates the numerical stability of activation values in the given activation layer.
-
         Args:
             acts_name (str): The name of the activation layer to be validated. The name should include the name of the
             activation function used, such as "Relu", "Tanh", "Sigmoid", etc.
             acts_array (Tensor): The activations obtained from the specified activation layer.
-
         Returns:
             (bool): True if there is any NaN or infinite value present, False otherwise.
         """
@@ -214,7 +202,6 @@ class OnTrainActivationCheck(DebuggerInterface):
         Detects saturation in the activation values for bounded activation functions using the 𝜌𝐵 metric as proposed in
         the paper "Measuring Saturation in Neural Networks" by Rakitianskaia and Engelbrecht.
             - link: https://ieeexplore.ieee.org/document/7376778
-
         Args:
             acts_name (str): The name of the activation layer to be validated. The name should include the name of the
             activation function used, such as "Relu", "Tanh", "Sigmoid", etc.
@@ -238,7 +225,6 @@ class OnTrainActivationCheck(DebuggerInterface):
         Detects dead neurons in the activation layer by measuring the ratio of neurons that always produce a zero
         activation. If the ratio exceeds a predefined threshold, it is considered that the activation layer has dead
         neurons.
-
         Args:
             acts_name (str): The name of the activation layer to be validated. The name should include the name of the
             activation function used, such as "Relu", "Tanh", "Sigmoid", etc.
@@ -262,7 +248,6 @@ class OnTrainActivationCheck(DebuggerInterface):
         sampled activation layer while expecting to have normally-distributed values with unit standard deviation,
          e.g., a value within [0.5, 2]. the test would pass the actual std belongs to the range of [0.5, 2]; otherwise,
          we perform an f-test to compare std with either the low-bound 0.5 if std < 0.5 or 2.0 if std > 2.0.
-
         Args:
             acts_name (str): The name of the activation layer to be validated. The name should include the name of the
             activation function used, such as "Relu", "Tanh", "Sigmoid", etc.
@@ -291,12 +276,10 @@ class OnTrainActivationCheck(DebuggerInterface):
     def update_buffer(self, acts_name: str, acts_array: torch.Tensor) -> np.ndarray:
         """
             Updates the buffer for a given activation layer with new activations' data.
-
             Args:
             acts_name (str): The name of the activation layer to be validated. The name should include the name of the
             activation function used, such as "Relu", "Tanh", "Sigmoid", etc.
             acts_array (Tensor): The activations obtained from the specified activation layer.
-
             Returns:
             (numpy.ndarray) : The updated buffer containing the activations' data of the specified activation layer.
         """
@@ -308,11 +291,9 @@ class OnTrainActivationCheck(DebuggerInterface):
     def set_acts_data(self, observations_size: int, activations: dict) -> None:
         """
         Creates the buffer that will contain the activations' history.
-
         Args:
         observations_size (str): size of the observations.
         activations (dict): dict of activation values.
-
         Returns:
         numpy.ndarray: The updated buffer containing the activations' history.
         """

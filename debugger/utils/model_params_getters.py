@@ -19,16 +19,12 @@ def get_loss(original_predictions, model_predictions, loss_fn):
     return loss_value
 
 
-def get_sample(observations, labels, sample_size):
-    return observations[:sample_size], labels[:sample_size]
+def get_sample(observations, targets, sample_size):
+    return observations[:sample_size], targets[:sample_size]
 
 
 def is_activation_function(layer):
-    activations_functions = [nn.ELU, nn.LeakyReLU, nn.ReLU6, nn.SELU, nn.Tanh, nn.Sigmoid, nn.ReLU]
-    for act_layer in activations_functions:
-        if isinstance(layer, act_layer):
-            return True
-    return False
+    return layer.__module__ == 'torch.nn.modules.activation'
 
 
 def get_last_layer_activation(model):

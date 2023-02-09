@@ -11,8 +11,8 @@ def get_config() -> dict:
     Returns:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {"start": 3,
-              "Period": 3,
+    config = {"start": 100,
+              "Period": 100,
               "numeric_ins": {"disabled": False},
               "div": {"disabled": False, "window_size": 5, "mav_max_thresh": 100000000, "inc_rate_max_thresh": 2}
               }

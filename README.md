@@ -34,19 +34,20 @@ debugger:
   kwargs:
     
     params:
-      observations: "variable"
-      model: "variable"
-      labels: "variable"
-      predictions: "variable"
-      loss_fn: "constant"
-      opt: "constant"
-      actions: "variable"
-      done: "variable"
+      observations: "variable" # sample of observations.
+      model: "variable"        # Model to be trained.
+      targets: "variable"      # Ground truth to be used for the Loos function .
+      predictions: "variable"  # The outputs of the model in the sample of observations.
+      loss_fn: "constant"      # Loss function.
+      opt: "constant"          # Optimizer function.
+      actions: "variable"      # Predicted actions for the sample of observations.
+      done: "variable"         # Boolean indicating if the episode is done or not
       
     check_type:
       - name: #Checker_Name_1
       - name: #Checker_Name_2
 ```
+
 The debugger config should have the same structure and includes the following elements:
 
 * **params (only change it when you will develop a new Checker)** : contains the elements 
@@ -114,7 +115,7 @@ from debugger import rl_debugger
 ....
 rl_debugger.run_debugging(observations= ...,
                           model= ...,
-                          labels= ...,
+                          targets= ...,
                           predictions= ....
                           )
 ```
@@ -123,7 +124,7 @@ It can be called from any class or file in your project ( you can imagine it as 
 global function).
 
 For example, to run the Checker PreTrainLoss, the `run_debugging` function should receive
-four parameters: labels, predictions, loss_fn, and model. However,The function 
+four parameters: targets, predictions, loss_fn, and model. However,The function 
 `run_debugging` can be called  in different parts of the code and be provided with 
 the parameters available at that point, but the Checker will wait until all the 
 parameters are received, so it can start running.

@@ -12,7 +12,7 @@ def get_config():
     """
     config = {"Period": 0,
               "Data": {"normalized_data_mins": [0.0, -1.0], "normalized_data_maxs": [1.0],
-                       "labels_perp_min_thresh": 0.5, "outputs_var_coef_thresh": 0.001}
+                       "outputs_var_coef_thresh": 0.001}
               }
     return config
 

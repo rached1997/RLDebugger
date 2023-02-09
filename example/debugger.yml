@@ -5,13 +5,23 @@ debugger:
       # variable and constant indicate the nature of the observed parameter.
       observations: "variable"
       model: "variable"
-      labels: "variable"
+      targets: "variable"
       predictions: "variable"
       loss_fn: "constant"
       opt: "constant"
       actions: "variable"
       done: "variable"
-      observed_param: "variable"
+      # uncomment the following line if you want to use the custom check provided in the example folder
+#      observed_param: "variable"
     check_type:
-      - name: CustomChecker
-
+      - name: PreTrainObservation
+      - name: PreTrainWeight
+      - name: PreTrainBias
+      - name: PreTrainLoss
+      - name: PreTrainProperFitting
+      - name: PreTrainGradient
+      - name: OnTrainBias
+      - name: OnTrainWeight
+      - name: OnTrainLoss
+      # uncomment the following line if you want to use the custom check provided in the example folder
+#      - name: CustomChecker

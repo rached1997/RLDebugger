@@ -13,7 +13,7 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-              "Period": 200,
+              "Period": 100,
               "numeric_ins": {"disabled": False},
               "non_dec": {"disabled": False, "window_size": 5, "decr_percentage": 0.05},
               "div": {"disabled": False, "incr_abs_rate_max_thresh": 2, "window_size": 5},
@@ -33,7 +33,7 @@ class OnTrainLossCheck(DebuggerInterface):
         self.current_losses = []
         self.average_losses = []
 
-    def run(self, labels: torch.Tensor, predictions: torch.Tensor, loss_fn: torch.nn.Module) -> None:
+    def run(self, targets: torch.Tensor, predictions: torch.Tensor, loss_fn: torch.nn.Module) -> None:
         """
         This function performs multiple checks on the loss function during the training:
 
@@ -42,11 +42,11 @@ class OnTrainLossCheck(DebuggerInterface):
         (2) Check the abnormal loss curvature of the loss (check the function check_loss_curve for more details)
 
         Args:
-        labels (Tensor): A sample of labels collected periodically during the training.
+        targets (Tensor): A sample of targets collected periodically during the training.
         predictions (Tensor): A sample of predictions collected periodically during the training.
         loss_fn (torch.nn.Module): the loss function of the model.
         """
-        loss_val = float(get_loss(predictions, labels, loss_fn))
+        loss_val = float(get_loss(predictions, targets, loss_fn))
         if self.check_numerical_instabilities(loss_val):
             return
         self.current_losses += [loss_val]

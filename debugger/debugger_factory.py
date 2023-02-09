@@ -28,11 +28,12 @@ class DebuggerFactory:
         """
 
         self.set_params_iteration(config)
-        config = config["debugger"]["kwargs"]["check_type"]
-        for debugger_config in config:
-            debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
-            debugger = debugger_fn()
-            self.debuggers[debugger_config["name"]] = debugger
+        if config["debugger"]["kwargs"]["check_type"]:
+            config = config["debugger"]["kwargs"]["check_type"]
+            for debugger_config in config:
+                debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
+                debugger = debugger_fn()
+                self.debuggers[debugger_config["name"]] = debugger
 
     def set_params_iteration(self, config):
         """

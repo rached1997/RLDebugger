@@ -39,7 +39,7 @@ class PreTrainProperFittingCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="PreTrainProperFitting", config=get_config())
 
-    def run(self, observations, labels, actions, opt, model, loss_fn):
+    def run(self, observations, targets, actions, opt, model, loss_fn):
         """
         Evaluate the convergence (ability to fit a sample of data) of the proposed model using an initial sample of
         data. This function performs the following checks:
@@ -51,7 +51,7 @@ class PreTrainProperFittingCheck(DebuggerInterface):
 
         Args:
             observations (Tensor): Initial sample of observations.
-            labels (Tensor): Ground truth of the initial observations.
+            targets (Tensor): Ground truth of the initial observations.
             actions (Tensor): Predicted actions for the initial set of observations.
             opt (function): Optimizer function.
             model (nn.Module): Model to be trained.
@@ -60,14 +60,14 @@ class PreTrainProperFittingCheck(DebuggerInterface):
         if not self.check_period():
             return
 
-        real_losses = self.overfit_verification(model, opt, observations, labels, actions, loss_fn)
+        real_losses = self.overfit_verification(model, opt, observations, targets, actions, loss_fn)
         if not real_losses:
             return
 
         if not self.regularization_verification(real_losses):
             return
 
-        fake_losses = self.input_dependency_verification(model, opt, observations, labels, actions, loss_fn)
+        fake_losses = self.input_dependency_verification(model, opt, observations, targets, actions, loss_fn)
         if not fake_losses:
             return
 
@@ -105,7 +105,7 @@ class PreTrainProperFittingCheck(DebuggerInterface):
             model (nn.Module): The model to be trained.
             opt (function): The optimization function used to update the model's parameters.
             derived_batch_x (Tensor): The input observations used for training.
-            derived_batch_y (Tensor): The ground truth labels for the input observations.
+            derived_batch_y (Tensor): The ground truth targets for the input observations.
             actions (Tensor): The predicted actions for the initial set of observations.
             loss_fn (function): The loss function used to evaluate the model's performance.
 

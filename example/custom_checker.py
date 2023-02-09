@@ -2,7 +2,7 @@ from debugger import DebuggerInterface
 
 
 def get_config():
-    config = {"Period": 0, "threshold": 0.05}
+    config = {"Period": 100}
     return config
 
 
@@ -15,10 +15,9 @@ class CustomChecker(DebuggerInterface):
 
     def run(self, observed_param):
         if self.check_period():
-            self.error_msg.append(
-                "your custom checker is running successfully!;"
-                " your observed parameter is {} and your threshold is {}".format(observed_param,
-                                                                                 self.config["threshold"]))
+            # Do some instructions ....
+            self.error_msg.append("The custom checker is integrated successfully!;"
+                                  "The value of the observed_param is {} ".format(observed_param))
 
 
 

@@ -76,6 +76,7 @@ class DebuggableRainbowAgent(RainbowDQNAgent):
 
                 rl_debugger.run_debugging(observations=current_state_inputs[0],
                                           model=self._qnet,
+                                          targets=q_targets,
                                           predictions=pred_qvals.detach(),
                                           loss_fn=self._loss_fn,
                                           opt=self._optimizer,

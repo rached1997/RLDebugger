@@ -13,7 +13,7 @@ def get_config() -> dict:
     """
 
     config = {"Period": 0,
-              "labels_perp_min_thresh": 0.5
+              "targets_perp_min_thresh": 0.5
               }
     return config
 
@@ -54,7 +54,7 @@ class PreTrainBiasCheck(DebuggerInterface):
 
             if get_last_layer_activation(model) in ['Softmax', 'Sigmoid']:
                 targets = model(observations)
-                if get_balance(targets) < self.config["labels_perp_min_thresh"]:
+                if get_balance(targets) < self.config["targets_perp_min_thresh"]:
                     if checks[-1]:
                         self.error_msg.append(self.main_msgs['last_bias'])
                     elif not checks[-1]:
