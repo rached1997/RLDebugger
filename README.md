@@ -11,7 +11,11 @@ potential flaws and making it easier to improve the performance of your DRL mode
 
 > Note : This first version of the debugger contains checks for 
 various aspects of the neural network, as adapted from the paper
-"Testing Feedforward Neural Networks Training Programs" [^1].
+"Testing Feedforward Neural Networks Training Programs" [^1]. 
+We would like to thank this paper's authors for providing the code 
+for these checks (https://github.com/thedeepchecker/thedeepchecker). 
+These checks have been adapted to function in the DRL context and 
+been migrated from TensorFlow 1 to PyTorch.
 
 [^1]: https://arxiv.org/pdf/2204.00694.pdf
 
