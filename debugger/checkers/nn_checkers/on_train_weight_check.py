@@ -141,7 +141,7 @@ class OnTrainWeightsCheck(DebuggerInterface):
             main_msg = self.main_msgs['conv_w_dead'] if is_conv else self.main_msgs['fc_w_dead']
             self.error_msg.append(main_msg.format(weight_name, dead_ratio, self.config['dead']['val_min_thresh']))
 
-    def check_divergence(self, weight_name: str, weight_reductions: list[torch.Tensor], is_conv: bool):
+    def check_divergence(self, weight_name: str, weight_reductions, is_conv: bool):
         """
         This function check weight divergence, as weights risk divergence, and may go towards inf.
         High initial weights or learning rate coupled with a lack of or inadequate regularization results in rapidly

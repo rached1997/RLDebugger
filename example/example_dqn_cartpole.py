@@ -5,6 +5,8 @@ from hive.runners.utils import load_config
 from hive.runners.single_agent_loop import set_up_experiment
 from hive.agents.dqn import DQNAgent
 from debugger import rl_debugger
+
+
 # uncomment the following line if you want to use the custom check provided in the example folder
 # from custom_checker import CustomChecker
 
@@ -42,7 +44,6 @@ class DebuggableDQNAgent(DQNAgent):
             return
 
         self._replay_buffer.add(**self.preprocess_update_info(update_info))
-
         if (
                 self._learn_schedule.update()
                 and self._replay_buffer.size() > 0
@@ -67,17 +68,21 @@ class DebuggableDQNAgent(DQNAgent):
 
             q_targets = batch["reward"] + self._discount_rate * next_qvals * (1 - batch["done"])
 
-            # rl_debugger.run_debugging(observations=current_state_inputs[0],
-            #                           model=self._qnet,
-            #                           targets=q_targets,
-            #                           predictions=pred_qvals.detach(),
-            #                           loss_fn=self._loss_fn,
-            #                           opt=self._optimizer,
-            #                           actions=actions,
-            #                           done=update_info["done"],
-            #                           # uncomment the following line if you want to use the custom checker
-            #                           # observed_param=self._loss_fn(pred_qvals, q_targets).mean().detach().cpu()
-            #                           )
+            rl_debugger.run_debugging(model=self._qnet,
+                                      loss_fn=self._loss_fn,
+                                      opt=self._optimizer,
+                                      target_model=self._target_qnet,
+                                      target_model_update_period=self._target_net_update_schedule._total_period,
+                                      target_net_update_fraction=1,
+                                      observations=current_state_inputs[0],
+                                      targets=q_targets,
+                                      predictions=pred_qvals.detach(),
+                                      actions=actions,
+                                      predicted_next_vals=next_qvals,
+                                      discount_rate=self._discount_rate,
+                                      steps_rewards=batch["reward"],
+                                      steps_done=batch["done"]
+                                      )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 

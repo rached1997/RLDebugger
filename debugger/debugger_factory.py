@@ -48,7 +48,8 @@ class DebuggerFactory:
         Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
         """
         for key, value in kwargs.items():
-            self.params[key] = copy.deepcopy(value)
+            # self.params[key] = copy.deepcopy(value)
+            self.params[key] = value
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
 
@@ -74,11 +75,20 @@ class DebuggerFactory:
         Runs the `debugger` objects in the `debuggers` dictionary.
         """
         for debugger in self.debuggers.values():
-            args = inspect.getfullargspec(debugger.run).args[1:]
-            params_iters = [self.params_iters[key] for key in args]
-            if all(((val == -1) or (val == (debugger.iter_num + 1))) for val in params_iters):
+            argspec = inspect.getfullargspec(debugger.run)
+            arg_names = argspec.args[1:]
+            defaults = argspec.defaults
+            defaults_dict = {}
+            if  not (defaults is None):
+                defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
+            params_iters = [self.params_iters[key] for key in arg_names]
+            if all(((params_iters[i] == -1)
+                    or (params_iters[i] >= (debugger.iter_num + 1))
+                    or (arg_names[i] in defaults_dict.keys()))
+                   for i in range(len(params_iters))):
                 debugger.increment_iteration()
-                kwargs = {arg: self.params[arg] for arg in args}
+                kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
+                          for arg in arg_names}
                 debugger.run(**kwargs)
                 self.react(debugger.error_msg)
                 debugger.reset_error_msg()
@@ -110,5 +120,3 @@ class DebuggerFactory:
     @staticmethod
     def register(checker_name: str, checker_class: debugger.DebuggerInterface) -> None:
         registry.register(checker_name, checker_class, checker_class)
-
-
