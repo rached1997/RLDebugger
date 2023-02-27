@@ -1,8 +1,5 @@
 import torch
 from debugger.debugger_interface import DebuggerInterface
-import numpy as np
-
-from debugger.utils.utils import smoothness
 
 
 def get_config() -> dict:
@@ -25,3 +22,6 @@ class OnTrainValueFunctionCheck(DebuggerInterface):
         q_targets = steps_rewards + discount_rate * predicted_next_vals * (1 - steps_done)
         if not torch.equal(targets, q_targets):
             self.error_msg.append(self.main_msgs['val_func_err'])
+
+        # todo add the ppo
+        # todo add the a2c

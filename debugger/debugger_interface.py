@@ -36,3 +36,5 @@ class DebuggerInterface(Registrable):
     @classmethod
     def type_name(cls):
         return "debugger"
+
+    # TODO: add flush function

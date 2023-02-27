@@ -79,9 +79,10 @@ class DebuggerFactory:
             arg_names = argspec.args[1:]
             defaults = argspec.defaults
             defaults_dict = {}
-            if  not (defaults is None):
+            if not (defaults is None):
                 defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
             params_iters = [self.params_iters[key] for key in arg_names]
+            # TODO: review this
             if all(((params_iters[i] == -1)
                     or (params_iters[i] >= (debugger.iter_num + 1))
                     or (arg_names[i] in defaults_dict.keys()))

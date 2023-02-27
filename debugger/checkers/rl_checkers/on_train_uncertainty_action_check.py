@@ -58,17 +58,17 @@ def get_config():
     return config
 
 
-class UncertaintyActionCheck(DebuggerInterface):
+class OnTrainUncertaintyActionCheck(DebuggerInterface):
     """
-    # TODO: fill this.
+    #
     """
     def __init__(self):
-        super().__init__(check_type="UncertaintyAction", config=get_config())
+        super().__init__(check_type="OnTrainUncertaintyAction", config=get_config())
         self._buffer = Memory(max_size=self.config["buffer_max_size"])
 
     def run(self, model, observations):
         """
-        # TODO: fill this.
+        #
         """
         self._buffer.append(observations)
         if self.check_period():
@@ -87,26 +87,8 @@ class UncertaintyActionCheck(DebuggerInterface):
         # Average the predictions to get the final prediction and uncertainty estimate
         uncertainty = torch.mean(torch.std(torch.stack(predictions), dim=0), dim=0)
         if torch.any(uncertainty > self.config["std_threshold"]):
-            # TODO: also print the % of choices in each action class (40% went for action 0 and 60% action 1)
+            # TODO: divide this check into two exploration and exploitation
             self.error_msg.append(self.main_msgs['mcd_uncertainty'].format(torch.mean(uncertainty),
                                                                            self.config["std_threshold"],
                                                                            self.config['num_repetitions']))
         return None
-
-# for i in range(num_samples):
-#     for name, module in model.named_modules():
-#         if isinstance(module, nn.Linear) and name != last_layer_name:
-#             weight = module.weight
-#             p = 0.5  # set the dropout probability
-#             mask = torch.rand_like(weight) < p
-#             new_weight = weight * mask
-#             module.weight = nn.Parameter(new_weight)
-#             # bias = module.bias
-#
-#     output = model(observations)
-#     predictions.append(output)
-#
-# # Average the predictions to get the final prediction and uncertainty estimate
-# mean_prediction1 = torch.mean(torch.stack(predictions), dim=0)
-# uncertainty1 = torch.std(torch.stack(predictions), dim=0)
-# uncertainty11 = torch.var(torch.stack(predictions), dim=0)

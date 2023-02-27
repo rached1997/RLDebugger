@@ -8,8 +8,8 @@ from debugger.checkers.nn_checkers.on_train_weight_check import OnTrainWeightsCh
 from debugger.checkers.nn_checkers.pre_train_proper_fitting_check import PreTrainProperFittingCheck
 from debugger.checkers.nn_checkers.pre_train_gradient_check import PreTrainGradientCheck
 from debugger.checkers.nn_checkers.pre_train_weights_check import PreTrainWeightsCheck
-from debugger.checkers.action_check import ActionCheck
-from debugger.checkers.uncertainty_action_check import UncertaintyActionCheck
+from debugger.checkers.rl_checkers.on_train_action_check import ActionCheck
+from debugger.checkers.rl_checkers.on_train_uncertainty_action_check import UncertaintyActionCheck
 from debugger.checkers.rl_checkers.on_train_agent_check import OnTrainAgentCheck
 from debugger.checkers.rl_checkers.on_train_reward_check import OnTrainRewardsCheck
 from debugger.checkers.rl_checkers.on_train_states_check import OnTrainStatesCheck

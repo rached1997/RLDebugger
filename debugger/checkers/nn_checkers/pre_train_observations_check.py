@@ -17,6 +17,7 @@ def get_config():
     return config
 
 
+# TODO: check if util otherwise delete
 class PreTrainObservationsCheck(DebuggerInterface):
     """
     The check in charge of verifying the observations during pre-training.

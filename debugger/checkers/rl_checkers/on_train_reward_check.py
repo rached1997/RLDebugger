@@ -2,8 +2,6 @@ import torch
 from debugger.debugger_interface import DebuggerInterface
 import numpy as np
 
-from debugger.utils.utils import smoothness
-
 
 def get_config() -> dict:
     """
@@ -12,10 +10,11 @@ def get_config() -> dict:
     Returns:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
+    # TODO: divide the checker into multiple checks
     config = {
         "Period": 15,
         "disabled": False,
-        "episodes_to_check" : 10,
+        "vars_to_check": 10,
         "window_size": 5,
         "incr_percentage": 0.05,
         "exploration_perc": 0.2,
@@ -33,16 +32,15 @@ class OnTrainRewardsCheck(DebuggerInterface):
 
         self.episodes_rewards = []
 
-    def run(self, episode_reward, done, steps, max_steps_per_episode, max_total_steps, max_reward) -> None:
+    def run(self, reward, done, steps, max_steps_per_episode, max_total_steps, max_reward) -> None:
 
-        # self.episodes_rewards.append(episode_reward)
         self.total_steps += steps
 
         if done or steps >= max_steps_per_episode:
-            self.episodes_rewards += [episode_reward]
+            self.episodes_rewards += [reward]
 
         n_rewards = len(self.episodes_rewards)
-        if self.check_period() and (n_rewards >= self.config['window_size'] * self.config["episodes_to_check"] ):
+        if self.check_period() and (n_rewards >= self.config['window_size'] * self.config["vars_to_check"]):
             vars = []
 
             for i in range(0, len(self.episodes_rewards), self.config['window_size']):
@@ -55,7 +53,7 @@ class OnTrainRewardsCheck(DebuggerInterface):
                 fluctuations = self.check_reward_start_fluctuating(vars, cof)
                 if fluctuations < self.config['fluctuation']:
                     self.error_msg.append(self.main_msgs['fluctuated_reward'].format(
-                        self.config['exploration_perc']*100))
+                        self.config['exploration_perc'] * 100))
 
             if self.iter_num > max_total_steps * (1 - self.config['exploration_perc']):
                 self.check_reward_monotonicity(cof, max_reward)
@@ -71,11 +69,11 @@ class OnTrainRewardsCheck(DebuggerInterface):
         """
         if torch.abs(cof.solution[0][0]) > self.config["stagnation_thresh"]:
             self.error_msg.append(
-                self.main_msgs['decreasing_reward'].format(100- (self.config["exploration_perc"]*100)))
+                self.main_msgs['decreasing_reward'].format(100 - (self.config["exploration_perc"] * 100)))
         else:
             if self.episodes_rewards[self.config["stagnation_episodes"]:]:
                 stagnated_reward = np.mean(self.episodes_rewards[self.config["stagnation_episodes"]:])
-                if stagnated_reward < max_reward* self.config["reward_stagnation_tolerance"]:
+                if stagnated_reward < max_reward * self.config["reward_stagnation_tolerance"]:
                     self.error_msg.append(
                         self.main_msgs['stagnated_reward'].format(
                             100 - (self.config["exploration_perc"] * 100),
@@ -83,6 +81,7 @@ class OnTrainRewardsCheck(DebuggerInterface):
                             max_reward))
         return None
 
+    # TODO: debug this please
     def check_reward_start_fluctuating(self, vars, cof):
         x = torch.arange(len(vars), device=vars.device)
         ones = torch.ones_like(x)
