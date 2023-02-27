@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import hive
 from hive.runners.utils import load_config
 from hive.runners.single_agent_loop import set_up_experiment
@@ -9,6 +10,29 @@ from debugger import rl_debugger
 
 
 class DebuggableDQNAgent(DQNAgent):
+
+    @torch.no_grad()
+    def act(self, observation):
+
+        if self._training:
+            if not self._learn_schedule.get_value():
+                epsilon = 1.0
+            else:
+                epsilon = self._epsilon_schedule.update()
+        else:
+            epsilon = self._test_epsilon
+
+        observation = torch.tensor(np.expand_dims(observation, axis=0), device=self._device).float()
+        qvals = self._qnet(observation)
+        if self._rng.random() < epsilon:
+            action = self._rng.integers(self._act_dim)
+            # rl_debugger.run_debugging(actions_probs=torch.softmax(torch.randn(1, self._act_dim), dim=1).to('cuda'))
+        else:
+            action = torch.argmax(qvals).item()
+            # rl_debugger.run_debugging(actions_probs=qvals)
+
+        rl_debugger.run_debugging(model=self._qnet, observations=observation)
+        return action
 
     def update(self, update_info):
         if update_info["done"]:
@@ -43,17 +67,17 @@ class DebuggableDQNAgent(DQNAgent):
 
             q_targets = batch["reward"] + self._discount_rate * next_qvals * (1 - batch["done"])
 
-            rl_debugger.run_debugging(observations=current_state_inputs[0],
-                                      model=self._qnet,
-                                      targets=q_targets,
-                                      predictions=pred_qvals.detach(),
-                                      loss_fn=self._loss_fn,
-                                      opt=self._optimizer,
-                                      actions=actions,
-                                      done=update_info["done"],
-                                      # uncomment the following line if you want to use the custom checker
-                                      # observed_param=self._loss_fn(pred_qvals, q_targets).mean().detach().cpu()
-                                      )
+            # rl_debugger.run_debugging(observations=current_state_inputs[0],
+            #                           model=self._qnet,
+            #                           targets=q_targets,
+            #                           predictions=pred_qvals.detach(),
+            #                           loss_fn=self._loss_fn,
+            #                           opt=self._optimizer,
+            #                           actions=actions,
+            #                           done=update_info["done"],
+            #                           # uncomment the following line if you want to use the custom checker
+            #                           # observed_param=self._loss_fn(pred_qvals, q_targets).mean().detach().cpu()
+            #                           )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 

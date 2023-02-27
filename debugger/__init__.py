@@ -3,11 +3,13 @@ from debugger.checkers.nn_checkers.pre_train_bias_check import PreTrainBiasCheck
 from debugger.checkers.nn_checkers.pre_train_loss_check import PreTrainLossCheck
 from debugger.checkers.nn_checkers.pre_train_observations_check import PreTrainObservationsCheck
 from debugger.checkers.nn_checkers.on_train_bias_check import OnTrainBiasCheck
-from debugger.checkers.nn_checkers.on_train__loss_check import OnTrainLossCheck
+from debugger.checkers.nn_checkers.on_train_loss_check import OnTrainLossCheck
 from debugger.checkers.nn_checkers.on_train_weight_check import OnTrainWeightsCheck
 from debugger.checkers.nn_checkers.pre_train_proper_fitting_check import PreTrainProperFittingCheck
 from debugger.checkers.nn_checkers.pre_train_gradient_check import PreTrainGradientCheck
 from debugger.checkers.nn_checkers.pre_train_weights_check import PreTrainWeightsCheck
+from debugger.checkers.action_check import ActionCheck
+from debugger.checkers.uncertainty_action_check import UncertaintyActionCheck
 from debugger.debugger_interface import DebuggerInterface
 from debugger.debugger_factory import DebuggerFactory
 from debugger.utils.registry import registry
@@ -23,6 +25,8 @@ registry.register("OnTrainBias", OnTrainBiasCheck, OnTrainBiasCheck)
 registry.register("OnTrainWeight", OnTrainWeightsCheck, OnTrainWeightsCheck)
 registry.register("OnTrainLoss", OnTrainLossCheck, OnTrainLossCheck)
 
+registry.register("Action", ActionCheck, ActionCheck)
+registry.register("UncertaintyAction", UncertaintyActionCheck, UncertaintyActionCheck)
 get_debugger = getattr(registry, f"get_{DebuggerInterface.type_name()}")
 
 

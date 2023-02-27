@@ -61,9 +61,6 @@ class OnTrainActivationCheck(DebuggerInterface):
         Returns:
             None
         """
-        a = model.base_network.network[3]
-        b = a(observations)
-        c = b.cpu().numpy()
         activations = {}
 
         def hook(module, input, output):
