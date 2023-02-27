@@ -8,6 +8,11 @@ from debugger.checkers.nn_checkers.on_train_weight_check import OnTrainWeightsCh
 from debugger.checkers.nn_checkers.pre_train_proper_fitting_check import PreTrainProperFittingCheck
 from debugger.checkers.nn_checkers.pre_train_gradient_check import PreTrainGradientCheck
 from debugger.checkers.nn_checkers.pre_train_weights_check import PreTrainWeightsCheck
+from debugger.checkers.rl_checkers.on_train_agent_check import OnTrainAgentCheck
+from debugger.checkers.rl_checkers.on_train_reward_check import OnTrainRewardsCheck
+from debugger.checkers.rl_checkers.on_train_states_check import OnTrainStatesCheck
+from debugger.checkers.rl_checkers.on_train_value_function_check import OnTrainValueFunctionCheck
+from debugger.checkers.rl_checkers.pre_train_environment_check import PreTrainEnvironmentCheck
 from debugger.debugger_interface import DebuggerInterface
 from debugger.debugger_factory import DebuggerFactory
 from debugger.utils.registry import registry
@@ -22,6 +27,11 @@ registry.register("PreTrainGradient", PreTrainGradientCheck, PreTrainGradientChe
 registry.register("OnTrainBias", OnTrainBiasCheck, OnTrainBiasCheck)
 registry.register("OnTrainWeight", OnTrainWeightsCheck, OnTrainWeightsCheck)
 registry.register("OnTrainLoss", OnTrainLossCheck, OnTrainLossCheck)
+registry.register("PreTrainEnvironment", PreTrainEnvironmentCheck, PreTrainEnvironmentCheck)
+registry.register("OnTrainState", OnTrainStatesCheck, OnTrainStatesCheck)
+registry.register("OnTrainReward", OnTrainRewardsCheck, OnTrainRewardsCheck)
+registry.register("OnTrainAgent", OnTrainAgentCheck, OnTrainAgentCheck)
+registry.register("OnTrainValueFunction", OnTrainValueFunctionCheck, OnTrainValueFunctionCheck)
 
 get_debugger = getattr(registry, f"get_{DebuggerInterface.type_name()}")
 
@@ -37,4 +47,3 @@ class DebuggerSingleton:
 
 # Create an instance of the singleton class
 rl_debugger = DebuggerSingleton()
-

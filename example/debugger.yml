@@ -11,17 +11,38 @@ debugger:
       opt: "constant"
       actions: "variable"
       done: "variable"
+
+
+      environment: "constant"
+      steps: "variable"
+      max_steps_per_episode: "constant"
+      episode_reward: "variable"
+      max_total_steps : "constant"
+      max_reward: "constant"
+      target_model_update_period: "constant"
+      target_model: "variable"
+      target_net_update_fraction : "constant"
+      predicted_next_vals: "variable"
+      discount_rate: "constant"
+      steps_rewards: "variable"
+      steps_done: "variable"
       # uncomment the following line if you want to use the custom check provided in the example folder
 #      observed_param: "variable"
     check_type:
-      - name: PreTrainObservation
-      - name: PreTrainWeight
-      - name: PreTrainBias
-      - name: PreTrainLoss
-      - name: PreTrainProperFitting
-      - name: PreTrainGradient
-      - name: OnTrainBias
-      - name: OnTrainWeight
-      - name: OnTrainLoss
+#      - name: PreTrainObservation
+#      - name: PreTrainWeight
+#      - name: PreTrainBias
+#      - name: PreTrainLoss
+#      - name: PreTrainProperFitting
+#      - name: PreTrainGradient
+#      - name: OnTrainBias
+#      - name: OnTrainWeight
+#      - name: OnTrainLoss
       # uncomment the following line if you want to use the custom check provided in the example folder
 #      - name: CustomChecker
+
+#      -  name: PreTrainEnvironment
+#      - name: OnTrainState
+#      - name: OnTrainReward
+#      - name: OnTrainAgent
+       - name: OnTrainValueFunction
