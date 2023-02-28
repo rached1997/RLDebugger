@@ -74,7 +74,7 @@ class SingleAgentRunner(Runner):
         action = agent.act(stacked_observation)
         next_observation, reward, done, _, other_info = self._environment.step(action)
         rl_debugger.run_debugging(done=done,
-                                  episode_reward=episode_metrics['0']['reward'] + reward,
+                                  reward=episode_metrics['0']['reward'] + reward,
                                   max_reward=self._environment._env.spec.reward_threshold,
                                   steps=self._train_schedule._steps,
                                   max_steps_per_episode=self._max_steps_per_episode,

@@ -1,5 +1,6 @@
 import torch
 from debugger.debugger_interface import DebuggerInterface
+from debugger.utils.utils import almost_equal
 
 
 def get_config() -> dict:
@@ -10,8 +11,9 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "period": 1,
-        "reset": {"disabled": False}
+        "Period": 1,
+        "reset": {"disabled": False},
+        "normalization": {"disabled": True, "normalized_data_min": [-1.0], "normalized_data_max": [1.0]}
     }
     return config
 
@@ -22,9 +24,11 @@ class OnTrainStatesCheck(DebuggerInterface):
         self.env = None
         self.check_reset = False
 
-    def run(self, steps: int, done: bool, environment) -> None:
+    def run(self, observations, steps: int, done: bool, environment) -> None:
         if self.check_period():
             self.check_reset_is_called(steps, done, environment)
+            self.check_normalized_observations(observations)
+
             # TODO: check state stagnation overall
             # TODO: check state stagnation per episode (periodic)
             # TODO: ask Darshan about variance
@@ -42,6 +46,22 @@ class OnTrainStatesCheck(DebuggerInterface):
         # TODO: make done, steps .... observed automatically in the interface
         if done or steps > environment.spec.max_episode_steps:
             self.check_reset = True
+
+    def check_normalized_observations(self, observations):
+        #  todo this check is not correct, verify it with Darashan (example in the cartpool some values are > 1 )
+        if self.config["normalization"]["disabled"]:
+            return
+
+        mas = torch.max(observations)
+        mis = torch.min(observations)
+        avgs = torch.mean(observations * 1.0)
+        stds = torch.std(observations * 1.0)
+
+        if any([(mas > data_max) for data_max in self.config["normalization"]["normalized_data_max"]]) and \
+                any([(mis < data_min) for data_min in self.config["normalization"]["normalized_data_min"]]):
+            return
+        elif not (almost_equal(stds, 1.0) and almost_equal(avgs, 0.0)):
+            self.error_msg.append(self.main_msgs['observations_unnormalized'])
 
     def track_func(self, func):
         def wrapper(*args, **kwargs):

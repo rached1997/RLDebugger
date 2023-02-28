@@ -94,6 +94,7 @@ class DebuggableDQNAgent(DQNAgent):
             self._optimizer.step()
 
         # Update target network
+        self._target_qnet = self._qnet
         if self._target_net_update_schedule.update():
             self._update_target()
 

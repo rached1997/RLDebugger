@@ -5,27 +5,19 @@ debugger:
       # variable and constant indicate the nature of the observed parameter.
       observations: "variable"
       model: "variable"
-<<<<<<< HEAD
-#      targets: "variable"
-#      predictions: "variable"
-#      loss_fn: "constant"
-#      opt: "constant"
-#      actions: "variable"
-#      done: "variable"
-#      actions_probs: "variable"
-=======
       targets: "variable"
       predictions: "variable"
       loss_fn: "constant"
       opt: "constant"
       actions: "variable"
       done: "variable"
+      actions_probs: "variable"
 
 
       environment: "constant"
       steps: "variable"
       max_steps_per_episode: "constant"
-      episode_reward: "variable"
+      reward: "variable"
       max_total_steps : "constant"
       max_reward: "constant"
       target_model_update_period: "constant"
@@ -48,12 +40,12 @@ debugger:
 #      - name: OnTrainWeight
 #      - name: OnTrainLoss
 #      - name: Action
-      - name: UncertaintyAction
-      # uncomment the following line if you want to use the custom check provided in the example folder
-#      - name: CustomChecker
-
-#      -  name: PreTrainEnvironment
-#      - name: OnTrainState
+#      - name: UncertaintyAction
+#      - name: PreTrainEnvironment
+      - name: OnTrainState
 #      - name: OnTrainReward
 #      - name: OnTrainAgent
-       - name: OnTrainValueFunction
+#      - name: OnTrainValueFunction
+
+# uncomment the following line if you want to use the custom check provided in the example folder
+#      - name: CustomChecker

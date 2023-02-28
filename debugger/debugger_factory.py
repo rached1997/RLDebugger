@@ -99,6 +99,7 @@ class DebuggerFactory:
         Calls the `set_parameters` method with the provided `kwargs`, and then calls the `run` method, to start running
         the checks
         """
+        # todo we can add try except to avoid crushing the training if there is any error
         self.set_parameters(**kwargs)
         self.run()
 
