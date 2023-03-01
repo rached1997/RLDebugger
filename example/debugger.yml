@@ -43,11 +43,11 @@ debugger:
 #      - name: Action
 #      - name: UncertaintyAction
 #      - name: PreTrainEnvironment
-#      - name: OnTrainState
+      - name: OnTrainState
 #      - name: OnTrainReward
 #      - name: OnTrainAgent
 #      - name: OnTrainValueFunction
-      - name : OnTrainExplorationParameter
+#      - name : OnTrainExplorationParameter
 
 # uncomment the following line if you want to use the custom check provided in the example folder
 #      - name: CustomChecker
