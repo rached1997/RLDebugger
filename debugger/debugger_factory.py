@@ -22,7 +22,6 @@ class DebuggerFactory:
     def set_debugger(self, config):
         """
         Set the `debugger` object with the provided `config`.
-
         Args:
             config (dict): The dictionary of the checks names to be done.
         """
@@ -57,7 +56,6 @@ class DebuggerFactory:
         """
         Reacts to the provided `messages` by either raising an exception or logging a warning, depending on the value of
          `fail_on`.
-
         Args:
             messages (list): list of error messages to be displayed
             fail_on (bool): if True it raises an exception otherwise it only displays the error
@@ -106,7 +104,6 @@ class DebuggerFactory:
     def set_config(self, config=None, config_path=None):
         """
         Set the `debugger` object with the provided `config` or `config_path`.
-
         Args:
             config (dict): the configuration dict
             config_path (str): The path to the configuration dict
@@ -122,3 +119,14 @@ class DebuggerFactory:
     @staticmethod
     def register(checker_name: str, checker_class: debugger.DebuggerInterface) -> None:
         registry.register(checker_name, checker_class, checker_class)
+
+    def my_decorator(self, func):
+        def wrapper(*args, **kwargs):
+            # Execute your code here
+            for checkers in self.debuggers.values():
+                checkers.increment_episode()
+
+            result = func(*args, **kwargs)
+            return result
+
+        return wrapper
