@@ -1,5 +1,6 @@
 import torch
 from debugger.debugger_interface import DebuggerInterface
+import hashlib
 
 
 def get_config() -> dict:
@@ -9,9 +10,6 @@ def get_config() -> dict:
     Returns:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {
-        "Period": 10, }
-
     config = {
         "Period": 100,
         "target_update": {"disabled": False},
@@ -27,7 +25,7 @@ class OnTrainAgentCheck(DebuggerInterface):
 
     # todo : we have to explain in the doc that target_net_update_fraction=1 when there is not a soft update
     # todo check with darshan if the target and main network should be initialized with the same values
-    def run(self, model, target_model, target_model_update_period, steps, target_net_update_fraction=1,
+    def run(self, model, target_model, target_model_update_period, target_net_update_fraction=1,
             predictions=None, observations=None, actions=None) -> None:
         target_params = target_model.state_dict()
         current_params = model.state_dict()
@@ -40,7 +38,7 @@ class OnTrainAgentCheck(DebuggerInterface):
                                     target_net_update_fraction * current_params[key])
                         for key in target_params)
 
-        if (0 == ((steps - 1) % target_model_update_period)) and (steps > 1) and \
+        if (0 == ((self.step_num - 1) % target_model_update_period)) and (self.step_num > 1) and \
                 not self.config["target_update"]["disabled"]:
 
             if not all_equal:

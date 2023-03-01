@@ -50,7 +50,6 @@ class DebuggerInterface(Registrable):
             self.done = results[2]
             self.step_num += 1
             return results
-
         return wrapper
 
     def create_wrapper(self, environment):
