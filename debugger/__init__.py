@@ -34,8 +34,8 @@ registry.register("OnTrainReward", OnTrainRewardsCheck, OnTrainRewardsCheck)
 registry.register("OnTrainAgent", OnTrainAgentCheck, OnTrainAgentCheck)
 registry.register("OnTrainValueFunction", OnTrainValueFunctionCheck, OnTrainValueFunctionCheck)
 
-registry.register("Action", OnTrainActionCheck, OnTrainActionCheck)
-registry.register("UncertaintyAction", OnTrainUncertaintyActionCheck, OnTrainUncertaintyActionCheck)
+registry.register("OnTrainAction", OnTrainActionCheck, OnTrainActionCheck)
+registry.register("OnTrainUncertaintyAction", OnTrainUncertaintyActionCheck, OnTrainUncertaintyActionCheck)
 registry.register("OnTrainExplorationParameter", OnTrainExplorationParameterCheck, OnTrainExplorationParameterCheck)
 
 get_debugger = getattr(registry, f"get_{DebuggerInterface.type_name()}")

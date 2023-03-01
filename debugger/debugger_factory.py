@@ -98,14 +98,13 @@ class DebuggerFactory:
             arg_names = argspec.args[1:]
             defaults = argspec.defaults
             defaults_dict = {}
-            if not (defaults is None):
+            if defaults:
                 defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
             params_iters = [self.params_iters[key] for key in arg_names]
-            # TODO: review this
-            if all(((params_iters[i] == -1)
-                    or (params_iters[i] >= (debugger.iter_num + 1))
-                    or (arg_names[i] in defaults_dict.keys()))
-                   for i in range(len(params_iters))):
+            if all(
+                    param_iter == -1 or param_iter >= debugger.iter_num + 1 or arg_name in defaults_dict.keys()
+                    for param_iter, arg_name in zip(params_iters, arg_names)
+            ):
                 debugger.increment_iteration()
                 kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
                           for arg in arg_names}
@@ -118,9 +117,13 @@ class DebuggerFactory:
         Calls the `set_parameters` method with the provided `kwargs`, and then calls the `run` method, to start running
         the checks
         """
-        # todo we can add try except to avoid crushing the training if there is any error
-        self.set_parameters(**kwargs)
-        self.run()
+        try:
+            self.set_parameters(**kwargs)
+            self.run()
+        except Exception as e:
+            self.react(messages=[f"Error: {e}"], fail_on=True)
+            # Attempt to recover from the error and continue
+            pass
 
     def set_config(self, config=None, config_path=None):
         """

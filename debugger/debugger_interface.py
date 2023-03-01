@@ -1,5 +1,7 @@
-import torch
+import math
 
+import torch
+import math
 from debugger.utils.registry import Registrable
 from debugger.utils import settings
 
@@ -14,7 +16,7 @@ class DebuggerInterface(Registrable):
         self.error_msg = list()
         self.done = False
         self.step_num = -1
-        self.max_steps_per_episode = torch.inf
+        self.max_steps_per_episode = math.inf
 
     def check_period(self):
         """
@@ -60,4 +62,20 @@ class DebuggerInterface(Registrable):
             return True
         return False
 
-    # TODO: add flush function
+    def flush(self, var_list_name=None, var_list_obj=None):
+        if var_list_name is not None:
+            for var_name in var_list_name:
+                if getattr(self, var_name, False):
+                    setattr(self, var_name, None)
+        if var_list_obj is not None:
+            for i in range(len(var_list_obj)):
+                var_list_obj[i] = None
+
+    def flush_all(self):
+        for name, value in vars(self).items():
+            vars(self)[name] = None
+
+    def flush_all_tensors(self):
+        for name, value in vars(self).items():
+            if isinstance(value, torch.Tensor):
+                vars(self)[name] = None
