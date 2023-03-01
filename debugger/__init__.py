@@ -8,6 +8,7 @@ from debugger.checkers.nn_checkers.pre_train_proper_fitting_check import PreTrai
 from debugger.checkers.nn_checkers.pre_train_gradient_check import PreTrainGradientCheck
 from debugger.checkers.nn_checkers.pre_train_weights_check import PreTrainWeightsCheck
 from debugger.checkers.rl_checkers.on_train_action_check import OnTrainActionCheck
+from debugger.checkers.rl_checkers.on_train_exploration_param_check import OnTrainExplorationParameterCheck
 from debugger.checkers.rl_checkers.on_train_uncertainty_action_check import OnTrainUncertaintyActionCheck
 from debugger.checkers.rl_checkers.on_train_agent_check import OnTrainAgentCheck
 from debugger.checkers.rl_checkers.on_train_reward_check import OnTrainRewardsCheck
@@ -35,6 +36,8 @@ registry.register("OnTrainValueFunction", OnTrainValueFunctionCheck, OnTrainValu
 
 registry.register("Action", OnTrainActionCheck, OnTrainActionCheck)
 registry.register("UncertaintyAction", OnTrainUncertaintyActionCheck, OnTrainUncertaintyActionCheck)
+registry.register("OnTrainExplorationParameter", OnTrainExplorationParameterCheck, OnTrainExplorationParameterCheck)
+
 get_debugger = getattr(registry, f"get_{DebuggerInterface.type_name()}")
 
 

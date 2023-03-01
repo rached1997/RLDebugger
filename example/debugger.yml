@@ -27,6 +27,7 @@ debugger:
       discount_rate: "constant"
       steps_rewards: "variable"
       steps_done: "variable"
+      exploration_factor: "variable"
       # uncomment the following line if you want to use the custom check provided in the example folder
 #      observed_param: "variable"
     check_type:
@@ -42,10 +43,11 @@ debugger:
 #      - name: Action
 #      - name: UncertaintyAction
 #      - name: PreTrainEnvironment
-      - name: OnTrainState
+#      - name: OnTrainState
 #      - name: OnTrainReward
 #      - name: OnTrainAgent
 #      - name: OnTrainValueFunction
+      - name : OnTrainExplorationParameter
 
 # uncomment the following line if you want to use the custom check provided in the example folder
 #      - name: CustomChecker

@@ -13,7 +13,8 @@ def get_config() -> dict:
     config = {
         "Period": 1,
         "reset": {"disabled": False},
-        "normalization": {"disabled": True, "normalized_data_min": [-1.0], "normalized_data_max": [1.0]}
+        "normalization": {"disabled": True, "normalized_data_min": [-1.0], "normalized_data_max": [1.0]},
+        "stagnation": {"disabled": False, "stagnated_data_nbr_check": 10},
     }
     return config
 
@@ -23,15 +24,25 @@ class OnTrainStatesCheck(DebuggerInterface):
         super().__init__(check_type="OnTrainState", config=get_config())
         self.env = None
         self.check_reset = False
+        self.observations_buffer = torch.Tensor([])
 
     def run(self, observations, steps: int, done: bool, environment) -> None:
         if self.check_period():
             self.check_reset_is_called(steps, done, environment)
             self.check_normalized_observations(observations)
-
-            # TODO: check state stagnation overall
+            self.check_states_stagnation(observations)
             # TODO: check state stagnation per episode (periodic)
             # TODO: ask Darshan about variance
+
+    def check_states_stagnation(self, observations):
+        if self.config["stagnation"]["disabled"]:
+            return
+        self.observations_buffer = torch.cat([self.observations_buffer, observations])
+        if (len(self.observations_buffer) % self.config["stagnation"]["stagnated_data_nbr_check"]) == 0:
+            if torch.all(torch.eq(self.observations_buffer[-self.config["stagnation"]["stagnated_data_nbr_check"]:],
+                                  self.observations_buffer[0])):
+                self.error_msg.append(self.main_msgs['observations_are_similar'].format(
+                    self.config["stagnation"]["stagnated_data_nbr_check"]))
 
     def check_reset_is_called(self, steps, done, environment):
         if self.config["reset"]["disabled"]:

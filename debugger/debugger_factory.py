@@ -48,8 +48,8 @@ class DebuggerFactory:
         Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
         """
         for key, value in kwargs.items():
-            # self.params[key] = copy.deepcopy(value)
-            self.params[key] = value
+            self.params[key] = copy.deepcopy(value)
+            # self.params[key] = value
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
 

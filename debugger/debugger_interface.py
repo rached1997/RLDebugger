@@ -19,7 +19,7 @@ class DebuggerInterface(Registrable):
             True if the period is reached. False otherwise.
         """
         return ((self.period != 0) and (self.iter_num % self.period == 0)) or (
-                    (self.period == 0) and (self.iter_num == 1))
+                (self.period == 0) and (self.iter_num == 1))
 
     def increment_iteration(self):
         """
