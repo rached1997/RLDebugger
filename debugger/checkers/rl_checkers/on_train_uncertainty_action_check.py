@@ -72,7 +72,7 @@ class OnTrainUncertaintyActionCheck(DebuggerInterface):
         #
         """
         self._buffer.append(observations)
-        if self.check_period() and self.iter_num >= self.config["start"]:
+        if self.check_period() and self.step_num >= self.config["start"]:
             last_layer_name, _ = list(model.named_modules())[-1]
             observations_batch = torch.stack(self._buffer.sample(batch_size=self.config["batch_size"]), dim=0).squeeze()
             self.check_mont_carlo_dropout_uncertainty(model, observations_batch, last_layer_name)

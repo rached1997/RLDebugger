@@ -25,36 +25,31 @@ def get_config() -> dict:
 class OnTrainRewardsCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="OnTrainReward", config=get_config())
-        self.total_steps = 0
-
         self.episodes_rewards = []
 
-    # todo reduce the number of params
-    def run(self, reward, done, steps, max_steps_per_episode, max_total_steps, max_reward) -> None:
+    def run(self, reward, max_total_steps, max_reward) -> None:
 
-        self.total_steps += steps
-
-        if done or steps >= max_steps_per_episode:
+        if self.is_final_step_of_ep():
             self.episodes_rewards += [reward]
 
         n_rewards = len(self.episodes_rewards)
         if self.check_period() and (n_rewards >= self.config['window_size'] * self.config["vars_to_check"]):
-            vars = []
+            variances = []
 
             for i in range(0, len(self.episodes_rewards), self.config['window_size']):
-                vars += [np.var(self.episodes_rewards[i:i + self.config['window_size']])]
+                variances += [np.var(self.episodes_rewards[i:i + self.config['window_size']])]
 
-            vars = torch.tensor(vars).float().reshape(-1, 1)
-            cof = self.get_reward_var_slope(vars)
+            variances = torch.tensor(variances).float().reshape(-1, 1)
+            cof = self.get_reward_var_slope(variances)
 
-            if (self.iter_num < max_total_steps * self.config['exploration_perc']) and \
+            if (self.step_num < max_total_steps * self.config['exploration_perc']) and \
                     (not self.config["fluctuation"]["disabled"]):
-                fluctuations = self.check_reward_start_fluctuating(vars, cof)
+                fluctuations = self.check_reward_start_fluctuating(variances, cof)
                 if fluctuations < self.config["fluctuation"]['fluctuation_rmse_min']:
                     self.error_msg.append(self.main_msgs['fluctuated_reward'].format(
                         self.config['exploration_perc'] * 100))
 
-            if self.iter_num > max_total_steps * (1 - self.config['exploration_perc']) and \
+            if self.step_num > max_total_steps * (1 - self.config['exploration_perc']) and \
                     (not self.config["monotonicity"]["disabled"]):
                 self.check_reward_monotonicity(cof, max_reward)
 

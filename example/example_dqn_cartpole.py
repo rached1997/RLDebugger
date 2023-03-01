@@ -33,7 +33,7 @@ class DebuggableDQNAgent(DQNAgent):
             action = torch.argmax(qvals).item()
             # rl_debugger.run_debugging(actions_probs=qvals)
 
-        rl_debugger.run_debugging(model=self._qnet, observations=observation, exploration_factor=self._test_epsilon)
+        rl_debugger.run_debugging(model=self._qnet, observations=observation, exploration_factor=epsilon)
         return action
 
     def update(self, update_info):

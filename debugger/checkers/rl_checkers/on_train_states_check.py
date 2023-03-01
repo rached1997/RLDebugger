@@ -26,9 +26,9 @@ class OnTrainStatesCheck(DebuggerInterface):
         self.check_reset = False
         self.observations_buffer = torch.Tensor([])
 
-    def run(self, observations, steps: int, done: bool, environment) -> None:
+    def run(self, observations, environment) -> None:
         if self.check_period():
-            self.check_reset_is_called(steps, done, environment)
+            self.check_reset_is_called(environment)
             self.check_normalized_observations(observations)
             self.check_states_stagnation(observations)
             # TODO: check state stagnation per episode (periodic)
@@ -44,18 +44,18 @@ class OnTrainStatesCheck(DebuggerInterface):
                 self.error_msg.append(self.main_msgs['observations_are_similar'].format(
                     self.config["stagnation"]["stagnated_data_nbr_check"]))
 
-    def check_reset_is_called(self, steps, done, environment):
+    # todo this function doesn't work with deep copy maybe change it
+    def check_reset_is_called(self, environment):
         if self.config["reset"]["disabled"]:
             return
         if self.env is None:
             self.env = environment
-            self.create_wrapper()
+            self.create_rest_wrapper()
 
         if self.check_reset and (not self.env.reset.called):
             self.error_msg.append(self.main_msgs['reset_was_not_called'])
 
-        # TODO: make done, steps .... observed automatically in the interface
-        if done or steps > environment.spec.max_episode_steps:
+        if self.is_final_step_of_ep():
             self.check_reset = True
 
     def check_normalized_observations(self, observations):
@@ -88,5 +88,5 @@ class OnTrainStatesCheck(DebuggerInterface):
     def reset_called(self):
         self.env.reset.called = False
 
-    def create_wrapper(self):
+    def create_rest_wrapper(self):
         self.env.reset = self.track_func(self.env.reset)

@@ -28,12 +28,12 @@ class OnTrainExplorationParameterCheck(DebuggerInterface):
         self.exploration_factor_buffer = []
 
     def run(self, exploration_factor) -> None:
-        # todo we should only append when the episode ends
-        # todo debug this and check if it's to slow
-        self.exploration_factor_buffer += [exploration_factor]
+        # todo debug this and check if it's to slow, also this may not work because the epsilon in training and testing are not the same
+        if self.is_final_step_of_ep():
+            self.exploration_factor_buffer += [exploration_factor]
         self.check_initial_value()
         self.check_exploration_parameter_monotonicity()
-        self.check_is_chaning_too_quickly()
+        self.check_is_changing_too_quickly()
 
     def check_initial_value(self):
         if (self.iter_num == 1) and not self.config["check_initialization"]["disabled"]:
@@ -53,7 +53,7 @@ class OnTrainExplorationParameterCheck(DebuggerInterface):
             else:
                 self.error_msg.append(self.main_msgs['stagnating_exploration_factor'])
 
-    def check_is_chaning_too_quickly(self):
+    def check_is_changing_too_quickly(self):
         if self.config["check_quick_change"]["disabled"]:
             return
         if self.check_period():
