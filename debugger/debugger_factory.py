@@ -22,6 +22,7 @@ class DebuggerFactory:
     def set_debugger(self, config):
         """
         Set the `debugger` object with the provided `config`.
+
         Args:
             config (dict): The dictionary of the checks names to be done.
         """
@@ -42,10 +43,28 @@ class DebuggerFactory:
         params = config["debugger"]["kwargs"]["params"]
         self.params_iters = {key: -1 if val == "constant" else 0 for key, val in params.items()}
 
+    def create_env_wrapper(self, environment=None, max_steps_per_episode=None):
+        if environment is not None:
+            for checkers in self.debuggers.values():
+                if checkers.step_num != -1:
+                    break
+                checkers.create_wrapper(environment)
+
+        if max_steps_per_episode is not None:
+            for checkers in self.debuggers.values():
+                if checkers.max_steps_per_episode == max_steps_per_episode:
+                    break
+                checkers.max_steps_per_episode = max_steps_per_episode
+
     def set_parameters(self, **kwargs):
         """
         Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
         """
+        if "environment" in kwargs.keys():
+            self.create_env_wrapper(environment=kwargs["environment"])
+        if "max_steps_per_episode" in kwargs.keys():
+            self.create_env_wrapper(max_steps_per_episode=kwargs["max_steps_per_episode"])
+
         for key, value in kwargs.items():
             self.params[key] = copy.deepcopy(value)
             # self.params[key] = value
@@ -56,6 +75,7 @@ class DebuggerFactory:
         """
         Reacts to the provided `messages` by either raising an exception or logging a warning, depending on the value of
          `fail_on`.
+
         Args:
             messages (list): list of error messages to be displayed
             fail_on (bool): if True it raises an exception otherwise it only displays the error
@@ -73,6 +93,7 @@ class DebuggerFactory:
         Runs the `debugger` objects in the `debuggers` dictionary.
         """
         for debugger in self.debuggers.values():
+            print(debugger.is_final_step_of_ep())
             argspec = inspect.getfullargspec(debugger.run)
             arg_names = argspec.args[1:]
             defaults = argspec.defaults
@@ -104,6 +125,7 @@ class DebuggerFactory:
     def set_config(self, config=None, config_path=None):
         """
         Set the `debugger` object with the provided `config` or `config_path`.
+
         Args:
             config (dict): the configuration dict
             config_path (str): The path to the configuration dict
@@ -119,14 +141,3 @@ class DebuggerFactory:
     @staticmethod
     def register(checker_name: str, checker_class: debugger.DebuggerInterface) -> None:
         registry.register(checker_name, checker_class, checker_class)
-
-    def my_decorator(self, func):
-        def wrapper(*args, **kwargs):
-            # Execute your code here
-            for checkers in self.debuggers.values():
-                checkers.increment_episode()
-
-            result = func(*args, **kwargs)
-            return result
-
-        return wrapper
