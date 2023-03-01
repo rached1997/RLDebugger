@@ -59,12 +59,12 @@ class OnTrainActionCheck(DebuggerInterface):
             self.check_entropy_start_very_low()
             if len(self._entropies) >= self.config['window_size']:
                 entropy_slope = self.get_entropy_slope()
-                if self.iter_num < max_total_steps * self.config['exploration_perc']:
+                if self.step_num < max_total_steps * self.config['exploration_perc']:
                     self.check_entropy_monotonicity(entropy_slope=entropy_slope)
                     self.check_entropy_decrease_very_fast()
                 self.check_entropy_fluctuation(entropy_slope=entropy_slope)
             # start checking action stagnation
-            if self.iter_num > max_total_steps * self.config['exploitation_perc']:
+            if self.step_num > max_total_steps * self.config['exploitation_perc']:
                 self._action_buffer = torch.cat((self._action_prob_buffer, torch.argmax(actions_probs).item()), dim=0)
                 if len(self._action_buffer) >= self.config['action_stagnation']['start']:
                     self.check_action_stagnation_overall()

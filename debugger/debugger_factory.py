@@ -93,7 +93,6 @@ class DebuggerFactory:
         Runs the `debugger` objects in the `debuggers` dictionary.
         """
         for debugger in self.debuggers.values():
-            print(debugger.is_final_step_of_ep())
             argspec = inspect.getfullargspec(debugger.run)
             arg_names = argspec.args[1:]
             defaults = argspec.defaults
