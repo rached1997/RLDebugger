@@ -50,6 +50,7 @@ def get_config():
     """
     config = {
         "Period": 1000,
+        "start": 10000,
         "num_repetitions": 100,
         "std_threshold": 0.5,
         "buffer_max_size": 1000,
@@ -71,7 +72,7 @@ class OnTrainUncertaintyActionCheck(DebuggerInterface):
         #
         """
         self._buffer.append(observations)
-        if self.check_period():
+        if self.check_period() and self.iter_num >= self.config["start"]:
             last_layer_name, _ = list(model.named_modules())[-1]
             observations_batch = torch.stack(self._buffer.sample(batch_size=self.config["batch_size"]), dim=0).squeeze()
             self.check_mont_carlo_dropout_uncertainty(model, observations_batch, last_layer_name)
@@ -87,7 +88,6 @@ class OnTrainUncertaintyActionCheck(DebuggerInterface):
         # Average the predictions to get the final prediction and uncertainty estimate
         uncertainty = torch.mean(torch.std(torch.stack(predictions), dim=0), dim=0)
         if torch.any(uncertainty > self.config["std_threshold"]):
-            # TODO: divide this check into two exploration and exploitation
             self.error_msg.append(self.main_msgs['mcd_uncertainty'].format(torch.mean(uncertainty),
                                                                            self.config["std_threshold"],
                                                                            self.config['num_repetitions']))

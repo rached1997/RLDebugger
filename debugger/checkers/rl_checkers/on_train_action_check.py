@@ -22,10 +22,13 @@ def get_config():
         "Period": 100,
         "window_size": 20,
         "exploration_perc": 0.2,
+        "exploitation_perc": 0.8,
         "low_start": {"disabled": False, "start": 5, "entropy_min_thresh": 0.3},
         "monotonicity": {"disabled": False, "increase_thresh": 0.1, "stagnation_thresh": 1e-3},
         "strong_decrease": {"disabled": False, "strong_decrease_thresh": -0.05, "acceleration_points_ratio": 0.5},
-        "fluctuation": {"disabled": False, "fluctuation_thresh": 0.5}
+        "fluctuation": {"disabled": False, "fluctuation_thresh": 0.5},
+        "action_stagnation": {"disabled": False, "start": 100, "similarity_pct_thresh": 0.8},
+        "action_stagnation_per_episode": {"disabled": False,}
 
     }
     return config
@@ -40,6 +43,7 @@ class OnTrainActionCheck(DebuggerInterface):
         super().__init__(check_type="OnTrainAction", config=get_config())
         self._action_prob_buffer = torch.tensor([], device='cuda')
         self._entropies = torch.tensor([], device='cuda')
+        self._action_buffer = torch.tensor([], device='cuda')
 
     def run(self, actions_probs, max_total_steps):
         """
@@ -47,7 +51,6 @@ class OnTrainActionCheck(DebuggerInterface):
         """
         if not torch.allclose(torch.sum(actions_probs, dim=1), torch.ones(actions_probs.shape[0], device='cuda')):
             actions_probs = torch.softmax(actions_probs, dim=1)
-
         self._action_prob_buffer = torch.cat((self._action_prob_buffer, actions_probs), dim=0)
         if self.check_period():
             self._entropies = torch.cat((self._entropies, self.compute_entropy().view(1)))
@@ -55,10 +58,17 @@ class OnTrainActionCheck(DebuggerInterface):
             # start checking entropy of action probs
             self.check_entropy_start_very_low()
             if len(self._entropies) >= self.config['window_size']:
+                entropy_slope = self.get_entropy_slope()
                 if self.iter_num < max_total_steps * self.config['exploration_perc']:
-                    self.check_entropy_monotonicity(entropy_slope=self.get_entropy_slope())
+                    self.check_entropy_monotonicity(entropy_slope=entropy_slope)
                     self.check_entropy_decrease_very_fast()
-                self.check_entropy_fluctuation()
+                self.check_entropy_fluctuation(entropy_slope=entropy_slope)
+            # start checking action stagnation
+            if self.iter_num > max_total_steps * self.config['exploitation_perc']:
+                self._action_buffer = torch.cat((self._action_prob_buffer, torch.argmax(actions_probs).item()), dim=0)
+                if len(self._action_buffer) >= self.config['action_stagnation']['start']:
+                    self.check_action_stagnation_overall()
+                    self.check_action_stagnation_per_episode()
 
     def compute_entropy(self):
         """
@@ -123,7 +133,6 @@ class OnTrainActionCheck(DebuggerInterface):
         """
         if self.config["strong_decrease"]["disabled"]:
             return
-        # TODO: try make this torch
         entropy_values = self._entropies.detach().cpu().numpy()
         time_values = len(entropy_values)
         second_derivative = np.gradient(np.gradient(entropy_values, time_values), time_values)
@@ -143,10 +152,23 @@ class OnTrainActionCheck(DebuggerInterface):
 
         residuals = torch.sqrt(torch.mean((self._entropies - predicted) ** 2))
         if residuals > self.config['fluctuation']["fluctuation_thresh"]:
-            # TODO: check message please
             self.error_msg.append(self.main_msgs['entropy_fluctuation'].format(residuals, self.config["fluctuation"][
                 "fluctuation_thresh"]))
         return None
 
-# TODO: check action stagnation overall
-# TODO: check action stagnation per episode (periodic)
+    def check_action_stagnation_overall(self):
+        if self.config["action_stagnation"]["disabled"]:
+            return
+        mode_tensor = torch.mode(self._action_buffer).values
+
+        num_matching = sum(self._action_buffer == mode_tensor)
+        similarity_pct = num_matching / len(self._action_buffer)
+
+        if similarity_pct > self.config['action_stagnation']["similarity_pct_thresh"]:
+            self.error_msg.append(self.main_msgs['action_stagnation'].format(similarity_pct))
+        return None
+
+    def check_action_stagnation_per_episode(self):
+        # TODO: finish this
+        pass
+
