@@ -9,6 +9,7 @@ class DebuggerInterface(Registrable):
         self.check_type = check_type
         self.period = config["Period"]
         self.iter_num = 0
+        self.episode_num = 0
         self.error_msg = list()
 
     def check_period(self):
@@ -26,6 +27,12 @@ class DebuggerInterface(Registrable):
             Increments the iteration
         """
         self.iter_num += 1
+
+    def increment_episode(self):
+        """
+            Increments the iteration
+        """
+        self.episode_num += 1
 
     def reset_error_msg(self):
         """

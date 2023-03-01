@@ -122,3 +122,14 @@ class DebuggerFactory:
     @staticmethod
     def register(checker_name: str, checker_class: debugger.DebuggerInterface) -> None:
         registry.register(checker_name, checker_class, checker_class)
+
+    def my_decorator(self, func):
+        def wrapper(*args, **kwargs):
+            # Execute your code here
+            for checkers in self.debuggers.values():
+                checkers.increment_episode()
+
+            result = func(*args, **kwargs)
+            return result
+
+        return wrapper
