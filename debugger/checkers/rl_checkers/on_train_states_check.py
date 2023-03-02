@@ -66,10 +66,13 @@ class OnTrainStatesCheck(DebuggerInterface):
         if (len(self.period_index) >= self.config["states_convergence"]["num_eps_to_check"]) and \
                 (statistics.mean(self.episodes_rewards) < max_reward * self.config["states_convergence"]["reward_tolerance"]) and \
                 (self.step_num >= max_total_steps * (1 - self.config["states_convergence"]["final_eps_perc"])):
+            #TODO: previous_ep_index is not incrementing maybe you should check taht
             previous_ep_index = 0
             final_obs = []
             for i in self.period_index:
                 # (i-previous_ep_index) measures the length of the ep
+                # TODO: maybe working with number rather than 'last_obs_perc' because episode could not have the same
+                #  size
                 starting_index = i - int((i - previous_ep_index) * self.config["states_convergence"]["last_obs_perc"])
                 final_obs += self.observations_buffer[starting_index:i + 1]
             if all((obs == final_obs[0]) for obs in final_obs):
