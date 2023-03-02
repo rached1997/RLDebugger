@@ -1,3 +1,5 @@
+import statistics
+
 import numpy as np
 import torch
 from debugger.debugger_interface import DebuggerInterface
@@ -11,9 +13,9 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 1000,
+        "Period": 10,
         "check_stagnation": {"disabled": False},
-        "poor_max_step_per_ep": {"disabled": False, "exploitation_perc": 0.8, },
+        "poor_max_step_per_ep": {"disabled": False, "final_eps_perc": 0.2, "max_reward_tol": 0.1, },
     }
 
     return config
@@ -22,21 +24,22 @@ def get_config() -> dict:
 class OnTrainStepCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="OnTrainStep", config=get_config())
-        self.steps_number_buffer = []
+        self.final_step_number_buffer = []
         self.reward_number_buffer = []
 
-    def run(self, step, reward) -> None:
-        # We should append this when the episode is done
-        self.steps_number_buffer += [step]
-        self.reward_number_buffer += [reward]
-        self.check_step_is_not_changing()
+    def run(self, reward, max_reward, max_total_steps) -> None:
+        if self.is_final_step_of_ep():
+            self.final_step_number_buffer += [self.step_num]
+            self.reward_number_buffer += [reward]
+        self.check_step_is_not_changing( max_reward, max_total_steps)
 
-        # Todo add the check that the max steps is too low
-
-
-
-    def check_step_is_not_changing(self):
+    def check_step_is_not_changing(self, max_reward, max_total_steps):
         if self.config["check_stagnation"]["disabled"]:
             return
-        if self.steps_number_buffer.count(self.steps_number_buffer[0]) == len(self.steps_number_buffer):
-            self.error_msg.append(self.main_msgs['steps_are_not_changing'])
+
+        if self.check_period() and (
+                self.step_num >= (max_total_steps * (1 - self.config["poor_max_step_per_ep"]["final_eps_perc"]))):
+            if (statistics.mean(self.final_step_number_buffer) >= self.max_steps_per_episode) and \
+                    (statistics.mean(self.final_step_number_buffer) <
+                     (max_reward * self.config["poor_max_step_per_ep"]["max_reward_tol"])):
+                self.error_msg.append(self.main_msgs['poor_max_ste_per_ep'])

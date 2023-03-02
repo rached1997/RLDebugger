@@ -5,7 +5,8 @@ import math
 from debugger.utils.registry import Registrable
 from debugger.utils import settings
 
-
+# todo add the checks from the blog
+# todo cover the testing during the training
 class DebuggerInterface(Registrable):
     def __init__(self, check_type, config):
         self.main_msgs = settings.load_messages()
@@ -61,6 +62,7 @@ class DebuggerInterface(Registrable):
             return True
         return False
 
+    # todo add this to all checkers
     def flush(self, var_list_name=None, var_list_obj=None):
         if var_list_name is not None:
             for var_name in var_list_name:

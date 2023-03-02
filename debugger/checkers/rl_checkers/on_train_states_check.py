@@ -6,6 +6,7 @@ from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.utils import almost_equal
 
 
+
 def get_config() -> dict:
     """
     Return the configuration dictionary needed to run the checkers.

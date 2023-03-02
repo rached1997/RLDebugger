@@ -4,46 +4,50 @@ debugger:
     params:
       # variable and constant indicate the nature of the observed parameter.
       observations: "variable"
-      model: "variable"
-      targets: "variable"
-      predictions: "variable"
+      reward: "variable"
+      done: "variable"
+
+      target_model_update_period: "constant"
+      max_steps_per_episode: "constant"
+      max_total_steps : "constant"
+      discount_rate: "constant"
+      environment: "constant"
+      max_reward: "constant"
       loss_fn: "constant"
       opt: "constant"
-      actions: "variable"
-      done: "variable"
-      actions_probs: "variable"
-      environment: "constant"
-      steps: "variable"
-      max_steps_per_episode: "constant"
-      reward: "variable"
-      max_total_steps : "constant"
-      max_reward: "constant"
-      target_model_update_period: "constant"
+
+      model: "variable"
       target_model: "variable"
-      target_net_update_fraction : "constant"
-      predicted_next_vals: "variable"
-      discount_rate: "constant"
-      steps_rewards: "variable"
-      steps_done: "variable"
       exploration_factor: "variable"
+
+      targets: "variable"
+      predictions: "variable"
+      actions: "variable"
+      actions_probs: "variable"
+      predicted_next_vals: "variable"
+
+      steps: "variable"
+      steps_done: "variable"
+      steps_rewards: "variable"
+
       # uncomment the following line if you want to use the custom check provided in the example folder
 #      observed_param: "variable"
     check_type:
 #      - name: PreTrainObservation
-      - name: PreTrainWeight
+#      - name: PreTrainWeight
 #      - name: PreTrainBias
 #      - name: PreTrainLoss
 #      - name: PreTrainProperFitting
 #      - name: PreTrainGradient
-      - name: OnTrainBias
-      - name: OnTrainWeight
+#      - name: OnTrainBias
+#      - name: OnTrainWeight
 #      - name: OnTrainLoss
-      - name: OnTrainAction
+#      - name: OnTrainAction
 #      - name: UncertaintyAction
 #      - name: PreTrainEnvironment
 #      - name: OnTrainState
-      - name: OnTrainReward
-      - name: OnTrainState
+#      - name: OnTrainReward
+      - name: OnTrainStep
 #      - name: OnTrainReward
 #      - name: OnTrainAgent
 #      - name: OnTrainValueFunction
