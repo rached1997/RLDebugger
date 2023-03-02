@@ -62,7 +62,7 @@ class OnTrainRewardsCheck(DebuggerInterface):
         entropy_slope (float): The slope of the linear regression fit to the entropy values.
         :return: A warning message if the entropy is increasing or stagnated with time.
         """
-        # TODO: debug this please cof.solution[0][0]
+        # todo DEBUG: debug this please cof.solution[0][0]
         if torch.abs(cof.solution[0][0]) > self.config["monotonicity"]["stagnation_thresh"]:
             self.error_msg.append(
                 self.main_msgs['decreasing_reward'].format(100 - (self.config["exploration_perc"] * 100)))
@@ -77,7 +77,7 @@ class OnTrainRewardsCheck(DebuggerInterface):
                             max_reward))
         return None
 
-    # TODO: debug this please
+    # todo DEBUG: debug this please
     def check_reward_start_fluctuating(self, vars, cof):
         x = torch.arange(len(vars), device=vars.device)
         ones = torch.ones_like(x)

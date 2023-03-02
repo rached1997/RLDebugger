@@ -30,11 +30,11 @@ class PreTrainEnvironmentCheck(DebuggerInterface):
 
     def run(self, environment) -> None:
 
-        # TODO: add Markovianity check
+        # todo CODE: add Markovianity check
         if not self.config["Markovianity_check"]["disabled"]:
             pass
 
-        # TODO: ask Darshan if rest should be random or yield the same states
+        # todo CR: ask Darshan if rest should be random or yield the same states
         if self.check_period():
             if environment.spec.max_episode_steps:
                 self.generate_random_eps(environment)

@@ -33,6 +33,7 @@ class OnTrainStatesCheck(DebuggerInterface):
         self.period_index = []
         self.episodes_rewards = []
 
+    # todo CODE: ADD the state coverage check
     def run(self, observations, environment, reward, max_reward, max_total_steps) -> None:
         if self.check_period():
             self.check_reset_is_called(environment)
@@ -48,7 +49,7 @@ class OnTrainStatesCheck(DebuggerInterface):
 
                 self.check_states_stagnation()
                 self.check_states_converging(max_reward, max_total_steps)
-                # TODO: ask Darshan about variance
+                # todo CR: ask Darshan about variance
 
     def check_states_stagnation(self, ):
         if self.config["stagnation"]["disabled"]:
@@ -59,7 +60,7 @@ class OnTrainStatesCheck(DebuggerInterface):
                 self.error_msg.append(self.main_msgs['observations_are_similar'].format(
                     self.config["stagnation"]["stagnated_data_nbr_check"]))
 
-    # todo check again if the implementation is correct
+    # todo DEBUG: check again if the implementation is correct
     def check_states_converging(self, max_reward, max_total_steps):
         if self.config["states_convergence"]["disabled"]:
             return
@@ -67,21 +68,20 @@ class OnTrainStatesCheck(DebuggerInterface):
         if (len(self.period_index) >= self.config["states_convergence"]["num_eps_to_check"]) and \
                 (statistics.mean(self.episodes_rewards) < max_reward * self.config["states_convergence"]["reward_tolerance"]) and \
                 (self.step_num >= max_total_steps * (1 - self.config["states_convergence"]["final_eps_perc"])):
-            #TODO: previous_ep_index is not incrementing maybe you should check taht
             previous_ep_index = 0
             final_obs = []
             for i in self.period_index:
                 # (i-previous_ep_index) measures the length of the ep
-                # TODO: maybe working with number rather than 'last_obs_perc' because episode could not have the same
-                #  size
+                # TODO CODE: maybe working with number rather than 'last_obs_perc' because episode could not have the same size
                 starting_index = i - int((i - previous_ep_index) * self.config["states_convergence"]["last_obs_perc"])
                 final_obs += self.observations_buffer[starting_index:i + 1]
+                previous_ep_index = i
             if all((obs == final_obs[0]) for obs in final_obs):
                 self.error_msg.append(self.main_msgs['observations_are_similar'])
         self.period_index = []
         self.episodes_rewards = []
 
-    # todo this function doesn't work with deep copy maybe change it
+    # todo DEBUG:this function can't work with deep copy maybe change it
     def check_reset_is_called(self, environment):
         if self.config["reset"]["disabled"]:
             return
@@ -96,7 +96,7 @@ class OnTrainStatesCheck(DebuggerInterface):
             self.check_reset = True
 
     def check_normalized_observations(self, observations):
-        #  todo this check is not correct, verify it with Darashan (example in the cartpool some values are > 1 )
+        #  todo CR : this check is not correct, verify it with Darashan (example in the cartpool some values are > 1 )
         if self.config["normalization"]["disabled"]:
             return
 

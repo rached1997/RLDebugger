@@ -5,8 +5,14 @@ import math
 from debugger.utils.registry import Registrable
 from debugger.utils import settings
 
-# todo add the checks from the blog
-# todo cover the testing during the training
+
+# todo IDEA: add the checks from the blog
+# todo DEBUGGING: cover the testing during the training
+# todo CODE: do the constant+wrapper separation
+# todo IDEA reduce the number of params
+# todo DOC: env in the first run, we can check this too
+# todo IDEA: think on when two runs sends the same parameter
+# when we have A2C
 class DebuggerInterface(Registrable):
     def __init__(self, check_type, config):
         self.main_msgs = settings.load_messages()
@@ -51,6 +57,7 @@ class DebuggerInterface(Registrable):
             self.done = results[2]
             self.step_num += 1
             return results
+
         return wrapper
 
     def create_wrapper(self, environment):
@@ -62,7 +69,7 @@ class DebuggerInterface(Registrable):
             return True
         return False
 
-    # todo add this to all checkers
+    # todo DEBUG: add this to all checkers
     def flush(self, var_list_name=None, var_list_obj=None):
         if var_list_name is not None:
             for var_name in var_list_name:

@@ -28,7 +28,7 @@ class OnTrainExplorationParameterCheck(DebuggerInterface):
         self.exploration_factor_buffer = []
 
     def run(self, exploration_factor) -> None:
-        # todo debug this and check if it's to slow, also this may not work because the epsilon in training and testing are not the same
+        # todo DEBUG: debug this and check if it's to slow, also this may not work because the epsilon in training and testing are not the same
         if self.is_final_step_of_ep():
             self.exploration_factor_buffer += [exploration_factor]
         self.check_initial_value()

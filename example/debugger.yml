@@ -7,6 +7,7 @@ debugger:
       reward: "variable"
       done: "variable"
 
+      target_net_update_fraction: "constant"
       target_model_update_period: "constant"
       max_steps_per_episode: "constant"
       max_total_steps : "constant"
@@ -47,11 +48,12 @@ debugger:
 #      - name: PreTrainEnvironment
 #      - name: OnTrainState
 #      - name: OnTrainReward
-      - name: OnTrainStep
+#      - name: OnTrainStep
 #      - name: OnTrainReward
 #      - name: OnTrainAgent
 #      - name: OnTrainValueFunction
 #      - name : OnTrainExplorationParameter
+      - name: OnTrainMainModel
 
 # uncomment the following line if you want to use the custom check provided in the example folder
 #      - name: CustomChecker

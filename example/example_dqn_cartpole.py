@@ -68,21 +68,21 @@ class DebuggableDQNAgent(DQNAgent):
             next_qvals, _ = torch.max(next_qvals, dim=1)
             q_targets = batch["reward"] + self._discount_rate * next_qvals * (1 - batch["done"])
 
-            # rl_debugger.run_debugging(model=self._qnet,
-            #                           loss_fn=self._loss_fn,
-            #                           opt=self._optimizer,
-            #                           target_model=self._target_qnet,
-            #                           target_model_update_period=self._target_net_update_schedule._total_period,
-            #                           target_net_update_fraction=1,
-            #                           observations=current_state_inputs[0],
-            #                           targets=q_targets.detach(),
-            #                           predictions=pred_qvals.detach(),
-            #                           actions=actions,
-            #                           predicted_next_vals=next_qvals.detach(),
-            #                           discount_rate=self._discount_rate,
-            #                           steps_rewards=batch["reward"],
-            #                           steps_done=batch["done"]
-            #                           )
+            rl_debugger.run_debugging(model=self._qnet,
+                                      loss_fn=self._loss_fn,
+                                      opt=self._optimizer,
+                                      target_model=self._target_qnet,
+                                      target_model_update_period=self._target_net_update_schedule._total_period,
+                                      target_net_update_fraction=1,
+                                      observations=current_state_inputs[0],
+                                      targets=q_targets.detach(),
+                                      predictions=pred_qvals.detach(),
+                                      actions=actions,
+                                      predicted_next_vals=next_qvals.detach(),
+                                      discount_rate=self._discount_rate,
+                                      steps_rewards=batch["reward"],
+                                      steps_done=batch["done"]
+                                      )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 
