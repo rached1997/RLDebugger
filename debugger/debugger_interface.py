@@ -12,7 +12,7 @@ from debugger.utils import settings
 # todo IDEA reduce the number of params
 # todo DOC: env in the first run, we can check this too
 # todo IDEA: think on when two runs sends the same parameter
-# when we have A2C
+# todo IDEA: how the debugger works when we have A2C, etc
 class DebuggerInterface(Registrable):
     def __init__(self, check_type, config):
         self.main_msgs = settings.load_messages()
