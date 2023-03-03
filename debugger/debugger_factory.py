@@ -1,5 +1,4 @@
-from pathlib import Path
-import debugger
+from debugger import DebuggerInterface
 import debugger as debugger_lib
 from debugger.utils import settings
 from debugger.utils.registry import registry
@@ -9,15 +8,12 @@ import copy
 
 
 class DebuggerFactory:
-    def __init__(self, config=None, app_path=None):
-        app_path = Path.cwd() if app_path == None else app_path
-        log_fpath = settings.build_log_file_path(app_path, "logger")
-        self.logger = settings.file_logger(log_fpath, "logger")
+    def __init__(self):
+        self.logger = settings.set_logger()
         self.debuggers = dict()
         self.params = {}
         self.params_iters = dict()
-        if config is not None:
-            self.set_debugger(config)
+        self.step_num = 0
 
     def set_debugger(self, config):
         """
@@ -27,7 +23,7 @@ class DebuggerFactory:
             config (dict): The dictionary of the checks names to be done.
         """
 
-        self.set_params_iteration(config)
+        self.init_params_iteration(config)
         if config["debugger"]["kwargs"]["check_type"]:
             config = config["debugger"]["kwargs"]["check_type"]
             for debugger_config in config:
@@ -35,39 +31,54 @@ class DebuggerFactory:
                 debugger = debugger_fn()
                 self.debuggers[debugger_config["name"]] = debugger
 
-    def set_params_iteration(self, config):
+    def init_params_iteration(self, config):
         """
         Set the `params_iters` attribute with the provided `config`.
         """
 
         params = config["debugger"]["kwargs"]["params"]
-        self.params_iters = {key: -1 if val == "constant" else 0 for key, val in params.items()}
+        self.params_iters = {key: 0 for key, val in params["variable"]}
+        self.params_iters.update({key: -1 for key, val in params["constant"]})
 
-    def create_env_wrapper(self, environment=None, max_steps_per_episode=None):
-        if environment is not None:
-            for checkers in self.debuggers.values():
-                if checkers.step_num != -1:
-                    break
-                checkers.create_wrapper(environment)
+    # def create_env_wrapper(self, environment):
+    #     self.create_wrapper(environment)
 
-        if max_steps_per_episode is not None:
-            for checkers in self.debuggers.values():
-                if checkers.max_steps_per_episode == max_steps_per_episode:
-                    break
-                checkers.max_steps_per_episode = max_steps_per_episode
+    # if max_steps_per_episode is not None:
+    #     for checkers in self.debuggers.values():
+    #         if checkers.max_steps_per_episode == max_steps_per_episode:
+    #             break
+    #         checkers.max_steps_per_episode = max_steps_per_episode
+
+    def track_func(self, func):
+        def wrapper(*args, **kwargs):
+            results = func(*args, **kwargs)
+            self.params['observations'], self.params['reward'], self.params['done'], _ = results
+            self.params_iters['observations'] += 1
+            self.params_iters['reward'] += 1
+            self.params_iters['done'] += 1
+            self.step_num += 1
+            return results
+
+        return wrapper
+
+    def create_env_wrapper(self, kwargs):
+        if "environment" in kwargs.keys():
+            kwargs["environment"].step = self.track_func(kwargs["environment"].step)
+
+    def is_final_step_of_ep(self):
+        if self.params_iters['done'] or (self.step_num >= self.params_iters['max_steps_per_episode']):
+            return True
+        return False
 
     def set_parameters(self, **kwargs):
         """
         Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
         """
-        if "environment" in kwargs.keys():
-            self.create_env_wrapper(environment=kwargs["environment"])
-        if "max_steps_per_episode" in kwargs.keys():
-            self.create_env_wrapper(max_steps_per_episode=kwargs["max_steps_per_episode"])
+
+        self.create_env_wrapper(kwargs)
 
         for key, value in kwargs.items():
             self.params[key] = copy.deepcopy(value)
-            # self.params[key] = value
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
 
@@ -93,20 +104,14 @@ class DebuggerFactory:
         Runs the `debugger` objects in the `debuggers` dictionary.
         """
         for debugger in self.debuggers.values():
-            argspec = inspect.getfullargspec(debugger.run)
-            arg_names = argspec.args[1:]
-            defaults = argspec.defaults
-            defaults_dict = {}
-            if defaults:
-                defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
+            arg_names = inspect.getfullargspec(debugger.run).args[1:]
             params_iters = [self.params_iters[key] for key in arg_names]
             if all(
-                    param_iter == -1 or param_iter >= debugger.iter_num + 1 or arg_name in defaults_dict.keys()
+                    param_iter == -1 or param_iter >= debugger.iter_num + 1
                     for param_iter, arg_name in zip(params_iters, arg_names)
             ):
                 debugger.increment_iteration()
-                kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
-                          for arg in arg_names}
+                kwargs = {arg: self.params[arg] for arg in arg_names}
                 debugger.run(**kwargs)
                 self.react(debugger.error_msg)
                 debugger.reset_error_msg()
@@ -141,5 +146,5 @@ class DebuggerFactory:
                 self.set_debugger(loaded_config)
 
     @staticmethod
-    def register(checker_name: str, checker_class: debugger.DebuggerInterface) -> None:
+    def register(checker_name: str, checker_class: DebuggerInterface) -> None:
         registry.register(checker_name, checker_class, checker_class)

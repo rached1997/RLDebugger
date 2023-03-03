@@ -8,10 +8,8 @@ from debugger.utils import settings
 
 # todo IDEA: add the checks from the blog
 # todo DEBUGGING: cover the testing during the training
-# todo CODE: do the constant+wrapper separation
-# todo IDEA reduce the number of params
 # todo DOC: env in the first run, we can check this too
-# todo IDEA: think on when two runs sends the same parameter
+# todo DOC: think on when two runs sends the same parameter
 # todo IDEA: how the debugger works when we have A2C, etc
 class DebuggerInterface(Registrable):
     def __init__(self, check_type, config):
@@ -22,8 +20,6 @@ class DebuggerInterface(Registrable):
         self.iter_num = 0
         self.error_msg = list()
         self.done = False
-        self.step_num = -1
-        self.max_steps_per_episode = math.inf
 
     def check_period(self):
         """
@@ -50,24 +46,6 @@ class DebuggerInterface(Registrable):
     @classmethod
     def type_name(cls):
         return "debugger"
-
-    def track_func(self, func):
-        def wrapper(*args, **kwargs):
-            results = func(*args, **kwargs)
-            self.done = results[2]
-            self.step_num += 1
-            return results
-
-        return wrapper
-
-    def create_wrapper(self, environment):
-        environment.step = self.track_func(environment.step)
-        self.step_num = 0
-
-    def is_final_step_of_ep(self):
-        if self.done or (self.step_num >= self.max_steps_per_episode):
-            return True
-        return False
 
     # todo DEBUG: add this to all checkers
     def flush(self, var_list_name=None, var_list_obj=None):

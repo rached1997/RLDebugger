@@ -68,3 +68,9 @@ def file_logger(file_path, app_name):
     logger.addHandler(ch)
     return logger
 
+
+def set_logger():
+    app_path = str(Path.cwd())
+    log_fpath = build_log_file_path(app_path, "logger")
+    return file_logger(log_fpath, "logger")
+

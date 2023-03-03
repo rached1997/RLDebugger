@@ -3,33 +3,35 @@ debugger:
   kwargs:
     params:
       # variable and constant indicate the nature of the observed parameter.
-      observations: "variable"
-      reward: "variable"
-      done: "variable"
+      constant: [
+        target_net_update_fraction,
+        target_model_update_period,
+        max_steps_per_episode,
+        max_total_steps,
+        discount_rate,
+        environment,
+        max_reward,
+        loss_fn,
+        opt,
+      ]
 
-      target_net_update_fraction: "constant"
-      target_model_update_period: "constant"
-      max_steps_per_episode: "constant"
-      max_total_steps : "constant"
-      discount_rate: "constant"
-      environment: "constant"
-      max_reward: "constant"
-      loss_fn: "constant"
-      opt: "constant"
+      variable: [
+        model,
+        target_model,
+        exploration_factor,
+        targets,
+        predictions,
+        actions,
+        actions_probs,
+        predicted_next_vals,
+      ]
 
-      model: "variable"
-      target_model: "variable"
-      exploration_factor: "variable"
-
-      targets: "variable"
-      predictions: "variable"
-      actions: "variable"
-      actions_probs: "variable"
-      predicted_next_vals: "variable"
-
-      steps: "variable"
-      steps_done: "variable"
-      steps_rewards: "variable"
+#      observations: "variable"
+#      reward: "variable"
+#      done: "variable"
+#      steps: "variable"
+#      steps_done: "variable"
+#      steps_rewards: "variable"
 
       # uncomment the following line if you want to use the custom check provided in the example folder
 #      observed_param: "variable"
