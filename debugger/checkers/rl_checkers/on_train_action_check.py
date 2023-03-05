@@ -20,10 +20,10 @@ def get_config():
     """
     config = {
         "Period": 100,
-        "window_size": 20,
+        "start": 5,
         "exploration_perc": 0.2,
         "exploitation_perc": 0.8,
-        "low_start": {"disabled": False, "start": 5, "entropy_min_thresh": 0.3},
+        "low_start": {"disabled": False, "start": 3, "entropy_min_thresh": 0.3},
         "monotonicity": {"disabled": False, "increase_thresh": 0.1, "stagnation_thresh": 1e-3},
         "strong_decrease": {"disabled": False, "strong_decrease_thresh": -0.05, "acceleration_points_ratio": 0.5},
         "fluctuation": {"disabled": False, "fluctuation_thresh": 0.5},
@@ -43,8 +43,8 @@ class OnTrainActionCheck(DebuggerInterface):
         super().__init__(check_type="OnTrainAction", config=get_config())
         self._action_prob_buffer = torch.tensor([], device='cuda')
         self._entropies = torch.tensor([], device='cuda')
-        self._action_buffer = torch.tensor([], device='cuda')
-        self.end_episode_indices = []
+        self._action_buffer = []
+        self._end_episode_indices = []
 
     def run(self, actions_probs, max_total_steps):
         """
@@ -58,19 +58,19 @@ class OnTrainActionCheck(DebuggerInterface):
             self._action_prob_buffer = torch.tensor([], device='cuda')
             # start checking entropy of action probs
             self.check_entropy_start_very_low()
-            if len(self._entropies) >= self.config['window_size']:
+            if len(self._entropies) >= self.config['start']:
                 entropy_slope = self.get_entropy_slope()
-                if self.step_num < max_total_steps * self.config['exploration_perc']:
+                if self.step_num <= max_total_steps * self.config['exploration_perc']:
                     self.check_entropy_monotonicity(entropy_slope=entropy_slope)
                     self.check_entropy_decrease_very_fast()
                 self.check_entropy_fluctuation(entropy_slope=entropy_slope)
-            # start checking action stagnation
-            if self.step_num > max_total_steps * self.config['exploitation_perc']:
-                self._action_buffer = torch.cat((self._action_prob_buffer, torch.argmax(actions_probs).item()), dim=0)
-                self.check_action_stagnation_overall()
-                if self.is_final_step_of_ep():
-                    self.end_episode_indices.append(len(self._action_buffer) - 1)
-                    self.check_action_stagnation_per_episode()
+        # start checking action stagnation
+        if self.step_num > max_total_steps * self.config['exploitation_perc']:
+            self._action_buffer.append(torch.argmax(actions_probs).item())
+            self.check_action_stagnation_overall()
+            if self.is_final_step():
+                self._end_episode_indices.append(len(self._action_buffer))
+                self.check_action_stagnation_per_episode()
 
     def compute_entropy(self):
         """
@@ -96,7 +96,7 @@ class OnTrainActionCheck(DebuggerInterface):
         X = torch.stack([x, ones], dim=1).float()
         cof, _ = torch.lstsq(self._entropies.unsqueeze(1), X)
 
-        return cof[0, 0]
+        return cof
 
     def check_entropy_start_very_low(self):
         if self.config["low_start"]["disabled"]:
@@ -115,12 +115,13 @@ class OnTrainActionCheck(DebuggerInterface):
         entropy_slope (float): The slope of the linear regression fit to the entropy values.
         :return: A warning message if the entropy is increasing or stagnated with time.
         """
+        entropy_slope_cof = entropy_slope[0, 0]
         if self.config["monotonicity"]["disabled"]:
             return
-        if entropy_slope > self.config["monotonicity"]["increase_thresh"]:
-            self.error_msg.append(self.main_msgs['entropy_incr'].format(entropy_slope))
-        elif torch.abs(entropy_slope) < self.config["monotonicity"]["stagnation_thresh"]:
-            self.error_msg.append(self.main_msgs['entropy_stag'].format(entropy_slope))
+        if entropy_slope_cof > self.config["monotonicity"]["increase_thresh"]:
+            self.error_msg.append(self.main_msgs['entropy_incr'].format(entropy_slope_cof))
+        elif torch.abs(entropy_slope_cof) < self.config["monotonicity"]["stagnation_thresh"]:
+            self.error_msg.append(self.main_msgs['entropy_stag'].format(entropy_slope_cof))
         return None
 
     def check_entropy_decrease_very_fast(self):
@@ -147,11 +148,9 @@ class OnTrainActionCheck(DebuggerInterface):
     def check_entropy_fluctuation(self, entropy_slope):
         if self.config["fluctuation"]["disabled"]:
             return
+        cof = entropy_slope[0:2]
         x = torch.arange(len(self._entropies), device=self._entropies.device)
-        ones = torch.ones_like(x)
-        X = torch.stack([x, ones], dim=1).float()
-        predicted = X.mm(entropy_slope.solution.T)
-
+        predicted = cof[0] * x + cof[1]
         residuals = torch.sqrt(torch.mean((self._entropies - predicted) ** 2))
         if residuals > self.config['fluctuation']["fluctuation_thresh"]:
             self.error_msg.append(self.main_msgs['entropy_fluctuation'].format(residuals, self.config["fluctuation"][
@@ -161,10 +160,12 @@ class OnTrainActionCheck(DebuggerInterface):
     def check_action_stagnation_overall(self):
         if self.config["action_stag"]["disabled"]:
             return
-        if len(self._action_buffer) >= self.config['action_stagnation']['start']:
-            mode_tensor = torch.mode(self._action_buffer).values
 
-            num_matching = sum(self._action_buffer == mode_tensor)
+        actions_tensor = torch.tensor(self._action_buffer, device="cuda")
+        if len(self._action_buffer) >= self.config['action_stag']['start']:
+            mode_tensor = torch.mode(actions_tensor).values
+
+            num_matching = sum(actions_tensor == mode_tensor)
             similarity_pct = num_matching / len(self._action_buffer)
 
             if similarity_pct > self.config['action_stag']["similarity_pct_thresh"]:
@@ -174,11 +175,52 @@ class OnTrainActionCheck(DebuggerInterface):
     def check_action_stagnation_per_episode(self):
         if self.config["action_stag_per_ep"]["disabled"]:
             return
-        if len(self.end_episode_indices) >= self.config['action_stag_per_ep']['nb_ep_to_check']:
+        if len(self._end_episode_indices) >= self.config['action_stag_per_ep']['nb_ep_to_check']:
             final_obs = []
-            for i in self.end_episode_indices:
+            for i in self._end_episode_indices:
                 start_index = i - self.config["action_stag_per_ep"]["last_step_num"]
-                final_obs += self._action_buffer[start_index:i + 1]
+                final_obs.append(self._action_buffer[start_index:i])
             if all((final_obs[i] == final_obs[i+1]) for i in range(len(final_obs)-1)):
                 self.error_msg.append(self.main_msgs['observations_are_similar'])
-        self.end_episode_indices = []
+            self._end_episode_indices = []
+        return None
+
+
+# if __name__ == '__main__':
+#     def get_entropy_slope(entropies):
+#         """Compute the slope of entropy evolution over time.
+#
+#         Returns:
+#         entropy_slope (float): The slope of the linear regression fit to the entropy values.
+#         """
+#         # Compute the x-values (time steps) for the linear regression
+#         x = torch.arange(len(entropies), device=entropies.device)
+#         # Fit a linear regression model to the entropy values
+#         ones = torch.ones_like(x)
+#         X = torch.stack([x, ones], dim=1).float()
+#
+#         cof, _ = torch.lstsq(X, entropies.unsqueeze(1))
+#
+#         cof = cof[0:1, :]
+#
+#         predicted = X.mm(cof.T)
+#
+#         y = cof[0, 0] * x + cof[0, 1]
+#
+#         residuals = torch.sqrt(torch.mean((entropies - predicted) ** 2))
+#
+#         print()
+#
+#
+#
+#         return residuals
+#
+#
+#     a = torch.tensor([1.2, 1.2, 1.3, 1.5, 1.5, 1.2, 1.2, 1.3, 1.5, 1.5])
+#
+#
+#
+#
+#
+#     cof = get_entropy_slope(a)
+#     print(cof)

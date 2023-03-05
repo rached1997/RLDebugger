@@ -13,7 +13,8 @@ class DebuggerFactory:
         self.debuggers = dict()
         self.params = {}
         self.params_iters = dict()
-        self.step_num = 0
+        self.step_num = -1
+        self.training = True
 
     def set_debugger(self, config):
         """
@@ -30,6 +31,7 @@ class DebuggerFactory:
                 debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
                 debugger = debugger_fn()
                 self.debuggers[debugger_config["name"]] = debugger
+            self.set_internal_params()
 
     def init_params_iteration(self, config):
         """
@@ -37,8 +39,8 @@ class DebuggerFactory:
         """
 
         params = config["debugger"]["kwargs"]["params"]
-        self.params_iters = {key: 0 for key, val in params["variable"]}
-        self.params_iters.update({key: -1 for key, val in params["constant"]})
+        self.params_iters = {key: 0 for key in params["variable"]}
+        self.params_iters.update({key: -1 for key in params["constant"]})
 
     # def create_env_wrapper(self, environment):
     #     self.create_wrapper(environment)
@@ -49,24 +51,41 @@ class DebuggerFactory:
     #             break
     #         checkers.max_steps_per_episode = max_steps_per_episode
 
-    def track_func(self, func):
-        def wrapper(*args, **kwargs):
-            results = func(*args, **kwargs)
-            self.params['observations'], self.params['reward'], self.params['done'], _ = results
-            self.params_iters['observations'] += 1
-            self.params_iters['reward'] += 1
-            self.params_iters['done'] += 1
-            self.step_num += 1
+    def track_func(self, func_step, func_reset):
+        def step_wrapper(*args, **kwargs):
+            results = func_step(*args, **kwargs)
+            if self.training:
+                self.params['observations'] = results[0]
+                self.params['reward'] += results[1]
+                self.params['done'] = results[2]
+                self.params_iters['observations'] += 1
+                self.params_iters['reward'] += 1
+                self.params_iters['done'] += 1
+                self.step_num += 1
             return results
 
-        return wrapper
+        def reset_wrapper(*args, **kwargs):
+            results = func_reset(*args, **kwargs)
+            if self.training:
+                self.params['reward'] = 0
+                self.params['observations'] = results
+                self.params_iters['observations'] += 1
+            return results
 
-    def create_env_wrapper(self, kwargs):
-        if "environment" in kwargs.keys():
-            kwargs["environment"].step = self.track_func(kwargs["environment"].step)
+        self.params['observations'] = None
+        self.params['reward'] = 0
+        self.params['done'] = False
+        self.step_num = 0
+        return step_wrapper, reset_wrapper
+
+    def create_wrappers(self, kwargs):
+        if "environment" in kwargs.keys() and self.step_num == -1:
+            func_wrappers = self.track_func(kwargs["environment"].step, kwargs["environment"].reset)
+            kwargs["environment"].step, kwargs["environment"].reset = func_wrappers
 
     def is_final_step_of_ep(self):
-        if self.params_iters['done'] or (self.step_num >= self.params_iters['max_steps_per_episode']):
+        if self.params['done'] or (
+                (self.step_num > 0) and ((self.step_num % self.params['max_steps_per_episode']) == 0)):
             return True
         return False
 
@@ -75,8 +94,7 @@ class DebuggerFactory:
         Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
         """
 
-        self.create_env_wrapper(kwargs)
-
+        self.create_wrappers(kwargs)
         for key, value in kwargs.items():
             self.params[key] = copy.deepcopy(value)
             if self.params_iters[key] != -1:
@@ -110,6 +128,7 @@ class DebuggerFactory:
                     param_iter == -1 or param_iter >= debugger.iter_num + 1
                     for param_iter, arg_name in zip(params_iters, arg_names)
             ):
+                debugger.step_num = self.step_num
                 debugger.increment_iteration()
                 kwargs = {arg: self.params[arg] for arg in arg_names}
                 debugger.run(**kwargs)
@@ -122,8 +141,10 @@ class DebuggerFactory:
         the checks
         """
         try:
-            self.set_parameters(**kwargs)
-            self.run()
+            print(self.step_num)
+            if self.training:
+                self.set_parameters(**kwargs)
+                self.run()
         except Exception as e:
             self.react(messages=[f"Error: {e}"], fail_on=True)
             # Attempt to recover from the error and continue
@@ -148,3 +169,13 @@ class DebuggerFactory:
     @staticmethod
     def register(checker_name: str, checker_class: DebuggerInterface) -> None:
         registry.register(checker_name, checker_class, checker_class)
+
+    def set_internal_params(self):
+        for debugger in self.debuggers.values():
+            debugger.set_params(self.is_final_step_of_ep)
+
+    def turn_off(self):
+        self.training = False
+
+    def turn_on(self):
+        self.training = True

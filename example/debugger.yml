@@ -20,10 +20,14 @@ debugger:
         target_model,
         exploration_factor,
         targets,
-        predictions,
+#        predictions,
         actions,
         actions_probs,
-        predicted_next_vals,
+#        predicted_next_vals,
+        observations,
+        reward,
+        done,
+
       ]
 
 #      observations: "variable"
@@ -32,11 +36,11 @@ debugger:
 #      steps: "variable"
 #      steps_done: "variable"
 #      steps_rewards: "variable"
+#              actions,
 
       # uncomment the following line if you want to use the custom check provided in the example folder
 #      observed_param: "variable"
     check_type:
-#      - name: PreTrainObservation
 #      - name: PreTrainWeight
 #      - name: PreTrainBias
 #      - name: PreTrainLoss
@@ -45,7 +49,7 @@ debugger:
 #      - name: OnTrainBias
 #      - name: OnTrainWeight
 #      - name: OnTrainLoss
-#      - name: OnTrainAction
+      - name: OnTrainAction
 #      - name: UncertaintyAction
 #      - name: PreTrainEnvironment
 #      - name: OnTrainState
@@ -55,7 +59,7 @@ debugger:
 #      - name: OnTrainAgent
 #      - name: OnTrainValueFunction
 #      - name : OnTrainExplorationParameter
-      - name: OnTrainMainModel
+#      - name: OnTrainMainModel
 
 # uncomment the following line if you want to use the custom check provided in the example folder
 #      - name: CustomChecker

@@ -1,5 +1,6 @@
 import argparse
 import copy
+import time
 
 import hive
 from hive import agents as agent_lib
@@ -73,12 +74,10 @@ class SingleAgentRunner(Runner):
         )
         action = agent.act(stacked_observation)
         next_observation, reward, done, _, other_info = self._environment.step(action)
-        rl_debugger.run_debugging(done=done,
-                                  reward=episode_metrics['0']['reward'] + reward,
-                                  max_reward=self._environment._env.spec.reward_threshold,
-                                  steps=self._train_schedule._steps,
-                                  max_steps_per_episode=self._max_steps_per_episode,
-                                  max_total_steps= self._experiment_manager._config["train_steps"])
+        # rl_debugger.run_debugging(
+        #                           max_reward=self._environment._env.spec.reward_threshold,
+        #                           max_steps_per_episode=self._max_steps_per_episode,
+        #                           max_total_steps= self._experiment_manager._config["train_steps"])
 
         info = {
             "observation": observation,
@@ -111,6 +110,12 @@ class SingleAgentRunner(Runner):
             steps += 1
         return episode_metrics
 
+    def run_testing(self):
+        rl_debugger.turn_off()
+        results = super().run_testing()
+        rl_debugger.turn_on()
+        return results
+
 
 def set_up_experiment(config):
     """Returns a :py:class:`SingleAgentRunner` object based on the config and any
@@ -142,8 +147,6 @@ def set_up_experiment(config):
         config["environment"], "environment"
     )
     env_spec = environment.env_spec
-
-    rl_debugger.run_debugging(environment=environment._env)
 
     # Set up loggers
     logger_config = config.get("loggers", {"name": "NullLogger"})
@@ -203,12 +206,24 @@ def set_up_experiment(config):
 
 
 def main():
+    # sum = 0
+    # for i in range(10):
+    start = time.time()
     hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
     config = load_config(config='agent_configs/custom_agent_cartpole.yml')
     rl_debugger.set_config(config_path="debugger.yml")
 
     runner = set_up_experiment(config)
+    rl_debugger.run_debugging(environment=runner._environment._env,
+                              max_reward=runner._environment._env.spec.reward_threshold,
+                              max_steps_per_episode=runner._max_steps_per_episode,
+                              max_total_steps=runner._experiment_manager._config["train_steps"])
     runner.run_training()
+    end = time.time()
+    print(end - start)
+
+    #     sum += end - start
+    # print(sum/10)
 
 
 if __name__ == "__main__":

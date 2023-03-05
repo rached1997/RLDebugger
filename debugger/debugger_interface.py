@@ -1,5 +1,3 @@
-import math
-
 import torch
 import math
 from debugger.utils.registry import Registrable
@@ -19,7 +17,8 @@ class DebuggerInterface(Registrable):
         self.period = config["Period"]
         self.iter_num = 0
         self.error_msg = list()
-        self.done = False
+        self.step_num = None
+        self.is_final_step = None
 
     def check_period(self):
         """
@@ -65,3 +64,6 @@ class DebuggerInterface(Registrable):
         for name, value in vars(self).items():
             if isinstance(value, torch.Tensor):
                 vars(self)[name] = None
+
+    def set_params(self, is_final_step):
+        self.is_final_step = is_final_step
