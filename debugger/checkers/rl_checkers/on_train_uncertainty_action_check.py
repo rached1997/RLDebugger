@@ -1,3 +1,5 @@
+import numpy as np
+
 from debugger.debugger_interface import DebuggerInterface
 import torch
 import random
@@ -17,9 +19,14 @@ class Memory:
         self.size = min(self.size + 1, self.max_size)
         self.index = (self.index + 1) % self.max_size
 
+    def append_batch(self, objs):
+        for obj in objs:
+            self.append(obj)
+
     def sample(self, batch_size):
         indices = random.sample(range(self.size), batch_size)
-        return [self.buffer[index] for index in indices]
+        result = np.stack([self.buffer[index] for index in indices], axis=0).squeeze()
+        return torch.tensor(result, device='cuda')
 
 
 class DropoutWrapper(nn.Module):
@@ -50,7 +57,7 @@ def get_config():
     """
     config = {
         "Period": 1000,
-        "start": 10000,
+        "start": 1000,
         "num_repetitions": 100,
         "std_threshold": 0.5,
         "buffer_max_size": 1000,
@@ -67,14 +74,19 @@ class OnTrainUncertaintyActionCheck(DebuggerInterface):
         super().__init__(check_type="OnTrainUncertaintyAction", config=get_config())
         self._buffer = Memory(max_size=self.config["buffer_max_size"])
 
-    def run(self, model, observations):
+    def run(self, model, observations, environment):
         """
         #
         """
-        self._buffer.append(observations)
-        if self.check_period() and self.step_num >= self.config["start"]:
+        observation_shape = environment.observation_space.shape
+        if observations.shape == observation_shape:
+            self._buffer.append(observations)
+        else:
+            self._buffer.append_batch(observations)
+        # TODO: check conditions that uses iter_num and step_num
+        if self.check_period() and self.iter_num >= self.config["start"]:
             last_layer_name, _ = list(model.named_modules())[-1]
-            observations_batch = torch.stack(self._buffer.sample(batch_size=self.config["batch_size"]), dim=0).squeeze()
+            observations_batch = self._buffer.sample(batch_size=self.config["batch_size"])
             self.check_mont_carlo_dropout_uncertainty(model, observations_batch, last_layer_name)
 
     def check_mont_carlo_dropout_uncertainty(self, model, observations, last_layer_name):

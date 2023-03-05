@@ -42,13 +42,13 @@ class DebuggableDQNAgent(DQNAgent):
                 and self._state["episode_start"]
         ):
             self._state["episode_start"] = False
-        if self._training:
-            rl_debugger.run_debugging(actions_probs=qvals)
+
+        # rl_debugger.run_debugging(actions_probs=qvals)
+        rl_debugger.run_debugging(exploration_factor=epsilon)
         # rl_debugger.run_debugging(model=self._qnet)
         # rl_debugger.run_debugging(model=self._qnet, observations=observation, exploration_factor=self._test_epsilon)
         # rl_debugger.run_debugging(environment=environment._env, model=self._qnet, exploration_factor=epsilon)
         return action
-
 
     def update(self, update_info):
         if update_info["done"]:
@@ -82,6 +82,12 @@ class DebuggableDQNAgent(DQNAgent):
             q_targets = batch["reward"] + self._discount_rate * next_qvals * (1 - batch["done"])
 
             # rl_debugger.run_debugging(model=self._qnet,
+            #                           target_model=self._target_qnet,
+            #                           target_model_update_period=self._target_net_update_schedule._total_period,
+            #                           target_net_update_fraction=1,
+            #                           )
+
+            # rl_debugger.run_debugging(model=self._qnet,
             #                           loss_fn=self._loss_fn,
             #                           opt=self._optimizer,
             #                           target_model=self._target_qnet,
@@ -104,10 +110,8 @@ class DebuggableDQNAgent(DQNAgent):
             self._optimizer.step()
 
         # Update target network
-        self._target_qnet = self._qnet
         if self._target_net_update_schedule.update():
             self._update_target()
-
 
 # def main():
 #     hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)

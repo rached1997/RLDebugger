@@ -11,7 +11,7 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 100,
+        "Period": 1,
         "target_update": {"disabled": False},
         "similarity": {"disabled": False}
     }

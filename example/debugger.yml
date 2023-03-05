@@ -51,15 +51,15 @@ debugger:
 #      - name: OnTrainWeight
 #      - name: OnTrainLoss
 #      - name: OnTrainAction
-#      - name: UncertaintyAction
+#      - name: OnTrainUncertaintyAction
 #      - name: PreTrainEnvironment
 #      - name: OnTrainState
-      - name: OnTrainReward
+#      - name: OnTrainReward
 #      - name: OnTrainStep
 #      - name: OnTrainReward
 #      - name: OnTrainAgent
 #      - name: OnTrainValueFunction
-#      - name : OnTrainExplorationParameter
+      - name : OnTrainExplorationParameter
 #      - name: OnTrainMainModel
 
 # uncomment the following line if you want to use the custom check provided in the example folder

@@ -125,16 +125,23 @@ class DebuggerFactory:
         """
         Runs the `debugger` objects in the `debuggers` dictionary.
         """
+        # TODO: try remove default and update .yml files
         for debugger in self.debuggers.values():
-            arg_names = inspect.getfullargspec(debugger.run).args[1:]
+            argspec = inspect.getfullargspec(debugger.run)
+            arg_names = argspec.args[1:]
+            defaults = argspec.defaults
+            defaults_dict = {}
+            if defaults:
+                defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
             params_iters = [self.params_iters[key] for key in arg_names]
             if all(
-                    param_iter == -1 or param_iter >= debugger.iter_num + 1
+                    param_iter == -1 or param_iter >= debugger.iter_num + 1 or arg_name in defaults_dict.keys()
                     for param_iter, arg_name in zip(params_iters, arg_names)
             ):
                 debugger.step_num = self.step_num
                 debugger.increment_iteration()
-                kwargs = {arg: self.params[arg] for arg in arg_names}
+                kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
+                          for arg in arg_names}
                 debugger.run(**kwargs)
                 self.react(debugger.error_msg)
                 debugger.reset_error_msg()
@@ -145,7 +152,7 @@ class DebuggerFactory:
         the checks
         """
         try:
-            # print(self.step_num)
+            print(self.step_num)
             if self.training:
                 self.set_parameters(**kwargs)
                 self.run()

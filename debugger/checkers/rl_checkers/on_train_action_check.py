@@ -26,7 +26,8 @@ def get_config():
         "exploitation_perc": 0.8,
         "low_start": {"disabled": False, "start": 3, "entropy_min_thresh": 0.3},
         "monotonicity": {"disabled": False, "increase_thresh": 0.1, "stagnation_thresh": 1e-3},
-        "strong_decrease": {"disabled": False, "strong_decrease_thresh": -0.05, "acceleration_points_ratio": 0.5},
+        # TODO: check if "strong_decrease_thresh" should be + or -
+        "strong_decrease": {"disabled": False, "strong_decrease_thresh": 0.05, "acceleration_points_ratio": 0.5},
         "fluctuation": {"disabled": False, "fluctuation_thresh": 0.5},
         "action_stag": {"disabled": False, "start": 100, "similarity_pct_thresh": 0.8},
         "action_stag_per_ep": {"disabled": False, "nb_ep_to_check": 2, "last_step_num": 50}
@@ -159,11 +160,11 @@ class OnTrainActionCheck(DebuggerInterface):
         if self.config["action_stag_per_ep"]["disabled"]:
             return
         if len(self._end_episode_indices) >= self.config['action_stag_per_ep']['nb_ep_to_check']:
-            final_obs = []
+            final_actions = []
             for i in self._end_episode_indices:
                 start_index = i - self.config["action_stag_per_ep"]["last_step_num"]
-                final_obs.append(self._action_buffer[start_index:i])
-            if all((final_obs[i] == final_obs[i+1]) for i in range(len(final_obs)-1)):
-                self.error_msg.append(self.main_msgs['observations_are_similar'])
+                final_actions.append(self._action_buffer[start_index:i])
+            if all((final_actions[i] == final_actions[i+1]) for i in range(len(final_actions)-1)):
+                self.error_msg.append(self.main_msgs['actions_are_similar'])
             self._end_episode_indices = []
         return None
