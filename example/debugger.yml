@@ -25,6 +25,7 @@ debugger:
         actions_probs,
 #        predicted_next_vals,
         observations,
+        next_observations,
         reward,
         done,
 
@@ -49,11 +50,11 @@ debugger:
 #      - name: OnTrainBias
 #      - name: OnTrainWeight
 #      - name: OnTrainLoss
-      - name: OnTrainAction
+#      - name: OnTrainAction
 #      - name: UncertaintyAction
 #      - name: PreTrainEnvironment
 #      - name: OnTrainState
-#      - name: OnTrainReward
+      - name: OnTrainReward
 #      - name: OnTrainStep
 #      - name: OnTrainReward
 #      - name: OnTrainAgent

@@ -53,12 +53,17 @@ class DebuggerFactory:
 
     def track_func(self, func_step, func_reset):
         def step_wrapper(*args, **kwargs):
+            if self.step_num == 0 or self.is_final_step_of_ep():
+                self.params['next_observations'] = self.params['observations']
+                self.params['reward'] = 0
             results = func_step(*args, **kwargs)
             if self.training:
-                self.params['observations'] = results[0]
+                self.params['observations'] = self.params['next_observations']
+                self.params['next_observations'] = results[0]
                 self.params['reward'] += results[1]
                 self.params['done'] = results[2]
                 self.params_iters['observations'] += 1
+                self.params_iters['next_observations'] += 1
                 self.params_iters['reward'] += 1
                 self.params_iters['done'] += 1
                 self.step_num += 1
@@ -67,7 +72,6 @@ class DebuggerFactory:
         def reset_wrapper(*args, **kwargs):
             results = func_reset(*args, **kwargs)
             if self.training:
-                self.params['reward'] = 0
                 self.params['observations'] = results
                 self.params_iters['observations'] += 1
             return results
@@ -141,7 +145,7 @@ class DebuggerFactory:
         the checks
         """
         try:
-            print(self.step_num)
+            # print(self.step_num)
             if self.training:
                 self.set_parameters(**kwargs)
                 self.run()

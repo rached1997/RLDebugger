@@ -1,6 +1,7 @@
 from debugger.debugger_interface import DebuggerInterface
 import torch
 import numpy as np
+from debugger.utils.utils import estimate_fluctuation_rmse, get_data_slope
 
 """
 the entropy regularization or exploration bonus.  In the early stages of learning, the entropy of the policy 
@@ -59,7 +60,7 @@ class OnTrainActionCheck(DebuggerInterface):
             # start checking entropy of action probs
             self.check_entropy_start_very_low()
             if len(self._entropies) >= self.config['start']:
-                entropy_slope = self.get_entropy_slope()
+                entropy_slope = get_data_slope(self._entropies)
                 if self.step_num <= max_total_steps * self.config['exploration_perc']:
                     self.check_entropy_monotonicity(entropy_slope=entropy_slope)
                     self.check_entropy_decrease_very_fast()
@@ -82,21 +83,6 @@ class OnTrainActionCheck(DebuggerInterface):
         log_probs = torch.log(self._action_prob_buffer)
         entropy = -torch.mean(torch.sum(self._action_prob_buffer * log_probs, dim=1))
         return entropy
-
-    def get_entropy_slope(self):
-        """Compute the slope of entropy evolution over time.
-
-        Returns:
-        entropy_slope (float): The slope of the linear regression fit to the entropy values.
-        """
-        # Compute the x-values (time steps) for the linear regression
-        x = torch.arange(len(self._entropies), device=self._entropies.device)
-        # Fit a linear regression model to the entropy values
-        ones = torch.ones_like(x)
-        X = torch.stack([x, ones], dim=1).float()
-        cof, _ = torch.lstsq(self._entropies.unsqueeze(1), X)
-
-        return cof
 
     def check_entropy_start_very_low(self):
         if self.config["low_start"]["disabled"]:
@@ -148,10 +134,7 @@ class OnTrainActionCheck(DebuggerInterface):
     def check_entropy_fluctuation(self, entropy_slope):
         if self.config["fluctuation"]["disabled"]:
             return
-        cof = entropy_slope[0:2]
-        x = torch.arange(len(self._entropies), device=self._entropies.device)
-        predicted = cof[0] * x + cof[1]
-        residuals = torch.sqrt(torch.mean((self._entropies - predicted) ** 2))
+        residuals = estimate_fluctuation_rmse(entropy_slope, self._entropies)
         if residuals > self.config['fluctuation']["fluctuation_thresh"]:
             self.error_msg.append(self.main_msgs['entropy_fluctuation'].format(residuals, self.config["fluctuation"][
                 "fluctuation_thresh"]))
@@ -184,43 +167,3 @@ class OnTrainActionCheck(DebuggerInterface):
                 self.error_msg.append(self.main_msgs['observations_are_similar'])
             self._end_episode_indices = []
         return None
-
-
-# if __name__ == '__main__':
-#     def get_entropy_slope(entropies):
-#         """Compute the slope of entropy evolution over time.
-#
-#         Returns:
-#         entropy_slope (float): The slope of the linear regression fit to the entropy values.
-#         """
-#         # Compute the x-values (time steps) for the linear regression
-#         x = torch.arange(len(entropies), device=entropies.device)
-#         # Fit a linear regression model to the entropy values
-#         ones = torch.ones_like(x)
-#         X = torch.stack([x, ones], dim=1).float()
-#
-#         cof, _ = torch.lstsq(X, entropies.unsqueeze(1))
-#
-#         cof = cof[0:1, :]
-#
-#         predicted = X.mm(cof.T)
-#
-#         y = cof[0, 0] * x + cof[0, 1]
-#
-#         residuals = torch.sqrt(torch.mean((entropies - predicted) ** 2))
-#
-#         print()
-#
-#
-#
-#         return residuals
-#
-#
-#     a = torch.tensor([1.2, 1.2, 1.3, 1.5, 1.5, 1.2, 1.2, 1.3, 1.5, 1.5])
-#
-#
-#
-#
-#
-#     cof = get_entropy_slope(a)
-#     print(cof)

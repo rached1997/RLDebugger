@@ -2,6 +2,8 @@ import torch
 from debugger.debugger_interface import DebuggerInterface
 import numpy as np
 
+from debugger.utils.utils import get_data_slope, estimate_fluctuation_rmse
+
 
 def get_config() -> dict:
     """
@@ -11,10 +13,11 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 15,
+        "Period": 100,
         "exploration_perc": 0.2,
-        "vars_to_check": 10,
-        "window_size": 5,
+        "exploitation_perc": 0.8,
+        "start": 5,
+        "window_size": 3,
         "fluctuation": {"disabled": False, "fluctuation_rmse_min": 0.1},
         "monotonicity": {"disabled": False, "stagnation_thresh": 1e-3, "reward_stagnation_tolerance": 0.01,
                          "stagnation_episodes": 20}
@@ -29,28 +32,30 @@ class OnTrainRewardsCheck(DebuggerInterface):
 
     def run(self, reward, max_total_steps, max_reward) -> None:
 
-        if self.is_final_step_of_ep():
+        if self.is_final_step():
             self.episodes_rewards += [reward]
 
         n_rewards = len(self.episodes_rewards)
-        if self.check_period() and (n_rewards >= self.config['window_size'] * self.config["vars_to_check"]):
+        if self.check_period() and (n_rewards >= self.config['window_size'] * self.config["start"]):
             variances = []
 
-            for i in range(0, len(self.episodes_rewards), self.config['window_size']):
-                variances += [np.var(self.episodes_rewards[i:i + self.config['window_size']])]
+            for i in range(0, len(self.episodes_rewards) // self.config['window_size']):
+                count = i * self.config['window_size']
+                variances += [np.var(self.episodes_rewards[count:count + self.config['window_size']])]
 
-            variances = torch.tensor(variances).float().reshape(-1, 1)
-            cof = self.get_reward_var_slope(variances)
+            variances = torch.tensor(variances).float()
 
             if (self.step_num < max_total_steps * self.config['exploration_perc']) and \
                     (not self.config["fluctuation"]["disabled"]):
-                fluctuations = self.check_reward_start_fluctuating(variances, cof)
+                cof = get_data_slope(variances)
+                fluctuations = estimate_fluctuation_rmse(cof, variances)
                 if fluctuations < self.config["fluctuation"]['fluctuation_rmse_min']:
                     self.error_msg.append(self.main_msgs['fluctuated_reward'].format(
                         self.config['exploration_perc'] * 100))
 
-            if self.step_num > max_total_steps * (1 - self.config['exploration_perc']) and \
+            if self.step_num > max_total_steps * (self.config['exploitation_perc']) and \
                     (not self.config["monotonicity"]["disabled"]):
+                cof = get_data_slope(variances)
                 self.check_reward_monotonicity(cof, max_reward)
 
             self.episodes_rewards = []
@@ -62,40 +67,15 @@ class OnTrainRewardsCheck(DebuggerInterface):
         entropy_slope (float): The slope of the linear regression fit to the entropy values.
         :return: A warning message if the entropy is increasing or stagnated with time.
         """
-        # todo DEBUG: debug this please cof.solution[0][0]
-        if torch.abs(cof.solution[0][0]) > self.config["monotonicity"]["stagnation_thresh"]:
+        if torch.abs(cof[0]) > self.config["monotonicity"]["stagnation_thresh"]:
             self.error_msg.append(
                 self.main_msgs['decreasing_reward'].format(100 - (self.config["exploration_perc"] * 100)))
         else:
-            if self.episodes_rewards[self.config["monotonicity"]["stagnation_episodes"]:]:
-                stagnated_reward = np.mean(self.episodes_rewards[self.config["monotonicity"]["stagnation_episodes"]:])
-                if stagnated_reward < max_reward * self.config["monotonicity"]["reward_stagnation_tolerance"]:
-                    self.error_msg.append(
-                        self.main_msgs['stagnated_reward'].format(
-                            100 - (self.config["exploration_perc"] * 100),
-                            stagnated_reward,
-                            max_reward))
+            stagnated_reward = np.mean(self.episodes_rewards)
+            if stagnated_reward < max_reward * (1- self.config["monotonicity"]["reward_stagnation_tolerance"]):
+                self.error_msg.append(
+                    self.main_msgs['stagnated_reward'].format(
+                        100 - (self.config["exploration_perc"] * 100),
+                        stagnated_reward,
+                        max_reward))
         return None
-
-    # todo DEBUG: debug this please
-    def check_reward_start_fluctuating(self, vars, cof):
-        x = torch.arange(len(vars), device=vars.device)
-        ones = torch.ones_like(x)
-        X = torch.stack([x, ones], dim=1).float()
-        predicted = X.mm(cof.solution.T)
-
-        residuals = torch.sqrt(torch.mean((vars - predicted) ** 2))
-        return residuals
-
-    def get_reward_var_slope(self, vars):
-        """Compute the slope of rewards variance evolution over time.
-
-        Returns:
-        reward_variance_slope_coefficients (float): The slope of the linear regression fit to the rewards variance
-        values.
-        """
-        x = torch.arange(len(vars))
-        ones = torch.ones_like(x)
-        X = torch.stack([x, ones], dim=1).float()
-        cof = torch.linalg.lstsq(vars, X)
-        return cof
