@@ -31,10 +31,6 @@ class PreTrainEnvironmentCheck(DebuggerInterface):
     def run(self, environment) -> None:
 
         # todo CODE: add Markovianity check
-        if not self.config["Markovianity_check"]["disabled"]:
-            pass
-
-        # todo CR: ask Darshan if rest should be random or yield the same states
         if self.check_period():
             if environment.spec.max_episode_steps:
                 self.generate_random_eps(environment)
@@ -86,40 +82,3 @@ class PreTrainEnvironmentCheck(DebuggerInterface):
 
         if env.reset() is None:
             self.error_msg.append(self.main_msgs['wrong_reset_func'])
-
-
-
-    # def generate_random_trajectories(self, env):
-    #     trajectories = []
-    #     for i in range(self.config["Markovianity_check"]["num_trajectories"]):
-    #         obs = env.reset()
-    #         trajectory = []
-    #         for t in range(env.spec.max_episode_steps):
-    #             action = env.action_space.sample()
-    #             obs_next, reward, done, info = env.step(action)
-    #             hashed_obs = str(hashlib.sha256(obs.tobytes()).hexdigest())
-    #             hashed_obs_next = str(hashlib.sha256(obs_next.tobytes()).hexdigest())
-    #             trajectory.append((hashed_obs, action, reward, hashed_obs_next))
-    #             if done:
-    #                 break
-    #             obs = obs_next
-    #         trajectories.append(trajectory)
-    #     return trajectories
-    #
-    # def check_markovianity(self, env):
-    #     trajectories = self.generate_random_trajectories(env)
-    #     is_markovian = True
-    #     for trajectory in trajectories:
-    #         for t in range(len(trajectory) - 1):
-    #             obs_t, action_t, reward_t, obs_next_t = trajectory[t]
-    #             obs_next_t_predicted = env.reset()
-    #             for t_prime in range(t, len(trajectory)):
-    #                 obs_t_prime, action_t_prime, reward_t_prime, obs_next_t_prime = trajectory[t_prime]
-    #                 if np.array_equal(obs_t_prime, obs_t):
-    #                     obs_next_t_predicted = obs_next_t_prime
-    #                     break
-    #             if not np.array_equal(obs_next_t, obs_next_t_predicted):
-    #                 is_markovian = False
-    #                 break
-    #         if not is_markovian:
-    #             break

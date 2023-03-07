@@ -11,9 +11,10 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 1,
+        "Period": 100,
         "target_update": {"disabled": False},
-        "similarity": {"disabled": False}
+        "similarity": {"disabled": False},
+        "wrong_model_out": {"disabled": False}
     }
     return config
 
@@ -25,10 +26,18 @@ class OnTrainAgentCheck(DebuggerInterface):
 
     # todo DOC : we have to explain in the doc that target_net_update_fraction=1 when there is not a soft update
     # todo CR : check with darshan if the target and main network should be initialized with the same values
-    def run(self, model, target_model, target_model_update_period, target_net_update_fraction=1) -> None:
+    def run(self, model, target_model, observation, actions_probs, target_model_update_period,
+            target_net_update_fraction=1) -> None:
+        self.check_main_target_models_behaviour(target_model, model, target_net_update_fraction,
+                                                target_model_update_period)
+
+        if self.check_period():
+            self.check_wrong_model_output(model, observation, actions_probs)
+
+    def check_main_target_models_behaviour(self, target_model, model, target_net_update_fraction,
+                                           target_model_update_period):
         target_params = target_model.state_dict()
         current_params = model.state_dict()
-
         if self.old_target_params is None:
             self.old_target_params = target_params
 
@@ -48,6 +57,9 @@ class OnTrainAgentCheck(DebuggerInterface):
             if all_equal and not self.config["similarity"]["disabled"]:
                 self.error_msg.append(self.main_msgs['similar_target_and_main_network'])
 
-
-
-
+    def check_wrong_model_output(self, model, observations, action_probs):
+        if self.config["wrong_model_out"]["disabled"]:
+            return
+        pred_qvals = model(observations)
+        if not torch.equal(action_probs, pred_qvals):
+            self.error_msg.append(self.main_msgs['using_the_wrong_network'])

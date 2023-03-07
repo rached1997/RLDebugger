@@ -23,5 +23,4 @@ class OnTrainValueFunctionCheck(DebuggerInterface):
         if not torch.equal(targets, q_targets):
             self.error_msg.append(self.main_msgs['val_func_err'])
 
-        # todo IDEA: add the ppo
-        # todo IDEA: add the a2c
+        # todo IDEA: check if we can add the ppo/a2c

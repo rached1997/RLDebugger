@@ -20,7 +20,6 @@ debugger:
         target_model,
         exploration_factor,
         targets,
-#        predictions,
         actions,
         actions_probs,
 #        predicted_next_vals,
@@ -52,15 +51,14 @@ debugger:
 #      - name: OnTrainLoss
 #      - name: OnTrainAction
 #      - name: OnTrainUncertaintyAction
-#      - name: PreTrainEnvironment
+      - name: PreTrainEnvironment
 #      - name: OnTrainState
 #      - name: OnTrainReward
 #      - name: OnTrainStep
 #      - name: OnTrainReward
 #      - name: OnTrainAgent
 #      - name: OnTrainValueFunction
-      - name : OnTrainExplorationParameter
-#      - name: OnTrainMainModel
+#      - name : OnTrainExplorationParameter
 
 # uncomment the following line if you want to use the custom check provided in the example folder
 #      - name: CustomChecker
