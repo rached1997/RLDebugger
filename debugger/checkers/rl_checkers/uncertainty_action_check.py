@@ -76,7 +76,12 @@ class UncertaintyActionCheck(DebuggerInterface):
 
     def run(self, model, observations, environment):
         """
-        #
+        Checks whether the actions predictions uncertainty over time is reducing during the learning process
+
+        Args:
+            model (nn.Module): the main model
+            observations (Tensor): the observation collected after doing one-step
+            environment (gym.env): the training RL environment
         """
         observation_shape = environment.observation_space.shape
         if observations.shape == observation_shape:
@@ -89,6 +94,18 @@ class UncertaintyActionCheck(DebuggerInterface):
             self.check_mont_carlo_dropout_uncertainty(model, observations_batch, last_layer_name)
 
     def check_mont_carlo_dropout_uncertainty(self, model, observations, last_layer_name):
+        """
+        Performs Monte Carlo dropout to measure the uncertainty. A normal learning process consists of starting from
+        a high uncertainty value to a low value.
+
+        Args:
+            model (nn.Module): the main model
+            observations (Tensor): the observation collected after doing one-step
+            last_layer_name (String): The last layer name
+
+        Returns:
+
+        """
         predictions = []
         mcd_model = DropoutWrapper(model, last_layer_name)
         # perform Monte Carlo dropout on the wrapped model

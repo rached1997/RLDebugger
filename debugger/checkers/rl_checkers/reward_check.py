@@ -31,6 +31,17 @@ class RewardsCheck(DebuggerInterface):
         self.episodes_rewards = []
 
     def run(self, reward, max_total_steps, max_reward) -> None:
+        """
+        Does the following checks on the reward value :
+        (1) checks if the reward per episode is fluctuating during the exploration
+        (2) checks if the reward per episode is stagnating in the last episodes of the exploitation
+        (3) checks whether the agent in the last episodes is stuck in a value far from the max reward expected
+
+        Args:
+            reward (float): the cumulative reward collected in one episode
+            max_reward (int):  The reward threshold before the task is considered solved
+            max_total_steps (int): The maximum total number of steps to finish the training.
+        """
 
         if self.is_final_step():
             self.episodes_rewards += [reward]
@@ -62,10 +73,12 @@ class RewardsCheck(DebuggerInterface):
 
     def check_reward_monotonicity(self, cof, max_reward):
         """
-        Check if the entropy is increasing with time, or is stagnated.
+        Check if the variance of the reward is not stagnating in the last episodes. or if the reward is stuck in a
+        value far from the max reward
 
-        entropy_slope (float): The slope of the linear regression fit to the entropy values.
-        :return: A warning message if the entropy is increasing or stagnated with time.
+        Args:
+            cof (tuple): The slope of the linear regression fit to the variance values.
+            max_reward (int):  The reward threshold before the task is considered solved
         """
         if torch.abs(cof[0]) > self.config["monotonicity"]["stagnation_thresh"]:
             self.error_msg.append(

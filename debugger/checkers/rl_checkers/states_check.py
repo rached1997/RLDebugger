@@ -34,6 +34,22 @@ class StatesCheck(DebuggerInterface):
 
     # todo IDEA: ADD the state coverage check
     def run(self, observations, environment, reward, max_reward, max_total_steps) -> None:
+        """
+        Does the following checks on the observations :
+        (1) Checks if the observations are normalized
+        (2) Checks if the states are stagnating in one episode
+        (3) Checks if the observations are being repeated across episodes during exploitation phase
+
+        Args:
+            observations (Tensor): the observations returned from the step functions
+            environment (gym.env): the training RL environment
+            reward (float): the cumulative reward collected in one episode
+            max_reward (int):  The reward threshold before the task is considered solved
+            max_total_steps (int): The maximum total number of steps to finish the training.
+
+        Returns:
+
+        """
         if self.check_period():
             self.check_normalized_observations(observations)
             self.update_hashed_observation_buffer(environment, observations)
@@ -45,6 +61,13 @@ class StatesCheck(DebuggerInterface):
                 # todo CR: ask Darshan about variance
 
     def update_hashed_observation_buffer(self, environment, observations):
+        """
+        Stores the observations in the buffer
+
+        Args:
+            environment (gym.env): the training RL environment
+            observations (Tensor): the observations returned from the step functions
+        """
         observation_shape = environment.observation_space.shape
         if observations.shape == observation_shape:
             hashed_obs = str(hashlib.sha256(str(observations).encode()).hexdigest())
@@ -54,7 +77,11 @@ class StatesCheck(DebuggerInterface):
                 hashed_obs = str(hashlib.sha256(str(obs).encode()).hexdigest())
                 self.hashed_observations_buffer += [hashed_obs]
 
-    def check_states_stagnation(self, ):
+    def check_states_stagnation(self):
+        """
+        Checks whether the observations are stagnating, meaning that the environment is consistently rendering the same
+        observations throughout an episode.
+        """
         if self.config["stagnation"]["disabled"]:
             return
         if (len(self.hashed_observations_buffer) % self.config["stagnation"]["period"]) == 0:
@@ -64,6 +91,17 @@ class StatesCheck(DebuggerInterface):
                     self.config["stagnation"]["stagnated_data_nbr_check"]))
 
     def check_states_converging(self, max_reward, max_total_steps):
+        """
+        Compares the observations produced by the environment tin multiple episodes during the exploitation phase of
+        the learning process andchecks whether the environment is producing the same sequence of observations. This
+        check can help detect when the agent is stuck in a local optima. Note that this check is only performed when
+        the average reward is far from the maximum reward threshold.
+        Note that this check is only performed when the average reward is far from the maximum reward threshold.
+
+        Args:
+            max_reward (int):  The reward threshold before the task is considered solved
+            max_total_steps (int): The maximum total number of steps to finish the training.
+        """
         if self.config["states_convergence"]["disabled"]:
             return
 
@@ -80,6 +118,12 @@ class StatesCheck(DebuggerInterface):
             self.episodes_rewards = []
 
     def check_normalized_observations(self, observations):
+        """
+        Checks whether the observations are normalized
+
+        Args:
+            observations (Tensor): a batch of observations
+        """
         if self.config["normalization"]["disabled"]:
             return
 

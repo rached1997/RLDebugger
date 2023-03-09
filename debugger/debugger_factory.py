@@ -6,6 +6,8 @@ import inspect
 import yaml
 import copy
 
+from debugger.utils.settings import react
+
 
 class DebuggerFactory:
     def __init__(self):
@@ -15,32 +17,6 @@ class DebuggerFactory:
         self.params_iters = dict()
         self.step_num = -1
         self.training = True
-
-    def set_debugger(self, config):
-        """
-        Set the `debugger` object with the provided `config`.
-
-        Args:
-            config (dict): The dictionary of the checks names to be done.
-        """
-
-        self.init_params_iteration(config)
-        if config["debugger"]["kwargs"]["check_type"]:
-            config = config["debugger"]["kwargs"]["check_type"]
-            for debugger_config in config:
-                debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
-                debugger = debugger_fn()
-                self.debuggers[debugger_config["name"]] = debugger
-            self.set_internal_params()
-
-    def init_params_iteration(self, config):
-        """
-        Set the `params_iters` attribute with the provided `config`.
-        """
-
-        params = config["debugger"]["kwargs"]["params"]
-        self.params_iters = {key: 0 for key in params["variable"]}
-        self.params_iters.update({key: -1 for key in params["constant"]})
 
     def track_func(self, func_step, func_reset):
         def step_wrapper(*args, **kwargs):
@@ -94,23 +70,6 @@ class DebuggerFactory:
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
 
-    def react(self, messages, fail_on=False):
-        """
-        Reacts to the provided `messages` by either raising an exception or logging a warning, depending on the value of
-         `fail_on`.
-
-        Args:
-            messages (list): list of error messages to be displayed
-            fail_on (bool): if True it raises an exception otherwise it only displays the error
-        """
-        if len(messages) > 0:
-            for message in messages:
-                if fail_on:
-                    self.logger.error(message)
-                    raise Exception(message)
-                else:
-                    self.logger.warning(message)
-
     # todo CODE URGENT: this doesn't work on the gradient check
     def run(self):
         """
@@ -134,7 +93,7 @@ class DebuggerFactory:
                 kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
                           for arg in arg_names}
                 debugger.run(**kwargs)
-                self.react(debugger.error_msg)
+                react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
     def run_debugging(self, **kwargs):
@@ -168,13 +127,41 @@ class DebuggerFactory:
                 loaded_config = yaml.safe_load(f)
                 self.set_debugger(loaded_config)
 
+    def set_debugger(self, config):
+        """
+        Set the `debugger` object with the provided `config`.
+
+        Args:
+            config (dict): The dictionary of the checks names to be done.
+        """
+        # init params
+        params = config["debugger"]["kwargs"]["params"]
+        self.params_iters = {key: 0 for key in params["variable"]}
+        self.params_iters.update({key: -1 for key in params["constant"]})
+
+        if config["debugger"]["kwargs"]["check_type"]:
+            config = config["debugger"]["kwargs"]["check_type"]
+            for debugger_config in config:
+                debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
+                debugger = debugger_fn()
+                self.debuggers[debugger_config["name"]] = debugger
+
+            # set internal parameters of the debuggers
+            for debugger in self.debuggers.values():
+                debugger.set_params(self.is_final_step_of_ep)
+
+    def init_params_iteration(self, config):
+        """
+        Set the `params_iters` attribute with the provided `config`.
+        """
+
+        params = config["debugger"]["kwargs"]["params"]
+        self.params_iters = {key: 0 for key in params["variable"]}
+        self.params_iters.update({key: -1 for key in params["constant"]})
+
     @staticmethod
     def register(checker_name: str, checker_class: DebuggerInterface) -> None:
         registry.register(checker_name, checker_class, checker_class)
-
-    def set_internal_params(self):
-        for debugger in self.debuggers.values():
-            debugger.set_params(self.is_final_step_of_ep)
 
     def turn_off(self):
         self.training = False

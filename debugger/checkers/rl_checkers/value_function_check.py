@@ -19,6 +19,19 @@ class ValueFunctionCheck(DebuggerInterface):
         super().__init__(check_type="ValueFunction", config=get_config())
 
     def run(self, targets, steps_rewards, discount_rate, predicted_next_vals, steps_done) -> None:
+        """
+        Checks if the value function has been calculated correctly
+        
+        Args:
+            targets:
+            steps_rewards:
+            discount_rate:
+            predicted_next_vals:
+            steps_done:
+
+        Returns:
+
+        """
         q_targets = steps_rewards + discount_rate * predicted_next_vals * (1 - steps_done)
         if not torch.equal(targets, q_targets):
             self.error_msg.append(self.main_msgs['val_func_err'])

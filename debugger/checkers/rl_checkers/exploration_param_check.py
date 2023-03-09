@@ -29,6 +29,18 @@ class ExplorationParameterCheck(DebuggerInterface):
         self.exploration_factor_buffer = []
 
     def run(self, exploration_factor) -> None:
+        """
+        Checks the evolution of the exploration parameter during training. A good exploration strategy is one that
+        starts with a high exploration rate to encourage the agent to try different actions and then gradually
+        reduces the exploration rate to shift towards exploitation. This function performs the following checks:
+
+        (1) Ensures that the initial value of the exploration parameter is set correctly.
+        (2) Verifies that the exploration parameter is decreasing over time as the agent learns.
+        (3) Checks if the exploration parameter is changing too rapidly, which can lead to unstable behavior.
+
+        Args:
+            exploration_factor (float): the value of the exploration parameter
+        """
         if self.is_final_step():
             self.exploration_factor_buffer += [exploration_factor]
         self.check_initial_value()
@@ -36,12 +48,19 @@ class ExplorationParameterCheck(DebuggerInterface):
         self.check_is_changing_too_quickly()
 
     def check_initial_value(self):
+        """
+        Checks if the initial value is correctly set.
+        """
         if (len(self.exploration_factor_buffer) == 1) and not self.config["check_initialization"]["disabled"]:
             if self.exploration_factor_buffer[0] != self.config["starting_value"]:
                 self.error_msg.append(self.main_msgs['bad_exploration_param_initialization'].format(
                     self.exploration_factor_buffer[0], self.config["starting_value"]))
 
     def check_exploration_parameter_monotonicity(self):
+        """
+        Checks whether the exploration parameter value is grdually decreasing or increasing depending on its starting
+        and ending values
+        """
         if self.config["check_quick_change"]["disabled"]:
             return
         if self.check_period():
@@ -52,6 +71,9 @@ class ExplorationParameterCheck(DebuggerInterface):
                 self.error_msg.append(self.main_msgs['decreasing_exploration_factor'])
 
     def check_is_changing_too_quickly(self):
+        """
+        Checks if the exploration parameter's value is changing too quickly
+        """
         if self.config["check_quick_change"]["disabled"]:
             return
         if self.check_period():

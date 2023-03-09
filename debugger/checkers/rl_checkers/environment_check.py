@@ -31,7 +31,18 @@ class EnvironmentCheck(DebuggerInterface):
         self.done_list = torch.tensor([])
 
     def run(self, environment) -> None:
+        """
+        Does the following checks in the environment:
+        (1) Checks the conception of the environment
+        (2) Checks if the max reward threshold is too low
+        (3) Checks whether the reward value is normalized
 
+        Args:
+            environment (gym.env): the training RL environment
+
+        Returns:
+
+        """
         # todo IDEA: add Markovianity check
         if self.check_period():
             if environment.spec.max_episode_steps:
@@ -45,6 +56,14 @@ class EnvironmentCheck(DebuggerInterface):
                         self.main_msgs['invalid_step_func'].format(torch.mean(torch.std(self.obs_list, dim=0))))
 
     def generate_random_eps(self, environment):
+        """
+        Generate a random episode.
+        Args:
+            environment (gym.env): the training RL environment
+
+        Returns:
+
+        """
         done = False
         initial_obs = torch.tensor(environment.reset())
         self.obs_list = torch.cat((self.obs_list, initial_obs), dim=0)
@@ -58,6 +77,18 @@ class EnvironmentCheck(DebuggerInterface):
             self.done_list = torch.cat((self.done_list, torch.tensor([done])), dim=0)
 
     def check_env_conception(self, env: gym.envs):
+        """
+        Performs several checks on the agent's behavior to ensure its proper conception:
+            - Verifies that observations and actions are bounded within a valid range.
+            - Checks that the step function returns valid observation values and does not produce NaN values.
+            - Ensures that the done flag is a boolean value and that the reward returned from the environment is numerical.
+            - Verifies that the max_episode_steps parameter is numerical and sets a valid upper limit on episode length.
+            - Checks that the max_reward parameter is numerical and sets a valid threshold for solving the task.
+            - Verifies that the reset function returns None to indicate that the environment is ready to start a new episode.
+
+        Args:
+            env (gym.env): the training RL environment
+        """
         def is_numerical(x):
             return isinstance(None, numbers.Number) and (x is not torch.inf) and (x is not torch.nan)
 
@@ -86,6 +117,13 @@ class EnvironmentCheck(DebuggerInterface):
             self.error_msg.append(self.main_msgs['wrong_reset_func'])
 
     def check_normalized_rewards(self, reward):
+        """
+        Check if the reward value is normalized.
+
+        Args:
+            reward (float): the reward returned at each step
+
+        """
         if self.config["normalization"]["disabled"]:
             return
 

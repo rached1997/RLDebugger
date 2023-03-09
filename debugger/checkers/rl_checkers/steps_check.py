@@ -30,6 +30,15 @@ class StepCheck(DebuggerInterface):
         self.last_step_num = 0
 
     def run(self, reward, max_reward, max_total_steps, max_steps_per_episode) -> None:
+        """
+        Checks whether the max step per episode is poorly initialised.
+
+        Args:
+            reward (float): the cumulative reward collected in one episode
+            max_reward (int):  The reward threshold before the task is considered solved
+            max_total_steps (int): The maximum total number of steps to finish the training.
+            max_steps_per_episode (int): the max steps for an episode
+        """
         if self.is_final_step():
             self.final_step_number_buffer += [self.step_num-self.last_step_num]
             self.episode_reward_buffer += [reward]
@@ -38,6 +47,15 @@ class StepCheck(DebuggerInterface):
         self.check_step_is_not_changing(max_reward, max_total_steps, max_steps_per_episode)
 
     def check_step_is_not_changing(self, max_reward, max_total_steps, max_steps_per_episode):
+        """
+        Checks if episodes are being ended prematurely due to the max step limit being reached during the
+        exploitation phase when the agent is not learning (i.e. the reward is far from the max reward).
+
+        Args:
+            max_reward (int):  The reward threshold before the task is considered solved
+            max_total_steps (int): The maximum total number of steps to finish the training.
+            max_steps_per_episode (int): the max steps for an episode
+        """
         if self.config["check_stagnation"]["disabled"]:
             return
 
