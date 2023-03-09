@@ -22,12 +22,11 @@ debugger:
         targets,
         actions,
         actions_probs,
-#        predicted_next_vals,
+        training_observations,
         observations,
         next_observations,
         reward,
         done,
-
       ]
 
 #      observations: "variable"

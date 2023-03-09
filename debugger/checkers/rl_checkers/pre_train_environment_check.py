@@ -16,7 +16,9 @@ def get_config() -> dict:
     config = {
         "Period": 0,
         "observations_std_coef_thresh": 0.001,
-        "Markovianity_check": {"disabled": False, "num_trajectories": 1000}
+        "Markovianity_check": {"disabled": False, "num_trajectories": 1000},
+        "normalization": {"disabled": False, "normalized_reward_min": -10.0, "normalized_reward_max": 10.0},
+
     }
     return config
 
@@ -30,7 +32,7 @@ class PreTrainEnvironmentCheck(DebuggerInterface):
 
     def run(self, environment) -> None:
 
-        # todo CODE: add Markovianity check
+        # todo IDEA: add Markovianity check
         if self.check_period():
             if environment.spec.max_episode_steps:
                 self.generate_random_eps(environment)
@@ -82,3 +84,13 @@ class PreTrainEnvironmentCheck(DebuggerInterface):
 
         if env.reset() is None:
             self.error_msg.append(self.main_msgs['wrong_reset_func'])
+
+    def check_normalized_rewards(self, reward):
+        if self.config["normalization"]["disabled"]:
+            return
+
+        max_reward_value = self.config["normalization"]["normalized_reward_max"]
+        min_reward_value = self.config["normalization"]["normalized_reward_min"]
+
+        if torch.max(self.reward_list) > max_reward_value or torch.min(self.reward_list) < min_reward_value:
+            self.error_msg.append(self.main_msgs['reward_unnormalized'])

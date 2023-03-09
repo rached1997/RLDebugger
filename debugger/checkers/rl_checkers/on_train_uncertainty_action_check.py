@@ -83,7 +83,6 @@ class OnTrainUncertaintyActionCheck(DebuggerInterface):
             self._buffer.append(observations)
         else:
             self._buffer.append_batch(observations)
-        # TODO: check conditions that uses iter_num and step_num
         if self.check_period() and self.iter_num >= self.config["start"]:
             last_layer_name, _ = list(model.named_modules())[-1]
             observations_batch = self._buffer.sample(batch_size=self.config["batch_size"])

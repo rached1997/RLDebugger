@@ -26,6 +26,7 @@ class PreTrainBiasCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="PreTrainBias", config=get_config())
 
+    #  TOdo CODE check the observations
     def run(self, model: torch.nn.Module, observations: torch.Tensor) -> None:
         """
         This function performs multiple checks on the bias initial values of the model:

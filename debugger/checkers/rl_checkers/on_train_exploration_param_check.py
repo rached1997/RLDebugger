@@ -17,7 +17,7 @@ def get_config() -> dict:
         "ending_value": 0,
         "check_initialization": {"disabled": False},
         "check_monotonicity": {"disabled": False},
-        "check_quick_change": {"disabled": False, "strong_decrease_thresh": 0.05, "acceleration_points_ratio": 0.5}
+        "check_quick_change": {"disabled": False, "strong_decrease_thresh": 5, "acceleration_points_ratio": 0.5}
     }
 
     return config
@@ -55,10 +55,6 @@ class OnTrainExplorationParameterCheck(DebuggerInterface):
         if self.config["check_quick_change"]["disabled"]:
             return
         if self.check_period():
-            time_values = len(self.exploration_factor_buffer)
-            # TODO: check second derivative no reflecting the real acceleration
-            first_derivative = np.gradient(self.exploration_factor_buffer, time_values)
-            second_derivative = np.gradient(np.gradient(self.exploration_factor_buffer, time_values), time_values)
-            acceleration_ratio = np.mean(second_derivative > self.config["check_quick_change"]["strong_decrease_thresh"])
-            if acceleration_ratio >= self.config["check_quick_change"]["acceleration_points_ratio"]:
+            abs_second_derivative = np.abs(np.gradient(np.gradient(self.exploration_factor_buffer)))
+            if np.any(abs_second_derivative > self.config["check_quick_change"]["strong_decrease_thresh"]):
                     self.error_msg.append(self.main_msgs['quick_changing_exploration_factor'])

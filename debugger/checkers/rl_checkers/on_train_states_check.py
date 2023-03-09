@@ -32,7 +32,7 @@ class OnTrainStatesCheck(DebuggerInterface):
         self.period_index = []
         self.episodes_rewards = []
 
-    # todo CODE: ADD the state coverage check
+    # todo IDEA: ADD the state coverage check
     def run(self, observations, environment, reward, max_reward, max_total_steps) -> None:
         if self.check_period():
             self.check_normalized_observations(observations)

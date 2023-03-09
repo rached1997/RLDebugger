@@ -96,6 +96,7 @@ class DebuggableDQNAgent(DQNAgent):
                                       targets=q_targets.detach(),
                                       actions_probs=self._qnet(*current_state_inputs).detach(),
                                       actions=actions,
+                                      training_observations = current_state_inputs[0],
                                       # predicted_next_vals=next_qvals.detach(),
                                       discount_rate=self._discount_rate,
                                       )

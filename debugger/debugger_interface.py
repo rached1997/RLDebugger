@@ -4,7 +4,6 @@ from debugger.utils.registry import Registrable
 from debugger.utils import settings
 
 
-# todo IDEA: add the checks from the blog
 # todo DEBUGGING: cover the testing during the training
 # todo DOC: env in the first run, we can check this too
 # todo DOC: think on when two runs sends the same parameter

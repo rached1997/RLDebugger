@@ -1,3 +1,5 @@
+import statistics
+
 from debugger.debugger_interface import DebuggerInterface
 import torch
 import numpy as np
@@ -20,14 +22,13 @@ def get_config():
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 100,
-        "start": 5,
+        "Period": 50,
+        "start": 10,
         "exploration_perc": 0.2,
         "exploitation_perc": 0.8,
         "low_start": {"disabled": False, "start": 3, "entropy_min_thresh": 0.3},
         "monotonicity": {"disabled": False, "increase_thresh": 0.1, "stagnation_thresh": 1e-3},
-        # TODO: check if "strong_decrease_thresh" should be + or -
-        "strong_decrease": {"disabled": False, "strong_decrease_thresh": 0.05, "acceleration_points_ratio": 0.5},
+        "strong_decrease": {"disabled": False, "strong_decrease_thresh": 5, "acceleration_points_ratio": 0.2},
         "fluctuation": {"disabled": False, "fluctuation_thresh": 0.5},
         "action_stag": {"disabled": False, "start": 100, "similarity_pct_thresh": 0.8},
         "action_stag_per_ep": {"disabled": False, "nb_ep_to_check": 2, "last_step_num": 50}
@@ -47,11 +48,14 @@ class OnTrainActionCheck(DebuggerInterface):
         self._entropies = torch.tensor([], device='cuda')
         self._action_buffer = []
         self._end_episode_indices = []
+        self.episodes_rewards = []
 
-    def run(self, actions_probs, max_total_steps):
+    def run(self, actions_probs, max_total_steps, reward, max_reward):
         """
         #
         """
+        if self.is_final_step():
+            self.episodes_rewards += [reward]
         if not torch.allclose(torch.sum(actions_probs, dim=1), torch.ones(actions_probs.shape[0], device='cuda')):
             actions_probs = torch.softmax(actions_probs, dim=1)
         self._action_prob_buffer = torch.cat((self._action_prob_buffer, actions_probs), dim=0)
@@ -72,7 +76,7 @@ class OnTrainActionCheck(DebuggerInterface):
             self.check_action_stagnation_overall()
             if self.is_final_step():
                 self._end_episode_indices.append(len(self._action_buffer))
-                self.check_action_stagnation_per_episode()
+                self.check_action_stagnation_per_episode(max_reward)
 
     def compute_entropy(self):
         """
@@ -124,8 +128,7 @@ class OnTrainActionCheck(DebuggerInterface):
         if self.config["strong_decrease"]["disabled"]:
             return
         entropy_values = self._entropies.detach().cpu().numpy()
-        time_values = len(entropy_values)
-        second_derivative = np.gradient(np.gradient(entropy_values, time_values), time_values)
+        second_derivative = np.gradient(np.gradient(entropy_values))
         acceleration_ratio = np.mean(second_derivative < self.config["strong_decrease"]["strong_decrease_thresh"])
         if acceleration_ratio >= self.config["strong_decrease"]["acceleration_points_ratio"]:
             self.error_msg.append(self.main_msgs['entropy_strong_dec'].format(
@@ -156,10 +159,12 @@ class OnTrainActionCheck(DebuggerInterface):
                 self.error_msg.append(self.main_msgs['action_stagnation'].format(similarity_pct))
         return None
 
-    def check_action_stagnation_per_episode(self):
+    def check_action_stagnation_per_episode(self,max_reward):
         if self.config["action_stag_per_ep"]["disabled"]:
             return
-        if len(self._end_episode_indices) >= self.config['action_stag_per_ep']['nb_ep_to_check']:
+        if (len(self._end_episode_indices) >= self.config['action_stag_per_ep']['nb_ep_to_check']) and \
+                (statistics.mean(self.episodes_rewards) < max_reward * self.config["states_convergence"][
+                    "reward_tolerance"]):
             final_actions = []
             for i in self._end_episode_indices:
                 start_index = i - self.config["action_stag_per_ep"]["last_step_num"]
