@@ -23,9 +23,9 @@ def get_config() -> dict:
     return config
 
 
-class OnTrainExplorationParameterCheck(DebuggerInterface):
+class ExplorationParameterCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="OnTrainExplorationParameter", config=get_config())
+        super().__init__(check_type="ExplorationParameter", config=get_config())
         self.exploration_factor_buffer = []
 
     def run(self, exploration_factor) -> None:

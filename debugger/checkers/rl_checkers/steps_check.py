@@ -22,9 +22,9 @@ def get_config() -> dict:
     return config
 
 
-class OnTrainStepCheck(DebuggerInterface):
+class StepCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="OnTrainStep", config=get_config())
+        super().__init__(check_type="Step", config=get_config())
         self.final_step_number_buffer = []
         self.episode_reward_buffer = []
         self.last_step_num = 0

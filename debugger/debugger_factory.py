@@ -42,15 +42,6 @@ class DebuggerFactory:
         self.params_iters = {key: 0 for key in params["variable"]}
         self.params_iters.update({key: -1 for key in params["constant"]})
 
-    # def create_env_wrapper(self, environment):
-    #     self.create_wrapper(environment)
-
-    # if max_steps_per_episode is not None:
-    #     for checkers in self.debuggers.values():
-    #         if checkers.max_steps_per_episode == max_steps_per_episode:
-    #             break
-    #         checkers.max_steps_per_episode = max_steps_per_episode
-
     def track_func(self, func_step, func_reset):
         def step_wrapper(*args, **kwargs):
             if self.step_num == 0 or self.is_final_step_of_ep():
@@ -97,7 +88,6 @@ class DebuggerFactory:
         """
         Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
         """
-
         self.create_wrappers(kwargs)
         for key, value in kwargs.items():
             self.params[key] = copy.deepcopy(value)
@@ -121,11 +111,12 @@ class DebuggerFactory:
                 else:
                     self.logger.warning(message)
 
+    # todo CODE URGENT: this doesn't work on the gradient check
     def run(self):
         """
         Runs the `debugger` objects in the `debuggers` dictionary.
         """
-        # TODO: try remove default and update .yml files
+        # TODO CODE: try remove default and update .yml files
         for debugger in self.debuggers.values():
             argspec = inspect.getfullargspec(debugger.run)
             arg_names = argspec.args[1:]

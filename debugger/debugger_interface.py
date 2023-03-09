@@ -4,10 +4,8 @@ from debugger.utils.registry import Registrable
 from debugger.utils import settings
 
 
-# todo DEBUGGING: cover the testing during the training
 # todo DOC: env in the first run, we can check this too
 # todo DOC: think on when two runs sends the same parameter
-# todo IDEA: how the debugger works when we have A2C, etc
 class DebuggerInterface(Registrable):
     def __init__(self, check_type, config):
         self.main_msgs = settings.load_messages()

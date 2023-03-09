@@ -21,9 +21,9 @@ def get_config() -> dict:
     return config
 
 
-class OnTrainAgentCheck(DebuggerInterface):
+class AgentCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="OnTrainAgent", config=get_config())
+        super().__init__(check_type="Agent", config=get_config())
         self.old_target_model_params = None
         self.old_model_output = None
         self.old_training_data = None

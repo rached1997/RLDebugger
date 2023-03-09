@@ -25,9 +25,9 @@ def get_config() -> dict:
     return config
 
 
-class OnTrainRewardsCheck(DebuggerInterface):
+class RewardsCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="OnTrainReward", config=get_config())
+        super().__init__(check_type="Reward", config=get_config())
         self.episodes_rewards = []
 
     def run(self, reward, max_total_steps, max_reward) -> None:

@@ -30,20 +30,22 @@ def get_config() -> dict:
     return config
 
 
-class OnTrainActivationCheck(DebuggerInterface):
+# todo CODE: this needs to be refactored
+
+class ActivationCheck(DebuggerInterface):
     """
        The check is in charge of verifying the activation functions during training.
     """
 
     def __init__(self):
-        super().__init__(check_type="OnTrainActivation", config=get_config())
+        super().__init__(check_type="Activation", config=get_config())
         self.acts_data = {}
         self.outputs_metadata = {
             'non_zero_variance': {'status': None},
             'max_abs_greater_than_one': {'status': None},
             'can_be_negative': {'status': None}}
 
-    def run(self, observations: torch.Tensor, model: torch.nn.Module) -> None:
+    def run(self, training_observations: torch.Tensor, model: torch.nn.Module) -> None:
         """
         Does multiple checks on the activation values during the training. The checks it does are :
         (1) checks the outputs (check the function check_outputs for more details)
@@ -56,7 +58,7 @@ class OnTrainActivationCheck(DebuggerInterface):
          function check_dead_layers for more details)
         (6) checks acts distribution (check the function check_acts_distribution for more details)
         Args:
-            observations (Tensor): A sample of observations collected during the training
+            training_observations (Tensor): A sample of observations collected during the training
             model (torch.nn.Module)): The model being trained
         Returns:
             None
@@ -72,9 +74,9 @@ class OnTrainActivationCheck(DebuggerInterface):
                     layer.register_forward_hook(hook)
 
         get_activation()
-        outputs = model(observations)
+        outputs = model(training_observations)
         if self.acts_data == {}:
-            self.set_acts_data(observations.shape[0], activations)
+            self.set_acts_data(training_observations.shape[0], activations)
 
         self.update_outs_conds(outputs)
 
@@ -87,7 +89,8 @@ class OnTrainActivationCheck(DebuggerInterface):
             if self.iter_num < self.config["start"] or self.iter_num % self.period != 0:
                 continue
             self.check_activations_range(acts_name, acts_buffer)
-            if self.check_numerical_instabilities(acts_name, acts_array): continue
+            if self.check_numerical_instabilities(acts_name, acts_array):
+                continue
             if acts_name in ['Sigmoid', 'Tanh']:
                 self.check_saturated_layers(acts_name, acts_buffer)
             else:
@@ -206,7 +209,8 @@ class OnTrainActivationCheck(DebuggerInterface):
         Returns:
             None
         """
-        if self.config['Saturation']['disabled']: return
+        if self.config['Saturation']['disabled']:
+            return
         acts_array = transform_2d(acts_array, keep='last').numpy()
         ro_Bs = np.apply_along_axis(compute_ro_B, 0, acts_array, min_out=self.config["Saturation"]['ro_histo_min'],
                                     max_out=self.config["Saturation"]['ro_histo_max'],

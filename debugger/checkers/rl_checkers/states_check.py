@@ -24,9 +24,9 @@ def get_config() -> dict:
     return config
 
 
-class OnTrainStatesCheck(DebuggerInterface):
+class StatesCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="OnTrainState", config=get_config())
+        super().__init__(check_type="State", config=get_config())
         self.env = None
         self.hashed_observations_buffer = []
         self.period_index = []

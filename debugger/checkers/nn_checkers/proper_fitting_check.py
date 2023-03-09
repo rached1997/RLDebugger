@@ -31,15 +31,15 @@ def get_config():
     return config
 
 
-class PreTrainProperFittingCheck(DebuggerInterface):
+class ProperFittingCheck(DebuggerInterface):
     """
     The check in charge of verifying the proper fitting of the DNN before training.
     """
 
     def __init__(self):
-        super().__init__(check_type="PreTrainProperFitting", config=get_config())
+        super().__init__(check_type="ProperFitting", config=get_config())
 
-    def run(self, observations, targets, actions, opt, model, loss_fn):
+    def run(self, training_observations, targets, actions, opt, model, loss_fn):
         """
         Evaluate the convergence (ability to fit a sample of data) of the proposed model using an initial sample of
         data. This function performs the following checks:
@@ -50,7 +50,7 @@ class PreTrainProperFittingCheck(DebuggerInterface):
          observations
 
         Args:
-            observations (Tensor): Initial sample of observations.
+            training_observations (Tensor): Initial sample of observations.
             targets (Tensor): Ground truth of the initial observations.
             actions (Tensor): Predicted actions for the initial set of observations.
             opt (function): Optimizer function.
@@ -60,14 +60,14 @@ class PreTrainProperFittingCheck(DebuggerInterface):
         if not self.check_period():
             return
 
-        real_losses = self.overfit_verification(model, opt, observations, targets, actions, loss_fn)
+        real_losses = self.overfit_verification(model, opt, training_observations, targets, actions, loss_fn)
         if not real_losses:
             return
 
         if not self.regularization_verification(real_losses):
             return
 
-        fake_losses = self.input_dependency_verification(model, opt, observations, targets, actions, loss_fn)
+        fake_losses = self.input_dependency_verification(model, opt, training_observations, targets, actions, loss_fn)
         if not fake_losses:
             return
 

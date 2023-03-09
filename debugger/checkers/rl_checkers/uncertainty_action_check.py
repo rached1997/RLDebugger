@@ -66,12 +66,12 @@ def get_config():
     return config
 
 
-class OnTrainUncertaintyActionCheck(DebuggerInterface):
+class UncertaintyActionCheck(DebuggerInterface):
     """
     #
     """
     def __init__(self):
-        super().__init__(check_type="OnTrainUncertaintyAction", config=get_config())
+        super().__init__(check_type="UncertaintyAction", config=get_config())
         self._buffer = Memory(max_size=self.config["buffer_max_size"])
 
     def run(self, model, observations, environment):

@@ -23,9 +23,9 @@ def get_config() -> dict:
     return config
 
 
-class PreTrainEnvironmentCheck(DebuggerInterface):
+class EnvironmentCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="PreTrainEnvironment", config=get_config())
+        super().__init__(check_type="Environment", config=get_config())
         self.obs_list = torch.tensor([])
         self.reward_list = torch.tensor([])
         self.done_list = torch.tensor([])

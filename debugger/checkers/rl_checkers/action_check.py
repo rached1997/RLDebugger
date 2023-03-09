@@ -37,13 +37,13 @@ def get_config():
     return config
 
 
-class OnTrainActionCheck(DebuggerInterface):
+class ActionCheck(DebuggerInterface):
     """
     #
     """
 
     def __init__(self):
-        super().__init__(check_type="OnTrainAction", config=get_config())
+        super().__init__(check_type="Action", config=get_config())
         self._action_prob_buffer = torch.tensor([], device='cuda')
         self._entropies = torch.tensor([], device='cuda')
         self._action_buffer = []

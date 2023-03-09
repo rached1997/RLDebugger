@@ -40,17 +40,34 @@ debugger:
       # uncomment the following line if you want to use the custom check provided in the example folder
 #      observed_param: "variable"
     check_type:
+#      - name: Activation
+#      - name: Bias
+#      - name: Loss
+#      - name: Weight
+#      - name: ProperFitting
+#      - name: Gradient
+
+#      - name: Action
+#      - name: Agent
+#      - name : ExplorationParameter
+#      - name: Reward
+#      - name: State
+#      - name: Step
+#      - name: UncertaintyAction
+#      - name: ValueFunction
+#      - name: Environment
+
+
+
 #      - name: PreTrainWeight
 #      - name: PreTrainBias
 #      - name: PreTrainLoss
 #      - name: PreTrainProperFitting
 #      - name: PreTrainGradient
-#      - name: OnTrainBias
-#      - name: OnTrainWeight
 #      - name: OnTrainLoss
 #      - name: OnTrainAction
 #      - name: OnTrainUncertaintyAction
-      - name: PreTrainEnvironment
+#      - name: PreTrainEnvironment
 #      - name: OnTrainState
 #      - name: OnTrainReward
 #      - name: OnTrainStep

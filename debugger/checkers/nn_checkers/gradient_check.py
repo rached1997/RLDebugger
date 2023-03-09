@@ -17,13 +17,13 @@ def get_config():
     return config
 
 
-class PreTrainGradientCheck(DebuggerInterface):
+class GradientCheck(DebuggerInterface):
     """
     The check is in charge of verifying the gradient values during pre-training.
     """
 
     def __init__(self):
-        super().__init__(check_type="PreTrainGradient", config=get_config())
+        super().__init__(check_type="Gradient", config=get_config())
 
     def run(self, loss_fn):
         """

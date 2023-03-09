@@ -14,9 +14,9 @@ def get_config() -> dict:
     return config
 
 
-class OnTrainValueFunctionCheck(DebuggerInterface):
+class ValueFunctionCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="OnTrainValueFunction", config=get_config())
+        super().__init__(check_type="ValueFunction", config=get_config())
 
     def run(self, targets, steps_rewards, discount_rate, predicted_next_vals, steps_done) -> None:
         q_targets = steps_rewards + discount_rate * predicted_next_vals * (1 - steps_done)
