@@ -121,7 +121,7 @@ class DebuggableDQNAgent(DQNAgent):
 #     # uncomment the following line if you want to use the custom checker
 #     # the register method should be called before the set_config method
 #     # rl_debugger.register(checker_name="CustomChecker", checker_class=CustomChecker)
-#     rl_debugger.set_config(config_path="debugger.yml")
+#     rl_debugger.set_config(config_path="default_debugger.yml")
 #
 #     runner = set_up_experiment(config)
 #     runner.run_training()

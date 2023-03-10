@@ -70,6 +70,9 @@ def file_logger(file_path, app_name):
 
 
 def set_logger():
+    """
+    Returns: the logger file
+    """
     app_path = str(Path.cwd())
     log_fpath = build_log_file_path(app_path, "logger")
     return file_logger(log_fpath, "logger")
@@ -92,3 +95,10 @@ def react(logger, messages, fail_on=False):
                 raise Exception(message)
             else:
                 logger.warning(message)
+
+
+def get_default_config_path():
+    """
+    Returns: the path to the default configuration yaml file
+    """
+    return os.path.join(Path(__file__).parent, "config/default_debugger.yml")
