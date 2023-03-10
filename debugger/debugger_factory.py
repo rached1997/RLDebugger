@@ -17,6 +17,7 @@ class DebuggerFactory:
         self.params_iters = dict()
         self.step_num = -1
         self.training = True
+        self.wandb_logger = None
 
     def track_func(self, func_step, func_reset):
         def step_wrapper(*args, **kwargs):
@@ -106,6 +107,7 @@ class DebuggerFactory:
             if self.training:
                 self.set_parameters(**kwargs)
                 self.run()
+                self.wandb_logger.log_scalar("step_num", self.step_num, "debugger")
         except Exception as e:
             self.react(messages=[f"Error: {e}"], fail_on=True)
             # Attempt to recover from the error and continue
@@ -168,3 +170,6 @@ class DebuggerFactory:
 
     def turn_on(self):
         self.training = True
+
+    def set_wandb_logger(self, logger):
+        self.wandb_logger = logger
