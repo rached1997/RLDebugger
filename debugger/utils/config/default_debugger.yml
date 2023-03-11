@@ -1,0 +1,31 @@
+debugger:
+  name: 'Debugger'
+  kwargs:
+    params:
+      constant: [
+        target_net_update_fraction,
+        target_model_update_period,
+        max_steps_per_episode,
+        max_total_steps,
+        discount_rate,
+        environment,
+        max_reward,
+        loss_fn,
+        opt,
+      ]
+
+      variable: [
+        model,
+        target_model,
+        exploration_factor,
+        targets,
+        actions,
+        actions_probs,
+        training_observations,
+        observations,
+        next_observations,
+        reward,
+        done,
+      ]
+    check_type:
+

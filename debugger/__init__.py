@@ -43,6 +43,7 @@ class DebuggerSingleton:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = DebuggerFactory()
+            cls._instance.set_config()
         return cls._instance
 
 

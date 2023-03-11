@@ -6,7 +6,7 @@ import inspect
 import yaml
 import copy
 
-from debugger.utils.settings import react
+from debugger.utils.settings import react, load_default_config
 
 
 class DebuggerFactory:
@@ -20,7 +20,23 @@ class DebuggerFactory:
         self.wandb_logger = None
 
     def track_func(self, func_step, func_reset):
+        """
+        Create a wrapper for the step and reset functions of the environment that allows tracking the values of their
+        outputs, including the observation, the next observation, the reward, done, and the step number.
+
+        Args:
+            func_step: the step function of the RL environment.
+            func_reset: the reset function of the RL environment.
+
+        Returns: The wrapped step and reset functions of the environment
+
+        """
         def step_wrapper(*args, **kwargs):
+            """
+            Create a wrapper function for the step function of the environment.
+
+            Returns:A wrapped version of the step function that returns the same result as the original step function.
+            """
             if self.step_num == 0 or self.is_final_step_of_ep():
                 self.params['next_observations'] = self.params['observations']
                 self.params['reward'] = 0
@@ -38,6 +54,11 @@ class DebuggerFactory:
             return results
 
         def reset_wrapper(*args, **kwargs):
+            """
+            Create a wrapper function for the reset function of the environment.
+
+            Returns: A wrapped version of the reset function that returns the same result as the original reset function
+            """
             results = func_reset(*args, **kwargs)
             if self.training:
                 self.params['observations'] = results
@@ -51,11 +72,24 @@ class DebuggerFactory:
         return step_wrapper, reset_wrapper
 
     def create_wrappers(self, kwargs):
+        """
+        creates a wrapper for  the step and reset functions of the RL environment in order to track the observation,
+        the next observation, the reward, done, and the step number.
+
+        Args:
+            kwargs: the same kwargs received by the function set_parameters
+        """
         if "environment" in kwargs.keys() and self.step_num == -1:
             func_wrappers = self.track_func(kwargs["environment"].step, kwargs["environment"].reset)
             kwargs["environment"].step, kwargs["environment"].reset = func_wrappers
 
     def is_final_step_of_ep(self):
+        """
+        Check if the current step represents the last step of an episode by checking if 'done' is True or if the step
+        number has reached the maximum value.
+
+        Returns (bool): returns True if the step is the last one in an episode, and False otherwise.
+        """
         if self.params['done'] or (
                 (self.step_num > 0) and ((self.step_num % self.params['max_steps_per_episode']) == 0)):
             return True
@@ -109,48 +143,40 @@ class DebuggerFactory:
                 self.run()
                 self.wandb_logger.log_scalar("step_num", self.step_num, "debugger")
         except Exception as e:
-            self.react(messages=[f"Error: {e}"], fail_on=True)
+            react(logger=self.logger, messages=[f"Error: {e}"], fail_on=True)
             # Attempt to recover from the error and continue
             pass
 
-    def set_config(self, config=None, config_path=None):
+    def set_config(self, config_path=None):
         """
-        Set the `debugger` object with the provided `config` or `config_path`.
+        Set the `debugger` object with the provided `config_path` or with the default config.
 
         Args:
             config (dict): the configuration dict
             config_path (str): The path to the configuration dict
         """
+        if config_path is None:
+            config_path = load_default_config()
 
-        if config is not None:
-            self.set_debugger(config)
-        if config_path is not None:
-            with open(config_path) as f:
-                loaded_config = yaml.safe_load(f)
-                self.set_debugger(loaded_config)
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+            # init params
+            params = config["debugger"]["kwargs"]["params"]
+            self.params_iters.update({key: 0 for key in params["variable"]})
+            # the constant values should be initialized with -2 which indicates that they are constants but still
+            # doesn't have a value yet.
+            self.params_iters.update({key: -2 for key in params["constant"]})
 
-    def set_debugger(self, config):
-        """
-        Set the `debugger` object with the provided `config`.
+            if config["debugger"]["kwargs"]["check_type"]:
+                config = config["debugger"]["kwargs"]["check_type"]
+                for debugger_config in config:
+                    debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
+                    debugger = debugger_fn()
+                    self.debuggers[debugger_config["name"]] = debugger
 
-        Args:
-            config (dict): The dictionary of the checks names to be done.
-        """
-        # init params
-        params = config["debugger"]["kwargs"]["params"]
-        self.params_iters = {key: 0 for key in params["variable"]}
-        self.params_iters.update({key: -1 for key in params["constant"]})
-
-        if config["debugger"]["kwargs"]["check_type"]:
-            config = config["debugger"]["kwargs"]["check_type"]
-            for debugger_config in config:
-                debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
-                debugger = debugger_fn()
-                self.debuggers[debugger_config["name"]] = debugger
-
-            # set internal parameters of the debuggers
-            for debugger in self.debuggers.values():
-                debugger.set_params(self.is_final_step_of_ep)
+                # set internal parameters of the debuggers
+                for debugger in self.debuggers.values():
+                    debugger.set_params(self.is_final_step_of_ep)
 
     def init_params_iteration(self, config):
         """
@@ -163,12 +189,25 @@ class DebuggerFactory:
 
     @staticmethod
     def register(checker_name: str, checker_class: DebuggerInterface) -> None:
+        """
+        Register a new checker. This is mostly useful for integrating a custom checker.
+
+        Args:
+            checker_name (str): The name of the checker.
+            checker_class (DebuggerInterface): The class of the debugger.
+        """
         registry.register(checker_name, checker_class, checker_class)
 
     def turn_off(self):
+        """
+        Turn off the debugger. This function is useful when there are testing episodes that occur during training.
+        """
         self.training = False
 
     def turn_on(self):
+        """
+        Turn on the debugger. This function is useful when there are testing episodes that occur during training.
+        """
         self.training = True
 
     def set_wandb_logger(self, logger):

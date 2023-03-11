@@ -92,3 +92,7 @@ def react(logger, messages, fail_on=False):
                 raise Exception(message)
             else:
                 logger.warning(message)
+
+
+def load_default_config():
+    return os.path.join(os.path.join(Path(__file__).parent, 'config'), 'default_debugger.yml')
