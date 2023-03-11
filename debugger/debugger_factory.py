@@ -1,6 +1,3 @@
-import os
-from pathlib import Path
-
 from debugger import DebuggerInterface
 import debugger as debugger_lib
 from debugger.utils import settings
@@ -9,7 +6,7 @@ import inspect
 import yaml
 import copy
 
-from debugger.utils.settings import react, get_default_config_path
+from debugger.utils.settings import react
 
 
 class DebuggerFactory:
@@ -20,21 +17,7 @@ class DebuggerFactory:
         self.params_iters = dict()
         self.step_num = -1
         self.training = True
-
-    def run_debugging(self, **kwargs):
-        """
-        Calls the `set_parameters` method with the provided `kwargs`, and then calls the `run` method, to start running
-        the checks
-        """
-        try:
-            print(self.step_num)
-            if self.training:
-                self.set_parameters(**kwargs)
-                self.run()
-        except Exception as e:
-            react(logger=self.logger, messages=[f"Error: {e}"], fail_on=True)
-            # Attempt to recover from the error and continue
-            pass
+        self.wandb_logger = None
 
     def track_func(self, func_step, func_reset):
         def step_wrapper(*args, **kwargs):
@@ -88,6 +71,7 @@ class DebuggerFactory:
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
 
+    # todo CODE URGENT: this doesn't work on the gradient check
     def run(self):
         """
         Runs the `debugger` objects in the `debuggers` dictionary.
@@ -113,7 +97,23 @@ class DebuggerFactory:
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
-    def set_config(self, config_path=None):
+    def run_debugging(self, **kwargs):
+        """
+        Calls the `set_parameters` method with the provided `kwargs`, and then calls the `run` method, to start running
+        the checks
+        """
+        try:
+            print(self.step_num)
+            if self.training:
+                self.set_parameters(**kwargs)
+                self.run()
+                self.wandb_logger.log_scalar("step_num", self.step_num, "debugger")
+        except Exception as e:
+            self.react(messages=[f"Error: {e}"], fail_on=True)
+            # Attempt to recover from the error and continue
+            pass
+
+    def set_config(self, config=None, config_path=None):
         """
         Set the `debugger` object with the provided `config` or `config_path`.
 
@@ -121,11 +121,9 @@ class DebuggerFactory:
             config (dict): the configuration dict
             config_path (str): The path to the configuration dict
         """
-        aaa = get_default_config_path()
-        with open(get_default_config_path()) as df:
-            default_config = yaml.safe_load(df)
-            self.set_debugger(default_config)
 
+        if config is not None:
+            self.set_debugger(config)
         if config_path is not None:
             with open(config_path) as f:
                 loaded_config = yaml.safe_load(f)
@@ -140,9 +138,8 @@ class DebuggerFactory:
         """
         # init params
         params = config["debugger"]["kwargs"]["params"]
-        self.params_iters.update({key: 0 for key in params["variable"]})
-        # we set constants to -2 which means that it's constant, but we haven't yet received it value
-        self.params_iters.update({key: -2 for key in params["constant"]})
+        self.params_iters = {key: 0 for key in params["variable"]}
+        self.params_iters.update({key: -1 for key in params["constant"]})
 
         if config["debugger"]["kwargs"]["check_type"]:
             config = config["debugger"]["kwargs"]["check_type"]
@@ -173,3 +170,6 @@ class DebuggerFactory:
 
     def turn_on(self):
         self.training = True
+
+    def set_wandb_logger(self, logger):
+        self.wandb_logger = logger
