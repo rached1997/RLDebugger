@@ -105,7 +105,6 @@ class DebuggerFactory:
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
 
-    # todo CODE URGENT: this doesn't work on the gradient check
     def run(self):
         """
         Runs the `debugger` objects in the `debuggers` dictionary.
