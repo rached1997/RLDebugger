@@ -37,9 +37,10 @@ class WeightsCheck(DebuggerInterface):
         """
         This function performs multiple checks on the weight during the training:
 
-        (1) Check the numerical instabilities of weight values (check the function check_numerical_instabilities
+        (1) run the pre-checks described in the function run_pre_checks
+        (2) Check the numerical instabilities of weight values (check the function check_numerical_instabilities
         for more details)
-        (2) Check the divergence of weight values (check the function check_divergence for more details)
+        (3) Check the divergence of weight values (check the function check_divergence for more details)
 
         Args:
             model (torch.nn.Module): The model being trained

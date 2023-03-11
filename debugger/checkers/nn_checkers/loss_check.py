@@ -39,9 +39,10 @@ class LossCheck(DebuggerInterface):
         """
         This function performs multiple checks on the loss function during the training:
 
-        (1) Check the numerical instabilities of loss values. (check the function check_numerical_instabilities
+        (1) run the pre-checks described in the function run_pre_checks
+        (2) Check the numerical instabilities of loss values. (check the function check_numerical_instabilities
         for more details)
-        (2) Check the abnormal loss curvature of the loss (check the function check_loss_curve for more details)
+        (3) Check the abnormal loss curvature of the loss (check the function check_loss_curve for more details)
 
         Args:
         targets (Tensor): A sample of targets collected periodically during the training.

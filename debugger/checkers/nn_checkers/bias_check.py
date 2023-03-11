@@ -34,9 +34,10 @@ class BiasCheck(DebuggerInterface):
         """
         This function performs multiple checks on the bias during the training:
 
-        (1) Check the numerical instabilities of bias values (check the function check_numerical_instabilities
+        (1) Run the pre-checks described in the function run_pre_checks
+        (2) Check the numerical instabilities of bias values (check the function check_numerical_instabilities
         for more details)
-        (2) Check the divergence of bias values (check the function check_divergence for more details)
+        (3) Check the divergence of bias values (check the function check_divergence for more details)
 
         Args:
             model (nn.model): The model being trained

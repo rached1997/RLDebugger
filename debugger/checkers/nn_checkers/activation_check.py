@@ -45,7 +45,6 @@ class ActivationCheck(DebuggerInterface):
             'max_abs_greater_than_one': {'status': None},
             'can_be_negative': {'status': None}}
 
-    #  todo DOC add the documentation of the pre checks
     def run(self, training_observations: torch.Tensor, model: torch.nn.Module) -> None:
         """
         Does multiple checks on the activation values during the training. The checks it does are :
