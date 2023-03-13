@@ -11,7 +11,7 @@ from hive.utils import experiment, loggers, schedule, utils
 from hive.utils.registry import get_parsed_args
 
 from debugger import rl_debugger
-from example.example_dqn_cartpole import DebuggableDQNAgent
+from example_dqn_cartpole import DebuggableDQNAgent
 
 
 class SingleAgentRunner(Runner):
@@ -214,9 +214,9 @@ def main():
     rl_debugger.set_config(config_path="debugger.yml")
 
     runner = set_up_experiment(config)
-    runner._logger.register_timescale("debugger")
-    wandb_logger = runner._logger._logger_list[1]
-    rl_debugger.set_wandb_logger(wandb_logger)
+    # runner._logger.register_timescale("debugger")
+    # wandb_logger = runner._logger._logger_list[1]
+    # rl_debugger.set_wandb_logger(wandb_logger)
     rl_debugger.run_debugging(environment=runner._environment._env,
                               max_reward=runner._environment._env.spec.reward_threshold,
                               max_steps_per_episode=runner._max_steps_per_episode,

@@ -17,7 +17,7 @@ def get_config():
     """
 
     config = {
-        "Period": 0,
+        "period": 1,
         "single_batch_size": 16,
         "total_iters": 100,
         "abs_loss_min_thresh": 1e-8,
@@ -57,6 +57,8 @@ class ProperFittingCheck(DebuggerInterface):
             model (nn.Module): Model to be trained.
             loss_fn (function): Loss function.
         """
+        model = copy.deepcopy(model)
+        opt = copy.deepcopy(opt)
         if not self.check_period():
             return
 

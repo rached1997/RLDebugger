@@ -13,7 +13,7 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 1,
+        "period": 1,
         "exploitation_perc": 0.8,
         "check_stagnation": {"disabled": False},
         "poor_max_step_per_ep": {"disabled": False, "max_reward_tol": 0.1},

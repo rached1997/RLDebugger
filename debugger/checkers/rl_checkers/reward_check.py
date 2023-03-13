@@ -13,7 +13,7 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 100,
+        "period": 100,
         "exploration_perc": 0.2,
         "exploitation_perc": 0.8,
         "start": 5,

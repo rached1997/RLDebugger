@@ -56,7 +56,7 @@ def get_config():
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 1000,
+        "period": 1000,
         "start": 1000,
         "num_repetitions": 100,
         "std_threshold": 0.5,

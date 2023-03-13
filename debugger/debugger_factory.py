@@ -2,9 +2,7 @@ from debugger import DebuggerInterface
 import debugger as debugger_lib
 from debugger.utils import settings
 from debugger.utils.registry import registry
-import inspect
 import yaml
-import copy
 
 from debugger.utils.settings import react, load_default_config
 
@@ -99,33 +97,58 @@ class DebuggerFactory:
         """
         Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
         """
-        self.create_wrappers(kwargs)
         for key, value in kwargs.items():
-            self.params[key] = copy.deepcopy(value)
+            # self.params[key] = copy.deepcopy(value)
+            self.params[key] = value
             if self.params_iters[key] != -1:
                 self.params_iters[key] += 1
+        self.create_wrappers(kwargs)
+
+    # def run(self):
+    #     """
+    #     Runs the `debugger` objects in the `debuggers` dictionary.
+    #     """
+    #     # TODO CODE: try remove default and update .yml files
+    #     for debugger in self.debuggers.values():
+    #         argspec = inspect.getfullargspec(debugger.run)
+    #         arg_names = argspec.args[1:]
+    #         defaults = argspec.defaults
+    #         defaults_dict = {}
+    #         if defaults:
+    #             defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
+    #         params_iters = [self.params_iters[key] for key in arg_names]
+    #         if all(
+    #                 param_iter == -1 or param_iter >= debugger.iter_num + 1 or arg_name in defaults_dict.keys()
+    #                 for param_iter, arg_name in zip(params_iters, arg_names)
+    #         ):
+    #             debugger.step_num = self.step_num
+    #             debugger.increment_iteration()
+    #             kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
+    #                       for arg in arg_names}
+    #             debugger.run(**kwargs)
+    #             react(self.logger, debugger.error_msg)
+    #             debugger.reset_error_msg()
 
     def run(self):
         """
         Runs the `debugger` objects in the `debuggers` dictionary.
         """
-        # TODO CODE: try remove default and update .yml files
         for debugger in self.debuggers.values():
-            argspec = inspect.getfullargspec(debugger.run)
-            arg_names = argspec.args[1:]
-            defaults = argspec.defaults
-            defaults_dict = {}
-            if defaults:
-                defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
-            params_iters = [self.params_iters[key] for key in arg_names]
-            if all(
-                    param_iter == -1 or param_iter >= debugger.iter_num + 1 or arg_name in defaults_dict.keys()
-                    for param_iter, arg_name in zip(params_iters, arg_names)
-            ):
+            arg_names = debugger.get_arg_names()
+            kwargs = {}
+            is_ready = True
+            for arg in arg_names:
+                param_iter = self.params_iters[arg]
+                if not (param_iter == -1 or param_iter >= debugger.iter_num + 1):
+                    is_ready = False
+                    break
+                else:
+                    kwargs[arg] = self.params[arg]
+            if is_ready:
                 debugger.step_num = self.step_num
+                if debugger.max_total_steps is None:
+                    debugger.max_total_steps = self.params["max_total_steps"]
                 debugger.increment_iteration()
-                kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
-                          for arg in arg_names}
                 debugger.run(**kwargs)
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
@@ -136,12 +159,18 @@ class DebuggerFactory:
         the checks
         """
         try:
-            print(self.step_num)
+            # print(self.step_num)
             if self.training:
                 self.set_parameters(**kwargs)
-                self.run()
-                self.wandb_logger.log_scalar("step_num", self.step_num, "debugger")
+                if "max_total_steps" in self.params.keys():
+                    self.run()
+                else:
+                    react(logger=self.logger,
+                          messages=[f"Warning: Please provide value for max_steps_per_episode to run the debugger"],
+                          fail_on=False)
+                # self.wandb_logger.log_scalar("step_num", self.step_num, "debugger")
         except Exception as e:
+            # TODO: put it back to false and make it run once
             react(logger=self.logger, messages=[f"Error: {e}"], fail_on=True)
             # Attempt to recover from the error and continue
             pass
@@ -171,20 +200,13 @@ class DebuggerFactory:
                 for debugger_config in config:
                     debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
                     debugger = debugger_fn()
+                    if "period" in debugger_config.keys():
+                        debugger.period = debugger_config["period"]
                     self.debuggers[debugger_config["name"]] = debugger
 
                 # set internal parameters of the debuggers
                 for debugger in self.debuggers.values():
                     debugger.set_params(self.is_final_step_of_ep)
-
-    def init_params_iteration(self, config):
-        """
-        Set the `params_iters` attribute with the provided `config`.
-        """
-
-        params = config["debugger"]["kwargs"]["params"]
-        self.params_iters = {key: 0 for key in params["variable"]}
-        self.params_iters.update({key: -1 for key in params["constant"]})
 
     @staticmethod
     def register(checker_name: str, checker_class: DebuggerInterface) -> None:

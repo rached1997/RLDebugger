@@ -7,7 +7,7 @@ from hive.agents.dqn import DQNAgent
 from debugger import rl_debugger
 
 
-# uncomment the following line if you want to use the custom check provided in the example folder
+# uncomment the following line if you want to use the custom check provided in the examples folder
 # from custom_checker import CustomChecker
 
 
@@ -43,7 +43,7 @@ class DebuggableDQNAgent(DQNAgent):
         ):
             self._state["episode_start"] = False
 
-        # rl_debugger.run_debugging(actions_probs=qvals)
+        rl_debugger.run_debugging(actions_probs=qvals)
         # rl_debugger.run_debugging(exploration_factor=epsilon)
         # rl_debugger.run_debugging(model=self._qnet)
         # rl_debugger.run_debugging(model=self._qnet, observations=observation, exploration_factor=self._test_epsilon)
@@ -87,19 +87,19 @@ class DebuggableDQNAgent(DQNAgent):
             #                           target_net_update_fraction=1,
             #                           )
 
-            rl_debugger.run_debugging(model=self._qnet,
-                                      loss_fn=self._loss_fn,
-                                      opt=self._optimizer,
-                                      target_model=self._target_qnet,
-                                      target_model_update_period=self._target_net_update_schedule._total_period,
-                                      target_net_update_fraction=1,
-                                      targets=q_targets.detach(),
-                                      actions_probs=self._qnet(*current_state_inputs).detach(),
-                                      actions=actions,
-                                      training_observations = current_state_inputs[0],
-                                      # predicted_next_vals=next_qvals.detach(),
-                                      discount_rate=self._discount_rate,
-                                      )
+            # rl_debugger.run_debugging(model=self._qnet,
+            #                           loss_fn=self._loss_fn,
+            #                           opt=self._optimizer,
+            #                           target_model=self._target_qnet,
+            #                           target_model_update_period=self._target_net_update_schedule._total_period,
+            #                           target_net_update_fraction=1,
+            #                           targets=q_targets.detach(),
+            #                           actions_probs=self._qnet(*current_state_inputs).detach(),
+            #                           actions=actions,
+            #                           training_observations = current_state_inputs[0],
+            #                           # predicted_next_vals=next_qvals.detach(),
+            #                           discount_rate=self._discount_rate,
+            #                           )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()
 

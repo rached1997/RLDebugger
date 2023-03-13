@@ -1,3 +1,4 @@
+import copy
 import re
 import torch.nn
 from debugger.debugger_interface import DebuggerInterface
@@ -13,9 +14,9 @@ def get_config() -> dict:
         Returns:
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {"buff_scale": 300,
-              "Period": 300,
-              "start": 300,
+    config = {"buff_scale": 10,
+              "period": 10,
+              "start": 10,
               "patience": 5,
               "Dead": {"disabled": False, "act_min_thresh": 0.00001, "act_maj_percentile": 95,
                        "neurons_ratio_max_thresh": 0.5},
@@ -63,6 +64,7 @@ class ActivationCheck(DebuggerInterface):
         Returns:
             None
         """
+        model = copy.deepcopy(model)
         activations = {}
 
         def hook(module, input, output):
@@ -80,23 +82,22 @@ class ActivationCheck(DebuggerInterface):
 
         self.update_outs_conds(outputs)
 
-        if self.iter_num % self.period == 0:
+        if self.check_period():
             self.check_outputs(outputs, get_last_layer_activation(model))
 
         for i, (acts_name, acts_array) in enumerate(activations.items()):
             acts_name = re.sub(r'\([^()]*\)', '', str(acts_name)) + "_" + str(i)
             acts_buffer = self.update_buffer(acts_name, acts_array)
-            if self.iter_num < self.config["start"] or self.iter_num % self.period != 0:
-                continue
-            self.check_activations_range(acts_name, acts_buffer)
-            if self.check_numerical_instabilities(acts_name, acts_array):
-                continue
-            if acts_name in ['Sigmoid', 'Tanh']:
-                self.check_saturated_layers(acts_name, acts_buffer)
-            else:
-                self.check_dead_layers(acts_name, acts_buffer)
+            if self.iter_num >= self.config["start"] and self.check_period():
+                self.check_activations_range(acts_name, acts_buffer)
+                if self.check_numerical_instabilities(acts_name, acts_array):
+                    continue
+                if acts_name in ['Sigmoid', 'Tanh']:
+                    self.check_saturated_layers(acts_name, acts_buffer)
+                else:
+                    self.check_dead_layers(acts_name, acts_buffer)
 
-            self.check_acts_distribution(acts_name, acts_buffer)
+                self.check_acts_distribution(acts_name, acts_buffer)
 
     def update_outs_conds(self, outs_array: torch.Tensor) -> None:
         """

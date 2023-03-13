@@ -15,12 +15,13 @@ def get_config() -> dict:
     """
     config = {
         "start": 100,
-        "Period": 100,
+        "period": 10,
+        "skip_run_threshold": 10,
         "numeric_ins": {"disabled": False},
         "neg": {"disabled": False, "ratio_max_thresh": 0.95},
         "dead": {"disabled": False, "val_min_thresh": 0.00001, "ratio_max_thresh": 0.95},
         "div": {"disabled": False, "window_size": 5, "mav_max_thresh": 100000000, "inc_rate_max_thresh": 2},
-        "Initial_Weight": {"disabled": False,"f_test_alpha": 0.1}
+        "Initial_Weight": {"disabled": False, "f_test_alpha": 0.1}
     }
     return config
 
@@ -48,19 +49,22 @@ class WeightsCheck(DebuggerInterface):
         Returns:
             None
         """
+        if self.skip_run(self.config['skip_run_threshold']):
+            return
         if self.iter_num == 1:
             self.run_pre_checks(model)
-        weights, _ = get_model_weights_and_biases(model)
-        weights = {k: (v, is_non_2d(v)) for k, v in weights.items()}
-        for w_name, (w_array, is_conv) in weights.items():
-            if self.check_numerical_instabilities(w_name, w_array):
-                continue
-            w_reductions = self.update_w_reductions(w_name, w_array)
-
-            if self.iter_num < self.config['start'] or self.check_period():
-                self.check_sign(w_name, w_array, is_conv)
-                self.check_dead(w_name, w_array, is_conv)
-                self.check_divergence(w_name, w_reductions, is_conv)
+        for name, param in model.named_parameters():
+            if 'weight' in name:
+                w_name = name.split('.weight')[0]
+                w_array = param.data
+                is_conv = is_non_2d(w_array)
+                w_reductions = self.update_w_reductions(w_name, w_array)
+                if (self.iter_num >= self.config['start']) and self.check_period():
+                    if self.check_numerical_instabilities(w_name, w_array):
+                        continue
+                    self.check_sign(w_name, w_array, is_conv)
+                    self.check_dead(w_name, w_array, is_conv)
+                    self.check_divergence(w_name, w_reductions, is_conv)
 
     def update_w_reductions(self, weight_name: str, weight_array: torch.Tensor) -> torch.Tensor:
         """
@@ -74,8 +78,9 @@ class WeightsCheck(DebuggerInterface):
             None
         """
         if weight_name not in self.w_reductions:
-            self.w_reductions[weight_name] = []
-        self.w_reductions[weight_name].append(torch.mean(torch.abs(weight_array)))
+            self.w_reductions[weight_name] = torch.tensor([], device="cuda")
+        self.w_reductions[weight_name] = torch.cat((self.w_reductions[weight_name],
+                                                    torch.mean(torch.abs(weight_array)).view(1)))
         return self.w_reductions[weight_name]
 
     def check_numerical_instabilities(self, weight_name: str, weight_array: torch.Tensor) -> bool:
@@ -169,9 +174,8 @@ class WeightsCheck(DebuggerInterface):
             self.error_msg.append(main_msg.format(weight_name, weight_reductions[-1],
                                                   self.config['div']['mav_max_thresh']))
         elif len(weight_reductions) >= self.config['div']['window_size']:
-            inc_rates = np.array(
-                [weight_reductions[-i].cpu().numpy() / weight_reductions[-i - 1].cpu().numpy() for i in
-                 range(1, self.config['div']['window_size'])])
+            inc_rates = weight_reductions[1-self.config['div']['window_size']:] / \
+                        weight_reductions[-self.config['div']['window_size']:-1]
             if (inc_rates >= self.config['div']['inc_rate_max_thresh']).all():
                 main_msg = self.main_msgs['conv_w_div_2'] if is_conv else self.main_msgs['fc_w_div_2']
                 self.error_msg.append(main_msg.format(weight_name, max(inc_rates),

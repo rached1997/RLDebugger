@@ -110,7 +110,7 @@ def main():
     hive.registry.register('DebuggableRainbowAgent', DebuggableRainbowAgent, DebuggableRainbowAgent)
     config = load_config(config='agent_configs/custom_rainbow_agent_cartpole.yml')
 
-    rl_debugger.set_config(config_path='debugger.yml')
+    rl_debugger.set_config(config_path='../dqn/debugger.yml')
 
     runner = set_up_experiment(config)
     runner.run_training()

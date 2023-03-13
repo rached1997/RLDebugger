@@ -7,7 +7,6 @@ debugger:
         target_model_update_period,
         max_steps_per_episode,
         max_total_steps,
-        discount_rate,
         environment,
         max_reward,
         loss_fn,
@@ -25,7 +24,7 @@ debugger:
         observations,
         next_observations,
         reward,
-        done,
+        done
       ]
     check_type:
 

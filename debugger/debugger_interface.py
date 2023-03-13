@@ -1,5 +1,5 @@
+import inspect
 import torch
-import math
 from debugger.utils.registry import Registrable
 from debugger.utils import settings
 
@@ -11,11 +11,14 @@ class DebuggerInterface(Registrable):
         self.main_msgs = settings.load_messages()
         self.config = config
         self.check_type = check_type
-        self.period = config["Period"]
+        self.period = config["period"]
         self.iter_num = 0
         self.error_msg = list()
         self.step_num = None
+        self.old_step_num = -1
         self.is_final_step = None
+        self.max_total_steps = None
+        self.arg_names = None
 
     def check_period(self):
         """
@@ -26,6 +29,18 @@ class DebuggerInterface(Registrable):
         """
         return ((self.period != 0) and (self.iter_num % self.period == 0)) or (
                 (self.period == 0) and (self.iter_num == 1))
+
+    def skip_run(self, threshold):
+        step_diff = self.step_num - self.old_step_num
+        if self.old_step_num == -1 or step_diff >= threshold:
+            self.old_step_num = self.step_num
+            return False
+        self.iter_num -= 1
+        return True
+
+    # TODO: implement this please
+    # def run(self):
+
 
     def increment_iteration(self):
         """
@@ -64,3 +79,9 @@ class DebuggerInterface(Registrable):
 
     def set_params(self, is_final_step):
         self.is_final_step = is_final_step
+
+    def get_arg_names(self):
+        if self.arg_names is None:
+            self.arg_names = inspect.getfullargspec(self.run).args[1:]
+        return self.arg_names
+

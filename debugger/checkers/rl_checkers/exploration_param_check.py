@@ -12,7 +12,7 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 1000,
+        "period": 1000,
         "starting_value": 1,
         "ending_value": 0,
         "check_initialization": {"disabled": False},

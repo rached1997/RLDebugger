@@ -1,3 +1,4 @@
+import copy
 import hashlib
 
 import gym
@@ -14,7 +15,7 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "Period": 0,
+        "period": 0,
         "observations_std_coef_thresh": 0.001,
         "Markovianity_check": {"disabled": False, "num_trajectories": 1000},
         "normalization": {"disabled": False, "normalized_reward_min": -10.0, "normalized_reward_max": 10.0},
@@ -64,6 +65,7 @@ class EnvironmentCheck(DebuggerInterface):
         Returns:
 
         """
+        environment = copy.deepcopy(environment)
         done = False
         initial_obs = torch.tensor(environment.reset())
         self.obs_list = torch.cat((self.obs_list, initial_obs), dim=0)

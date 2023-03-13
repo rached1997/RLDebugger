@@ -1,7 +1,6 @@
 from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.model_params_getters import get_model_weights_and_biases, get_last_layer_activation
 import torch
-import numpy as np
 
 from debugger.utils.utils import get_balance, get_probas
 
@@ -13,8 +12,9 @@ def get_config() -> dict:
     Returns:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {"start": 100,
-              "Period": 100,
+    config = {"start": 10,
+              "period": 10,
+              "skip_run_threshold": 10,
               "numeric_ins": {"disabled": False},
               "div": {"disabled": False, "window_size": 5, "mav_max_thresh": 100000000, "inc_rate_max_thresh": 2}
               }
@@ -46,16 +46,19 @@ class BiasCheck(DebuggerInterface):
         Returns:
             None
         """
+        if self.skip_run(self.config['skip_run_threshold']):
+            return
         if self.iter_num == 1:
             self.run_pre_checks(model, training_observations)
-        _, biases = get_model_weights_and_biases(model)
-        for b_name, b_array in biases.items():
-            if self.check_numerical_instabilities(b_name, b_array):
-                continue
-
-            b_reductions = self.update_b_reductions(b_name, b_array)
-            if self.iter_num < self.config['start'] or self.check_period():
-                self.check_divergence(b_name, b_reductions)
+        for name, param in model.named_parameters():
+            if 'bias' in name:
+                b_name = name.split('.bias')[0]
+                b_array = param.data
+                b_reductions = self.update_b_reductions(b_name, b_array)
+                if (self.iter_num >= self.config['start']) and self.check_period():
+                    if self.check_numerical_instabilities(b_name, b_array):
+                        continue
+                    self.check_divergence(b_name, b_reductions)
 
     def update_b_reductions(self, bias_name: str, bias_array: torch.Tensor) -> torch.Tensor:
         """
@@ -69,8 +72,9 @@ class BiasCheck(DebuggerInterface):
             (Tensor): all average biases obtained during training.
         """
         if bias_name not in self.b_reductions:
-            self.b_reductions[bias_name] = []
-        self.b_reductions[bias_name].append(torch.mean(torch.abs(bias_array)))
+            self.b_reductions[bias_name] = torch.tensor([], device="cuda")
+        self.b_reductions[bias_name] = torch.cat((self.b_reductions[bias_name],
+                                                  torch.mean(torch.abs(bias_array)).view(1)))
         return self.b_reductions[bias_name]
 
     def check_numerical_instabilities(self, bias_name: str, bias_array: torch.Tensor) -> bool:
@@ -115,13 +119,13 @@ class BiasCheck(DebuggerInterface):
             self.error_msg.append(self.main_msgs['b_div_1'].format(bias_name, bias_reductions[-1],
                                                                    self.config.div.mav_max_thresh))
         elif len(bias_reductions) >= self.config['div']['window_size']:
-            inc_rates = np.array(
-                [bias_reductions[-i].cpu().numpy() / bias_reductions[-i - 1].cpu().numpy() for i in
-                 range(1, self.config['div']['window_size'])])
+            inc_rates = bias_reductions[1 - self.config['div']['window_size']:] / \
+                        bias_reductions[-self.config['div']['window_size']:-1]
             if (inc_rates >= self.config['div']['inc_rate_max_thresh']).all():
                 self.error_msg.append(self.main_msgs['b_div_2'].format(bias_name, max(inc_rates),
                                                                        self.config['div']['inc_rate_max_thresh']))
 
+    # TODO: try to replace training_observations with observations
     def run_pre_checks(self, model, training_observations) -> None:
         """
         This function performs multiple checks on the bias initial values of the model:

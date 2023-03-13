@@ -13,7 +13,7 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-              "Period": 100,
+              "period": 10,
               "numeric_ins": {"disabled": False},
               "non_dec": {"disabled": False, "window_size": 5, "decr_percentage": 0.05},
               "div": {"disabled": False, "incr_abs_rate_max_thresh": 2, "window_size": 5},
@@ -49,7 +49,7 @@ class LossCheck(DebuggerInterface):
         predictions (Tensor): A sample of predictions collected periodically during the training.
         loss_fn (torch.nn.Module): the loss function of the model.
         """
-        predictions =actions_probs[torch.arange(actions_probs.size(0)), actions]
+        predictions = actions_probs[torch.arange(actions_probs.size(0)), actions]
         if self.iter_num == 1:
             self.run_pre_checks(targets, predictions, loss_fn, model)
         loss_val = float(get_loss(predictions, targets, loss_fn))

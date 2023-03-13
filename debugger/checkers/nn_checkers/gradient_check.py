@@ -10,7 +10,7 @@ def get_config():
         Returns:
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {"Period": 0,
+    config = {"period": 1,
               "sample_size": 3,
               "delta": 0.0001,
               "relative_err_max_thresh": 0.01}
