@@ -21,7 +21,7 @@ class Registrable:
     @classmethod
     def type_name(cls):
         """This should represent a string that denotes the which type of class you are
-        creating. For example, "logger", "agent", or "env".
+        creating. For examples, "logger", "agent", or "env".
         """
         raise ValueError
 
@@ -42,7 +42,7 @@ class Registry:
     command line. These parameters are specified in dot notation. They also are able
     to handle lists and dictionaries of Registrable objects.
 
-    For example, let's consider the following scenario:
+    For examples, let's consider the following scenario:
     Your agent class has an argument `arg1` which is annotated to be `List[Class1]`,
     `Class1` is `Registrable`, and the `Class1` constructor takes an argument `arg2`.
     In the passed yml config, there are two different Class1 object configs listed.

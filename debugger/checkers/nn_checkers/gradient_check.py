@@ -10,20 +10,20 @@ def get_config():
         Returns:
             config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
-    config = {"Period": 0,
+    config = {"period": 1,
               "sample_size": 3,
               "delta": 0.0001,
               "relative_err_max_thresh": 0.01}
     return config
 
 
-class PreTrainGradientCheck(DebuggerInterface):
+class GradientCheck(DebuggerInterface):
     """
     The check is in charge of verifying the gradient values during pre-training.
     """
 
     def __init__(self):
-        super().__init__(check_type="PreTrainGradient", config=get_config())
+        super().__init__(check_type="Gradient", config=get_config())
 
     def run(self, loss_fn):
         """

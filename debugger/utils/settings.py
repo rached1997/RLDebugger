@@ -68,3 +68,31 @@ def file_logger(file_path, app_name):
     logger.addHandler(ch)
     return logger
 
+
+def set_logger():
+    app_path = str(Path.cwd())
+    log_fpath = build_log_file_path(app_path, "logger")
+    return file_logger(log_fpath, "logger")
+
+
+def react(logger, messages, fail_on=False):
+    """
+    Reacts to the provided `messages` by either raising an exception or logging a warning, depending on the value of
+     `fail_on`.
+
+    Args:
+        logger (logger): the logger that will print the data
+        messages (list): list of error messages to be displayed
+        fail_on (bool): if True it raises an exception otherwise it only displays the error
+    """
+    if len(messages) > 0:
+        for message in messages:
+            if fail_on:
+                logger.error(message)
+                raise Exception(message)
+            else:
+                logger.warning(message)
+
+
+def load_default_config():
+    return os.path.join(os.path.join(Path(__file__).parent, 'config'), 'default_debugger.yml')

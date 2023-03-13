@@ -1,0 +1,22 @@
+debugger:
+  name: 'Debugger'
+  kwargs:
+    params:
+      constant: []
+      variable: []
+    check_type:
+#      - name: Activation
+#      - name: Bias
+#      - name: Loss
+#      - name: Weight
+#      - name: ProperFitting
+#      - name: Gradient
+      - name: Action
+#      - name: Agent
+#      - name : ExplorationParameter
+#      - name: Reward
+#      - name: State
+#      - name: Step
+#      - name: UncertaintyAction
+#      - name: ValueFunction
+      - name: Environment

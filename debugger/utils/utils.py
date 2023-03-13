@@ -6,6 +6,32 @@ from scipy.stats import mannwhitneyu
 import torch
 
 
+def get_data_slope(data):
+    """Compute the slope of entropy evolution over time.
+
+    Returns:
+    entropy_slope (float): The slope of the linear regression fit to the entropy values.
+    """
+    # Compute the x-values (time steps) for the linear regression
+    x = torch.arange(len(data), device=data.device)
+    # Fit a linear regression model to the entropy values
+    ones = torch.ones_like(x)
+    X = torch.stack([x, ones], dim=1).float()
+    cof, _ = torch.lstsq(data.unsqueeze(1), X)
+
+    return cof[0:2]
+
+
+def estimate_fluctuation_rmse(slope_coef, data):
+    """
+    x
+    """
+    x = torch.arange(len(data), device=data.device)
+    predicted = slope_coef[0] * x + slope_coef[1]
+    residuals = torch.sqrt(torch.mean((data - predicted) ** 2))
+    return residuals
+
+
 def almost_equal(value1, value2, rtol=1e-2):
     """
     This function checks if two values are almost equal within a relative tolerance.
@@ -220,5 +246,4 @@ def transform_2d(array, keep='first'):
         return array.reshape(array.shape[0], -1)
     elif keep == 'last':
         return array.reshape(-1, array.shape[-1])
-
 
