@@ -10,12 +10,12 @@ from debugger.utils.settings import react, load_default_config
 class DebuggerFactory:
     def __init__(self):
         self.logger = settings.set_logger()
+        self.wandb_logger = settings.set_wandb_logger()
         self.debuggers = dict()
         self.params = {}
         self.params_iters = dict()
         self.step_num = -1
         self.training = True
-        self.wandb_logger = None
 
     def track_func(self, func_step, func_reset):
         """
@@ -29,6 +29,7 @@ class DebuggerFactory:
         Returns: The wrapped step and reset functions of the environment
 
         """
+
         def step_wrapper(*args, **kwargs):
             """
             Create a wrapper function for the step function of the environment.
@@ -104,31 +105,6 @@ class DebuggerFactory:
                 self.params_iters[key] += 1
         self.create_wrappers(kwargs)
 
-    # def run(self):
-    #     """
-    #     Runs the `debugger` objects in the `debuggers` dictionary.
-    #     """
-    #     # TODO CODE: try remove default and update .yml files
-    #     for debugger in self.debuggers.values():
-    #         argspec = inspect.getfullargspec(debugger.run)
-    #         arg_names = argspec.args[1:]
-    #         defaults = argspec.defaults
-    #         defaults_dict = {}
-    #         if defaults:
-    #             defaults_dict = dict(zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
-    #         params_iters = [self.params_iters[key] for key in arg_names]
-    #         if all(
-    #                 param_iter == -1 or param_iter >= debugger.iter_num + 1 or arg_name in defaults_dict.keys()
-    #                 for param_iter, arg_name in zip(params_iters, arg_names)
-    #         ):
-    #             debugger.step_num = self.step_num
-    #             debugger.increment_iteration()
-    #             kwargs = {arg: self.params[arg] if arg in self.params.keys() else defaults_dict[arg]
-    #                       for arg in arg_names}
-    #             debugger.run(**kwargs)
-    #             react(self.logger, debugger.error_msg)
-    #             debugger.reset_error_msg()
-
     def run(self):
         """
         Runs the `debugger` objects in the `debuggers` dictionary.
@@ -150,6 +126,8 @@ class DebuggerFactory:
                     debugger.max_total_steps = self.params["max_total_steps"]
                 debugger.increment_iteration()
                 debugger.run(**kwargs)
+                if debugger.wandb_metrics:
+                    self.wandb_logger.plot(debugger.wandb_metrics)
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
@@ -231,5 +209,6 @@ class DebuggerFactory:
         """
         self.training = True
 
-    def set_wandb_logger(self, logger):
-        self.wandb_logger = logger
+    def set_custom_wand_logger(self, project, name, dir=None, mode=None, id=None, resume=None, start_method=None,
+                               **kwargs):
+        self.wandb_logger.custom_wandb_logger(project, name, dir, mode, id, resume, start_method, **kwargs)

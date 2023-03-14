@@ -2,7 +2,8 @@ import os
 import logging
 from configparser import ConfigParser
 from pathlib import Path
-
+from debugger.utils.wandb_logger import WandbLogger
+import yaml
 # Conventional constants
 LOG_DIR = 'logs'
 
@@ -73,6 +74,17 @@ def set_logger():
     app_path = str(Path.cwd())
     log_fpath = build_log_file_path(app_path, "logger")
     return file_logger(log_fpath, "logger")
+
+
+def set_wandb_logger(config_path=None):
+    if config_path is None:
+        config_path = load_default_config()
+
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+        return WandbLogger(project=config["debugger"]["wand_logger"]['project'],
+                           name=config["debugger"]["wand_logger"]['name'])
+
 
 
 def react(logger, messages, fail_on=False):

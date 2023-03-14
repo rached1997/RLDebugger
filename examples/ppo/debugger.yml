@@ -19,10 +19,13 @@ debugger:
         period: 1000
       - name: Agent
       - name : ExplorationParameter
-#      - name: Reward
-#      - name: State
+      - name: Reward
+        period: 1000
+      - name: State
+        period: 1000
       - name: Step
         period: 10000
-      #      - name: UncertaintyAction
+      - name: UncertaintyAction
+        period: 10000
       - name: ValueFunction
       - name: Environment

@@ -33,7 +33,7 @@ def get_config():
         "strong_decrease": {"disabled": False, "strong_decrease_thresh": 5, "acceleration_points_ratio": 0.2},
         "fluctuation": {"disabled": False, "fluctuation_thresh": 0.5},
         "action_stag": {"disabled": False, "start": 100, "similarity_pct_thresh": 0.8},
-        "action_stag_per_ep": {"disabled": False, "nb_ep_to_check": 2, "last_step_num": 50, "reward_tolerance":0.5}
+        "action_stag_per_ep": {"disabled": False, "nb_ep_to_check": 2, "last_step_num": 50, "reward_tolerance": 0.5}
     }
     return config
 
@@ -71,18 +71,20 @@ class ActionCheck(DebuggerInterface):
             reward: The cumulative reward collected during one episode.
             max_reward: The reward threshold before the task is considered solved.
         """
+        if self.is_final_step():
+            self.episodes_rewards += [reward]
         if self.skip_run(self.config['skip_run_threshold']):
             return
         actions_probs = copy.copy(actions_probs)
-        if self.is_final_step():
-            self.episodes_rewards += [reward]
         if actions_probs.dim() < 2:
             actions_probs = actions_probs.reshape((1, -1))
         if not torch.allclose(torch.sum(actions_probs, dim=1), torch.ones(actions_probs.shape[0], device='cuda')):
             actions_probs = torch.softmax(actions_probs, dim=1)
         self._action_prob_buffer = torch.cat((self._action_prob_buffer, actions_probs), dim=0)
         if self.check_period():
-            self._entropies = torch.cat((self._entropies, self.compute_entropy().view(1)))
+            entropy = self.compute_entropy()
+            self._entropies = torch.cat((self._entropies, entropy.view(1)))
+            self.wandb_metrics = {'entropy': entropy}
             self._action_prob_buffer = torch.tensor([], device='cuda')
             # start checking entropy of action probs
             self.check_entropy_start_very_low()
@@ -211,8 +213,9 @@ class ActionCheck(DebuggerInterface):
         if self.config["action_stag_per_ep"]["disabled"]:
             return
         if (len(self._end_episode_indices) >= self.config['action_stag_per_ep']['nb_ep_to_check']) and \
-                (statistics.mean(self.episodes_rewards) < max_reward * self.config["action_stag_per_ep"][
-                    "reward_tolerance"]):
+                ((len(self.episodes_rewards) == 0) or (statistics.mean(self.episodes_rewards) < max_reward *
+                                                       self.config["action_stag_per_ep"][
+                                                           "reward_tolerance"])):
             final_actions = []
             for i in self._end_episode_indices:
                 start_index = i - self.config["action_stag_per_ep"]["last_step_num"]

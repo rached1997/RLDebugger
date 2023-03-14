@@ -14,6 +14,7 @@ def get_config() -> dict:
     """
     config = {
         "period": 100,
+        "skip_run_threshold": 2,
         "exploration_perc": 0.2,
         "exploitation_perc": 0.8,
         "start": 5,
@@ -42,17 +43,20 @@ class RewardsCheck(DebuggerInterface):
             max_reward (int):  The reward threshold before the task is considered solved
             max_total_steps (int): The maximum total number of steps to finish the training.
         """
-
         if self.is_final_step():
             self.episodes_rewards += [reward]
 
+        if self.skip_run(self.config['skip_run_threshold']):
+            return
         n_rewards = len(self.episodes_rewards)
         if self.check_period() and (n_rewards >= self.config['window_size'] * self.config["start"]):
             variances = []
 
             for i in range(0, len(self.episodes_rewards) // self.config['window_size']):
                 count = i * self.config['window_size']
-                variances += [np.var(self.episodes_rewards[count:count + self.config['window_size']])]
+                reward_variance = np.var(self.episodes_rewards[count:count + self.config['window_size']])
+                self.wandb_metrics = {'reward_variance': reward_variance}
+                variances += [reward_variance]
 
             variances = torch.tensor(variances).float()
 

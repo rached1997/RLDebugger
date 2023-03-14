@@ -27,4 +27,8 @@ debugger:
         done
       ]
     check_type:
+  wand_logger:
+    project: DRLDebugger
+    name: default_name
+
 

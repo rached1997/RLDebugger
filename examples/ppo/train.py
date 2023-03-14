@@ -70,13 +70,13 @@ def main():
                 ppo_agent.update()
 
             # printing average reward
-            if time_step % print_freq == 0:
-                print_avg_reward = print_running_reward / print_running_episodes
-                print_avg_reward = round(print_avg_reward, 2)
-                print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step,
-                                                                                        print_avg_reward))
-                print_running_reward = 0
-                print_running_episodes = 0
+            # if time_step % print_freq == 0:
+            #     print_avg_reward = print_running_reward / print_running_episodes
+            #     print_avg_reward = round(print_avg_reward, 2)
+            #     print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step,
+            #                                                                             print_avg_reward))
+            #     print_running_reward = 0
+            #     print_running_episodes = 0
 
             # break; if the episode is over
             if done:
@@ -85,6 +85,12 @@ def main():
         print_running_reward += current_ep_reward
         print_running_episodes += 1
 
+        print_avg_reward = print_running_reward / print_running_episodes
+        print_avg_reward = round(print_avg_reward, 2)
+        print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step,
+                                                                                print_avg_reward))
+        print_running_reward = 0
+        print_running_episodes = 0
         i_episode += 1
 
     env.close()

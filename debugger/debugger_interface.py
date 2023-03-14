@@ -19,6 +19,7 @@ class DebuggerInterface(Registrable):
         self.is_final_step = None
         self.max_total_steps = None
         self.arg_names = None
+        self.wandb_metrics = {}
 
     def check_period(self):
         """

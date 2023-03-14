@@ -14,6 +14,7 @@ def get_config() -> dict:
     """
     config = {
         "period": 1,
+        "skip_run_threshold": 2,
         "exploitation_perc": 0.8,
         "reset": {"disabled": True},
         "normalization": {"disabled": True, "normalized_data_min": -10.0, "normalized_data_max": 10.0},
@@ -50,14 +51,16 @@ class StatesCheck(DebuggerInterface):
         Returns:
 
         """
+        if self.is_final_step():
+            self.period_index += [len(self.hashed_observations_buffer)]
+            self.episodes_rewards += [reward]
+        if self.skip_run(self.config['skip_run_threshold']):
+            return
         if self.check_period():
             self.check_normalized_observations(observations)
             self.update_hashed_observation_buffer(environment, observations)
             self.check_states_stagnation()
-            if self.is_final_step():
-                self.period_index += [len(self.hashed_observations_buffer)]
-                self.episodes_rewards += [reward]
-                self.check_states_converging(max_reward, max_total_steps)
+            self.check_states_converging(max_reward, max_total_steps)
                 # todo CR: ask Darshan about variance
 
     def update_hashed_observation_buffer(self, environment, observations):
@@ -104,18 +107,17 @@ class StatesCheck(DebuggerInterface):
         """
         if self.config["states_convergence"]["disabled"]:
             return
-
-        if (len(self.period_index) >= self.config["states_convergence"]["start"]) and \
-                (statistics.mean(self.episodes_rewards) < max_reward * self.config["states_convergence"][
-                    "reward_tolerance"]) and (self.step_num >= max_total_steps * (self.config["exploitation_perc"])):
-            final_obs = []
-            for i in self.period_index:
-                starting_index = i - self.config["states_convergence"]["last_obs_num"]
-                final_obs.append(self.hashed_observations_buffer[starting_index:i])
-            if all((final_obs[i] == final_obs[i + 1]) for i in range(len(final_obs) - 1)):
-                self.error_msg.append(self.main_msgs['observations_are_similar'])
-            self.period_index = []
-            self.episodes_rewards = []
+        if len(self.period_index) >= self.config["states_convergence"]["start"]:
+            if (statistics.mean(self.episodes_rewards) < max_reward * self.config["states_convergence"]
+            ["reward_tolerance"]) and (self.step_num >= max_total_steps * (self.config["exploitation_perc"])):
+                final_obs = []
+                for i in self.period_index:
+                    starting_index = i - self.config["states_convergence"]["last_obs_num"]
+                    final_obs.append(self.hashed_observations_buffer[starting_index:i])
+                if all((final_obs[i] == final_obs[i + 1]) for i in range(len(final_obs) - 1)):
+                    self.error_msg.append(self.main_msgs['observations_are_similar'])
+                self.period_index = []
+                self.episodes_rewards = []
 
     def check_normalized_observations(self, observations):
         """

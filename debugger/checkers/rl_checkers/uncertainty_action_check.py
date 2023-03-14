@@ -58,6 +58,7 @@ def get_config():
     config = {
         "period": 1000,
         "start": 1000,
+        "skip_run_threshold": 10,
         "num_repetitions": 100,
         "std_threshold": 0.5,
         "buffer_max_size": 1000,
@@ -83,6 +84,8 @@ class UncertaintyActionCheck(DebuggerInterface):
             observations (Tensor): the observation collected after doing one-step
             environment (gym.env): the training RL environment
         """
+        if self.skip_run(self.config['skip_run_threshold']):
+            return
         observation_shape = environment.observation_space.shape
         if observations.shape == observation_shape:
             self._buffer.append(observations)
