@@ -26,6 +26,9 @@ debugger:
         reward,
         done,
         discount_rate,
+        predicted_next_vals,
+        steps_rewards,
+        steps_done
       ]
     check_type:
   wand_logger:

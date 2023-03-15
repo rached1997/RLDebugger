@@ -114,10 +114,10 @@ class LossCheck(DebuggerInterface):
                 self.config.non_dec.disabled
             ):
                 self.error_msg.append(self.main_msgs["stagnated_loss"])
-        if n_losses >= self.config.divwindow_size:
+        if n_losses >= self.config.div.window_size:
             abs_loss_incrs = [
                 losses[n_losses - i] / self.min_loss
-                for i in range(self.config.divwindow_size, 0, -1)
+                for i in range(self.config.div.window_size, 0, -1)
             ]
             inc_rates = np.array(
                 [

@@ -56,9 +56,7 @@ class ExplorationParameterCheck(DebuggerInterface):
         """
         Checks if the initial value is correctly set.
         """
-        if (len(self.exploration_factor_buffer) == 1) and not self.config[
-            "check_initialization"
-        ]["disabled"]:
+        if (len(self.exploration_factor_buffer) == 1) and not self.config.check_initialization.disabled:
             if self.exploration_factor_buffer[0] != self.config.starting_value:
                 self.error_msg.append(
                     self.main_msgs["bad_exploration_param_initialization"].format(

@@ -63,7 +63,7 @@ class EnvironmentCheck(DebuggerInterface):
                 self.generate_random_eps(environment)
                 self.check_env_conception(environment)
                 if sum(self.reward_list) > environment.spec.reward_threshold:
-                    self.error_msg.append(self.main_msgs["Weak_reward_threshold"])
+                    self.error_msg.append(self.main_msgs['weak_reward_threshold'])
 
                 if (
                     torch.mean(torch.std(self.obs_list, dim=0))

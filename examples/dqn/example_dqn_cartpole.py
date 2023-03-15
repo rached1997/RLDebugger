@@ -40,7 +40,7 @@ class DebuggableDQNAgent(DQNAgent):
         ):
             self._state["episode_start"] = False
 
-        rl_debugger.debug(actions_probs=qvals, exploration_factor=epsilon, model=self._qnet)
+        rl_debugger.debug(actions_probs=qvals.detach(), exploration_factor=epsilon, model=self._qnet)
         return action
 
     def update(self, update_info):
@@ -87,6 +87,8 @@ class DebuggableDQNAgent(DQNAgent):
                 actions=actions,
                 discount_rate=self._discount_rate,
                 predicted_next_vals=next_qvals.detach(),
+                steps_rewards=batch["reward"],
+                steps_done=batch["done"]
             )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()

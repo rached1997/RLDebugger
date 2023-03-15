@@ -37,7 +37,7 @@ class InitialWeight:
 class WeightConfig:
     start: int = 100
     period: int = 10
-    skip_run_threshold: int = 10
+    skip_run_threshold: int = 2
     numeric_ins: NumericIns = NumericIns()
     neg: Neg = Neg()
     dead: Dead = Dead()

@@ -47,7 +47,7 @@ class ActionStagPerEp:
 class ActionConfig:
     period: int = 50
     start: int = 10
-    skip_run_threshold: int = 10
+    skip_run_threshold: int = 2
     exploration_perc: float = 0.2
     exploitation_perc: float = 0.8
     low_start: LowStart = LowStart()

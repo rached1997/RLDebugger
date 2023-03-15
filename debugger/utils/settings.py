@@ -58,7 +58,7 @@ def file_logger(file_path, app_name):
     Returns:
         logging.Logger: A logger object that writes logs to both a file and the console.
     """
-    logger = logging.getLogger(f"TheDeepChecker: {app_name} Logs")
+    logger = logging.getLogger(f"TheDRLDebugger: {app_name} Logs")
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(file_path)
     fh.setLevel(logging.DEBUG)
