@@ -18,16 +18,16 @@ class SingleAgentRunner(Runner):
     """Runner class used to implement a sinle-agent training loop."""
 
     def __init__(
-            self,
-            environment,
-            agent,
-            logger,
-            experiment_manager,
-            train_steps,
-            test_frequency,
-            test_episodes,
-            stack_size,
-            max_steps_per_episode=27000,
+        self,
+        environment,
+        agent,
+        logger,
+        experiment_manager,
+        train_steps,
+        test_frequency,
+        test_episodes,
+        stack_size,
+        max_steps_per_episode=27000,
     ):
         """Initializes the Runner object.
 
@@ -209,18 +209,20 @@ def main():
     # sum = 0
     # for i in range(10):
     start = time.time()
-    hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)
-    config = load_config(config='agent_configs/custom_agent_cartpole.yml')
+    hive.registry.register("DebuggableDQNAgent", DebuggableDQNAgent, DebuggableDQNAgent)
+    config = load_config(config="agent_configs/custom_agent_cartpole.yml")
     rl_debugger.set_config(config_path="debugger.yml")
 
     runner = set_up_experiment(config)
     # runner._logger.register_timescale("debugger")
     # wandb_logger = runner._logger._logger_list[1]
     # rl_debugger.set_wandb_logger(wandb_logger)
-    rl_debugger.run_debugging(environment=runner._environment._env,
-                              max_reward=runner._environment._env.spec.reward_threshold,
-                              max_steps_per_episode=runner._max_steps_per_episode,
-                              max_total_steps=runner._experiment_manager._config["train_steps"])
+    rl_debugger.debug(
+        environment=runner._environment._env,
+        max_reward=runner._environment._env.spec.reward_threshold,
+        max_steps_per_episode=runner._max_steps_per_episode,
+        max_total_steps=runner._experiment_manager._config["train_steps"],
+    )
     runner.run_training()
     end = time.time()
     print(end - start)

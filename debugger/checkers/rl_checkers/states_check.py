@@ -17,10 +17,19 @@ def get_config() -> dict:
         "skip_run_threshold": 2,
         "exploitation_perc": 0.8,
         "reset": {"disabled": True},
-        "normalization": {"disabled": True, "normalized_data_min": -10.0, "normalized_data_max": 10.0},
+        "normalization": {
+            "disabled": True,
+            "normalized_data_min": -10.0,
+            "normalized_data_max": 10.0,
+        },
         "stagnation": {"disabled": True, "period": 500},
-        "states_convergence": {"disabled": False, "start": 10, "last_obs_num": 10, "reward_tolerance": 0.5,
-                               "final_eps_perc": 0.2},
+        "states_convergence": {
+            "disabled": False,
+            "start": 10,
+            "last_obs_num": 10,
+            "reward_tolerance": 0.5,
+            "final_eps_perc": 0.2,
+        },
     }
     return config
 
@@ -34,7 +43,9 @@ class StatesCheck(DebuggerInterface):
         self.episodes_rewards = []
 
     # todo IDEA: ADD the state coverage check
-    def run(self, observations, environment, reward, max_reward, max_total_steps) -> None:
+    def run(
+        self, observations, environment, reward, max_reward, max_total_steps
+    ) -> None:
         """
         The states represents the main output of the environment that the agent uses to predict the next action to
         take. Generally DRL is applied in complex environments that have either a continuous observations space or a
@@ -79,14 +90,13 @@ class StatesCheck(DebuggerInterface):
         if self.is_final_step():
             self.period_index += [len(self.hashed_observations_buffer)]
             self.episodes_rewards += [reward]
-        if self.skip_run(self.config['skip_run_threshold']):
+        if self.skip_run(self.config["skip_run_threshold"]):
             return
         if self.check_period():
             self.check_normalized_observations(observations)
             self.update_hashed_observation_buffer(environment, observations)
             self.check_states_stagnation()
             self.check_states_converging(max_reward, max_total_steps)
-                # todo CR: ask Darshan about variance
 
     def update_hashed_observation_buffer(self, environment, observations):
         """
@@ -112,11 +122,20 @@ class StatesCheck(DebuggerInterface):
         """
         if self.config["stagnation"]["disabled"]:
             return
-        if (len(self.hashed_observations_buffer) % self.config["stagnation"]["period"]) == 0:
-            if all((obs == self.hashed_observations_buffer[-1])
-                   for obs in self.hashed_observations_buffer[-self.config["stagnation"]["period"]:]):
-                self.error_msg.append(self.main_msgs['observations_are_similar'].format(
-                    self.config["stagnation"]["stagnated_data_nbr_check"]))
+        if (
+            len(self.hashed_observations_buffer) % self.config["stagnation"]["period"]
+        ) == 0:
+            if all(
+                (obs == self.hashed_observations_buffer[-1])
+                for obs in self.hashed_observations_buffer[
+                    -self.config["stagnation"]["period"] :
+                ]
+            ):
+                self.error_msg.append(
+                    self.main_msgs["observations_are_similar"].format(
+                        self.config["stagnation"]["stagnated_data_nbr_check"]
+                    )
+                )
 
     def check_states_converging(self, max_reward, max_total_steps):
         """
@@ -133,14 +152,23 @@ class StatesCheck(DebuggerInterface):
         if self.config["states_convergence"]["disabled"]:
             return
         if len(self.period_index) >= self.config["states_convergence"]["start"]:
-            if (statistics.mean(self.episodes_rewards) < max_reward * self.config["states_convergence"]
-            ["reward_tolerance"]) and (self.step_num >= max_total_steps * (self.config["exploitation_perc"])):
+            if (
+                statistics.mean(self.episodes_rewards)
+                < max_reward * self.config["states_convergence"]["reward_tolerance"]
+            ) and (
+                self.step_num >= max_total_steps * (self.config["exploitation_perc"])
+            ):
                 final_obs = []
                 for i in self.period_index:
-                    starting_index = i - self.config["states_convergence"]["last_obs_num"]
+                    starting_index = (
+                        i - self.config["states_convergence"]["last_obs_num"]
+                    )
                     final_obs.append(self.hashed_observations_buffer[starting_index:i])
-                if all((final_obs[i] == final_obs[i + 1]) for i in range(len(final_obs) - 1)):
-                    self.error_msg.append(self.main_msgs['observations_are_similar'])
+                if all(
+                    (final_obs[i] == final_obs[i + 1])
+                    for i in range(len(final_obs) - 1)
+                ):
+                    self.error_msg.append(self.main_msgs["observations_are_similar"])
                 self.period_index = []
                 self.episodes_rewards = []
 
@@ -158,7 +186,7 @@ class StatesCheck(DebuggerInterface):
         min_data = self.config["normalization"]["normalized_data_min"]
 
         if torch.max(observations) > max_data or torch.min(observations) < min_data:
-            self.error_msg.append(self.main_msgs['observations_unnormalized'])
+            self.error_msg.append(self.main_msgs["observations_unnormalized"])
             return
 
     # This function does decode the hashed observation, we may need it

@@ -12,8 +12,8 @@ class DebuggerFactory:
         self.logger = settings.set_logger()
         self.wandb_logger = settings.set_wandb_logger()
         self.debuggers = dict()
-        self.params = {}
-        self.params_iters = dict()
+        self.observed_params = {}
+        self.observed_params_update_nums = dict()
         self.step_num = -1
         self.training = True
 
@@ -37,18 +37,22 @@ class DebuggerFactory:
             Returns:A wrapped version of the step function that returns the same result as the original step function.
             """
             if self.step_num == 0 or self.is_final_step_of_ep():
-                self.params['next_observations'] = self.params['observations']
-                self.params['reward'] = 0
+                self.observed_params["next_observations"] = self.observed_params[
+                    "observations"
+                ]
+                self.observed_params["reward"] = 0
             results = func_step(*args, **kwargs)
             if self.training:
-                self.params['observations'] = self.params['next_observations']
-                self.params['next_observations'] = results[0]
-                self.params['reward'] += results[1]
-                self.params['done'] = results[2]
-                self.params_iters['observations'] += 1
-                self.params_iters['next_observations'] += 1
-                self.params_iters['reward'] += 1
-                self.params_iters['done'] += 1
+                self.observed_params["observations"] = self.observed_params[
+                    "next_observations"
+                ]
+                self.observed_params["next_observations"] = results[0]
+                self.observed_params["reward"] += results[1]
+                self.observed_params["done"] = results[2]
+                self.observed_params_update_nums["observations"] += 1
+                self.observed_params_update_nums["next_observations"] += 1
+                self.observed_params_update_nums["reward"] += 1
+                self.observed_params_update_nums["done"] += 1
                 self.step_num += 1
             return results
 
@@ -60,27 +64,26 @@ class DebuggerFactory:
             """
             results = func_reset(*args, **kwargs)
             if self.training:
-                self.params['observations'] = results
-                self.params_iters['observations'] += 1
+                self.observed_params["observations"] = results
+                self.observed_params_update_nums["observations"] += 1
             return results
 
-        self.params['observations'] = None
-        self.params['reward'] = 0
-        self.params['done'] = False
+        self.observed_params["observations"] = None
+        self.observed_params["reward"] = 0
+        self.observed_params["done"] = False
         self.step_num = 0
         return step_wrapper, reset_wrapper
 
-    def create_wrappers(self, kwargs):
+    def wrap_env(self, env):
         """
         creates a wrapper for  the step and reset functions of the RL environment in order to track the observation,
         the next observation, the reward, done, and the step number.
 
         Args:
-            kwargs: the same kwargs received by the function set_parameters
+            env: gym environment
         """
-        if "environment" in kwargs.keys() and self.step_num == -1:
-            func_wrappers = self.track_func(kwargs["environment"].step, kwargs["environment"].reset)
-            kwargs["environment"].step, kwargs["environment"].reset = func_wrappers
+        func_wrappers = self.track_func(env.step, env.reset)
+        env.step, env.reset = func_wrappers
 
     def is_final_step_of_ep(self):
         """
@@ -89,21 +92,24 @@ class DebuggerFactory:
 
         Returns (bool): returns True if the step is the last one in an episode, and False otherwise.
         """
-        if self.params['done'] or (
-                (self.step_num > 0) and ((self.step_num % self.params['max_steps_per_episode']) == 0)):
+        if self.observed_params["done"] or (
+            (self.step_num > 0)
+            and ((self.step_num % self.observed_params["max_steps_per_episode"]) == 0)
+        ):
             return True
         return False
 
-    def set_parameters(self, **kwargs):
+    def set_observed_parameters(self, **kwargs):
         """
-        Set the `params` dictionary and the `params_iters` dictionary with the provided `kwargs`.
+        Set the `observed_params` dictionary and the `observed_params_update_nums` dictionary with the provided `kwargs`.
         """
         for key, value in kwargs.items():
-            # self.params[key] = copy.deepcopy(value)
-            self.params[key] = value
-            if self.params_iters[key] != -1:
-                self.params_iters[key] += 1
-        self.create_wrappers(kwargs)
+            # self.observed_params[key] = copy.deepcopy(value)
+            self.observed_params[key] = value
+            if self.observed_params_update_nums[key] != -1:
+                self.observed_params_update_nums[key] += 1
+        if "environment" in kwargs.keys() and self.step_num == -1:
+            self.wrap_env(kwargs["environment"])
 
     def run(self):
         """
@@ -114,16 +120,16 @@ class DebuggerFactory:
             kwargs = {}
             is_ready = True
             for arg in arg_names:
-                param_iter = self.params_iters[arg]
+                param_iter = self.observed_params_update_nums[arg]
                 if not (param_iter == -1 or param_iter >= debugger.iter_num + 1):
                     is_ready = False
                     break
                 else:
-                    kwargs[arg] = self.params[arg]
+                    kwargs[arg] = self.observed_params[arg]
             if is_ready:
                 debugger.step_num = self.step_num
                 if debugger.max_total_steps is None:
-                    debugger.max_total_steps = self.params["max_total_steps"]
+                    debugger.max_total_steps = self.observed_params["max_total_steps"]
                 debugger.increment_iteration()
                 debugger.run(**kwargs)
                 if debugger.wandb_metrics:
@@ -131,7 +137,7 @@ class DebuggerFactory:
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
-    def run_debugging(self, **kwargs):
+    def debug(self, **kwargs):
         """
         Calls the `set_parameters` method with the provided `kwargs`, and then calls the `run` method, to start running
         the checks
@@ -139,13 +145,17 @@ class DebuggerFactory:
         try:
             # print(self.step_num)
             if self.training:
-                self.set_parameters(**kwargs)
-                if "max_total_steps" in self.params.keys():
+                self.set_observed_parameters(**kwargs)
+                if "max_total_steps" in self.observed_params.keys():
                     self.run()
                 else:
-                    react(logger=self.logger,
-                          messages=[f"Warning: Please provide value for max_steps_per_episode to run the debugger"],
-                          fail_on=False)
+                    react(
+                        logger=self.logger,
+                        messages=[
+                            f"Warning: Please provide value for max_steps_per_episode to run the debugger"
+                        ],
+                        fail_on=False,
+                    )
                 # self.wandb_logger.log_scalar("step_num", self.step_num, "debugger")
         except Exception as e:
             # TODO: put it back to false and make it run once
@@ -158,7 +168,6 @@ class DebuggerFactory:
         Set the `debugger` object with the provided `config_path` or with the default config.
 
         Args:
-            config (dict): the configuration dict
             config_path (str): The path to the configuration dict
         """
         if config_path is None:
@@ -166,17 +175,23 @@ class DebuggerFactory:
 
         with open(config_path) as f:
             config = yaml.safe_load(f)
-            # init params
-            params = config["debugger"]["kwargs"]["params"]
-            self.params_iters.update({key: 0 for key in params["variable"]})
+            # init observed_params
+            params = config["debugger"]["kwargs"]["observed_params"]
+            self.observed_params_update_nums.update(
+                {key: 0 for key in params["variable"]}
+            )
             # the constant values should be initialized with -2 which indicates that they are constants but still
             # doesn't have a value yet.
-            self.params_iters.update({key: -2 for key in params["constant"]})
+            self.observed_params_update_nums.update(
+                {key: -2 for key in params["constant"]}
+            )
 
             if config["debugger"]["kwargs"]["check_type"]:
                 config = config["debugger"]["kwargs"]["check_type"]
                 for debugger_config in config:
-                    debugger_fn, _ = debugger_lib.get_debugger(debugger_config, debugger_config["name"])
+                    debugger_fn, _ = debugger_lib.get_debugger(
+                        debugger_config, debugger_config["name"]
+                    )
                     debugger = debugger_fn()
                     if "period" in debugger_config.keys():
                         debugger.period = debugger_config["period"]
@@ -209,6 +224,17 @@ class DebuggerFactory:
         """
         self.training = True
 
-    def set_custom_wand_logger(self, project, name, dir=None, mode=None, id=None, resume=None, start_method=None,
-                               **kwargs):
-        self.wandb_logger.custom_wandb_logger(project, name, dir, mode, id, resume, start_method, **kwargs)
+    def set_custom_wandb_logger(
+        self,
+        project,
+        name,
+        dir=None,
+        mode=None,
+        id=None,
+        resume=None,
+        start_method=None,
+        **kwargs,
+    ):
+        self.wandb_logger.custom_wandb_logger(
+            project, name, dir, mode, id, resume, start_method, **kwargs
+        )

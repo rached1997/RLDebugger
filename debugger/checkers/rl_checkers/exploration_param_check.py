@@ -17,7 +17,11 @@ def get_config() -> dict:
         "ending_value": 0,
         "check_initialization": {"disabled": False},
         "check_monotonicity": {"disabled": False},
-        "check_quick_change": {"disabled": False, "strong_decrease_thresh": 5, "acceleration_points_ratio": 0.5}
+        "check_quick_change": {
+            "disabled": False,
+            "strong_decrease_thresh": 5,
+            "acceleration_points_ratio": 0.5,
+        },
     }
 
     return config
@@ -73,10 +77,15 @@ class ExplorationParameterCheck(DebuggerInterface):
         """
         Checks if the initial value is correctly set.
         """
-        if (len(self.exploration_factor_buffer) == 1) and not self.config["check_initialization"]["disabled"]:
+        if (len(self.exploration_factor_buffer) == 1) and not self.config[
+            "check_initialization"
+        ]["disabled"]:
             if self.exploration_factor_buffer[0] != self.config["starting_value"]:
-                self.error_msg.append(self.main_msgs['bad_exploration_param_initialization'].format(
-                    self.exploration_factor_buffer[0], self.config["starting_value"]))
+                self.error_msg.append(
+                    self.main_msgs["bad_exploration_param_initialization"].format(
+                        self.exploration_factor_buffer[0], self.config["starting_value"]
+                    )
+                )
 
     def check_exploration_parameter_monotonicity(self):
         """
@@ -86,11 +95,17 @@ class ExplorationParameterCheck(DebuggerInterface):
         if self.config["check_quick_change"]["disabled"]:
             return
         if self.check_period():
-            slope = get_data_slope(torch.tensor(self.exploration_factor_buffer, device='cuda'))[0]
-            if (slope > 0) and (self.config["starting_value"] > self.config["ending_value"]):
-                self.error_msg.append(self.main_msgs['increasing_exploration_factor'])
-            elif (slope < 0) and (self.config["starting_value"] < self.config["ending_value"]):
-                self.error_msg.append(self.main_msgs['decreasing_exploration_factor'])
+            slope = get_data_slope(
+                torch.tensor(self.exploration_factor_buffer, device=self.device)
+            )[0]
+            if (slope > 0) and (
+                self.config["starting_value"] > self.config["ending_value"]
+            ):
+                self.error_msg.append(self.main_msgs["increasing_exploration_factor"])
+            elif (slope < 0) and (
+                self.config["starting_value"] < self.config["ending_value"]
+            ):
+                self.error_msg.append(self.main_msgs["decreasing_exploration_factor"])
 
     def check_is_changing_too_quickly(self):
         """
@@ -99,6 +114,13 @@ class ExplorationParameterCheck(DebuggerInterface):
         if self.config["check_quick_change"]["disabled"]:
             return
         if self.check_period():
-            abs_second_derivative = np.abs(np.gradient(np.gradient(self.exploration_factor_buffer)))
-            if np.any(abs_second_derivative > self.config["check_quick_change"]["strong_decrease_thresh"]):
-                    self.error_msg.append(self.main_msgs['quick_changing_exploration_factor'])
+            abs_second_derivative = np.abs(
+                np.gradient(np.gradient(self.exploration_factor_buffer))
+            )
+            if np.any(
+                abs_second_derivative
+                > self.config["check_quick_change"]["strong_decrease_thresh"]
+            ):
+                self.error_msg.append(
+                    self.main_msgs["quick_changing_exploration_factor"]
+                )

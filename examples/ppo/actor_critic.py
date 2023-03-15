@@ -44,7 +44,7 @@ class ActorCritic(nn.Module):
             nn.Linear(64, 64),
             nn.Tanh(),
             nn.Linear(64, action_dim),
-            nn.Softmax(dim=-1)
+            nn.Softmax(dim=-1),
         )
 
         # critic
@@ -53,14 +53,13 @@ class ActorCritic(nn.Module):
             nn.Tanh(),
             nn.Linear(64, 64),
             nn.Tanh(),
-            nn.Linear(64, 1)
+            nn.Linear(64, 1),
         )
 
     def forward(self):
         raise NotImplementedError
 
     def act(self, state):
-
         action_probs = self.actor(state)
         dist = Categorical(action_probs)
 
@@ -68,7 +67,12 @@ class ActorCritic(nn.Module):
         action_logprob = dist.log_prob(action)
         state_val = self.critic(state)
 
-        return action.detach(), action_logprob.detach(), state_val.detach(), action_probs
+        return (
+            action.detach(),
+            action_logprob.detach(),
+            state_val.detach(),
+            action_probs,
+        )
 
     def evaluate(self, state, action):
         action_probs = self.actor(state)

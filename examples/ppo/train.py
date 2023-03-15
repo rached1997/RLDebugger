@@ -34,11 +34,17 @@ def main():
 
     env = gym.make(env_name)
     env.seed(42)
-    rl_debugger.run_debugging(environment=env, max_reward=max_ep_len, max_total_steps=max_training_timesteps,
-                              max_steps_per_episode=max_ep_len)
+    rl_debugger.debug(
+        environment=env,
+        max_reward=max_ep_len,
+        max_total_steps=max_training_timesteps,
+        max_steps_per_episode=max_ep_len,
+    )
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
-    ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, k_epochs, eps_clip)
+    ppo_agent = PPO(
+        state_dim, action_dim, lr_actor, lr_critic, gamma, k_epochs, eps_clip
+    )
 
     start_time = time.time()
     print_running_reward = 0
@@ -47,12 +53,10 @@ def main():
     i_episode = 0
 
     while time_step <= max_training_timesteps:
-
         state = env.reset()
         current_ep_reward = 0
 
         for t in range(1, max_ep_len + 1):
-
             # select action with policy
             action = ppo_agent.select_action(state, incr)
             incr += 1
@@ -87,8 +91,11 @@ def main():
 
         print_avg_reward = print_running_reward / print_running_episodes
         print_avg_reward = round(print_avg_reward, 2)
-        print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step,
-                                                                                print_avg_reward))
+        print(
+            "Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(
+                i_episode, time_step, print_avg_reward
+            )
+        )
         print_running_reward = 0
         print_running_episodes = 0
         i_episode += 1
@@ -100,7 +107,7 @@ def main():
     print("Total training time  : ", end_time - start_time)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # perform profiling
     # prof = profile.Profile()
     # prof.enable()

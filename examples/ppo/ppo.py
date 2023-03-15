@@ -2,7 +2,6 @@
 # Accessed on 3/11/2023
 import torch
 import torch.nn as nn
-
 from examples.ppo.actor_critic import RolloutBuffer, ActorCritic
 from debugger import rl_debugger
 import numpy as np
@@ -17,34 +16,42 @@ torch.manual_seed(42)
 #     np.random.seed(42)
 
 
-class PPO:
-    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, k_epochs, eps_clip):
+def get_device():
+    return "cuda" if torch.cuda.is_available() else "cpu"
 
+
+class PPO:
+    def __init__(
+        self, state_dim, action_dim, lr_actor, lr_critic, gamma, k_epochs, eps_clip
+    ):
         self.gamma = gamma
         self.eps_clip = eps_clip
         self.K_epochs = k_epochs
 
         self.buffer = RolloutBuffer()
 
-        self.policy = ActorCritic(state_dim, action_dim).to("cuda")
-        self.optimizer = torch.optim.Adam([
-            {'params': self.policy.actor.parameters(), 'lr': lr_actor},
-            {'params': self.policy.critic.parameters(), 'lr': lr_critic}
-        ])
+        self.policy = ActorCritic(state_dim, action_dim).to(get_device())
+        self.optimizer = torch.optim.Adam(
+            [
+                {"observed_params": self.policy.actor.parameters(), "lr": lr_actor},
+                {"observed_params": self.policy.critic.parameters(), "lr": lr_critic},
+            ]
+        )
 
-        self.policy_old = ActorCritic(state_dim, action_dim).to("cuda")
+        self.policy_old = ActorCritic(state_dim, action_dim).to(get_device())
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
 
     def select_action(self, state, incr):
         with torch.no_grad():
-            state = torch.FloatTensor(state).to("cuda")
+            state = torch.FloatTensor(state).to(get_device())
             action, action_logprob, state_val, action_probs = self.policy_old.act(state)
 
         # if incr % 2:
-        rl_debugger.run_debugging(model=self.policy_old.actor, actions=action,
-                                  actions_probs=action_probs)
+        rl_debugger.debug(
+            model=self.policy_old.actor, actions=action, actions_probs=action_probs
+        )
 
         self.buffer.states.append(state)
         self.buffer.actions.append(action)
@@ -57,22 +64,40 @@ class PPO:
         # Monte Carlo estimate of returns
         rewards = []
         discounted_reward = 0
-        for reward, is_terminal in zip(reversed(self.buffer.rewards), reversed(self.buffer.is_terminals)):
+        for reward, is_terminal in zip(
+            reversed(self.buffer.rewards), reversed(self.buffer.is_terminals)
+        ):
             if is_terminal:
                 discounted_reward = 0
             discounted_reward = reward + (self.gamma * discounted_reward)
             rewards.insert(0, discounted_reward)
 
         # Normalizing the rewards
-        rewards = torch.tensor(rewards, dtype=torch.float32).to("cuda")
+        rewards = torch.tensor(rewards, dtype=torch.float32).to(get_device())
         rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
 
         # convert list to tensor
-        old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to("cuda")
-        old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to("cuda")
-        old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to("cuda")
-        old_state_values = torch.squeeze(torch.stack(self.buffer.state_values, dim=0)).detach().to("cuda")
-        rl_debugger.run_debugging(training_observations=old_states)
+        old_states = (
+            torch.squeeze(torch.stack(self.buffer.states, dim=0))
+            .detach()
+            .to(get_device())
+        )
+        old_actions = (
+            torch.squeeze(torch.stack(self.buffer.actions, dim=0))
+            .detach()
+            .to(get_device())
+        )
+        old_logprobs = (
+            torch.squeeze(torch.stack(self.buffer.logprobs, dim=0))
+            .detach()
+            .to(get_device())
+        )
+        old_state_values = (
+            torch.squeeze(torch.stack(self.buffer.state_values, dim=0))
+            .detach()
+            .to(get_device())
+        )
+        rl_debugger.debug(training_observations=old_states)
 
         # calculate advantages
         advantages = rewards.detach() - old_state_values.detach()
@@ -80,7 +105,9 @@ class PPO:
         # Optimize policy for K epochs
         for _ in range(self.K_epochs):
             # Evaluating old actions and values
-            logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
+            logprobs, state_values, dist_entropy = self.policy.evaluate(
+                old_states, old_actions
+            )
 
             # match state_values tensor dimensions with rewards tensor
             state_values = torch.squeeze(state_values)
@@ -90,10 +117,16 @@ class PPO:
 
             # Finding Surrogate Loss
             surr1 = ratios * advantages
-            surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
+            surr2 = (
+                torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
+            )
 
             # final loss of clipped objective PPO
-            loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards) - 0.01 * dist_entropy
+            loss = (
+                -torch.min(surr1, surr2)
+                + 0.5 * self.MseLoss(state_values, rewards)
+                - 0.01 * dist_entropy
+            )
 
             # take gradient step
             self.optimizer.zero_grad()

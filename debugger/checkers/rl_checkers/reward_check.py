@@ -20,8 +20,12 @@ def get_config() -> dict:
         "start": 5,
         "window_size": 3,
         "fluctuation": {"disabled": False, "fluctuation_rmse_min": 0.1},
-        "monotonicity": {"disabled": False, "stagnation_thresh": 0.25, "reward_stagnation_tolerance": 0.01,
-                         "stagnation_episodes": 20}
+        "monotonicity": {
+            "disabled": False,
+            "stagnation_thresh": 0.25,
+            "reward_stagnation_tolerance": 0.01,
+            "stagnation_episodes": 20,
+        },
     }
     return config
 
@@ -29,7 +33,7 @@ def get_config() -> dict:
 class RewardsCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="Reward", config=get_config())
-        self.episodes_rewards = []
+        self.episodes_rewards = torch.tensor([], device=self.device)
 
     def run(self, reward, max_total_steps, max_reward) -> None:
         """
@@ -73,36 +77,61 @@ class RewardsCheck(DebuggerInterface):
             max_total_steps (int): The maximum total number of steps to finish the training.
         """
         if self.is_final_step():
-            self.episodes_rewards += [reward]
+            self.episodes_rewards = torch.cat(
+                (
+                    self.episodes_rewards,
+                    torch.tensor(reward, device=self.device).view(1),
+                ),
+                dim=0,
+            )
 
-        if self.skip_run(self.config['skip_run_threshold']):
+        if self.skip_run(self.config["skip_run_threshold"]):
             return
         n_rewards = len(self.episodes_rewards)
-        if self.check_period() and (n_rewards >= self.config['window_size'] * self.config["start"]):
+        if self.check_period() and (
+            n_rewards >= self.config["window_size"] * self.config["start"]
+        ):
             stds = []
+            stds_nor = []
 
-            for i in range(0, len(self.episodes_rewards) // self.config['window_size']):
-                count = i * self.config['window_size']
-                reward_std = np.std(self.episodes_rewards[count:count + self.config['window_size']])
-                self.wandb_metrics = {'reward_stds': reward_std}
+            for i in range(0, len(self.episodes_rewards) // self.config["window_size"]):
+                count = i * self.config["window_size"]
+                reward_std = torch.std(
+                    self.episodes_rewards[count : count + self.config["window_size"]]
+                )
+                reward_std_nor = torch.std(
+                    self.episodes_rewards[count : count + self.config["window_size"]]
+                    / max_reward
+                )
+                self.wandb_metrics = {
+                    "reward_stds": reward_std,
+                    "reward_stds_nor": reward_std_nor,
+                }
                 stds += [reward_std]
+                stds_nor += [reward_std_nor]
 
             stds = torch.tensor(stds).float()
+            stds_nor = torch.tensor(stds_nor).float()
 
-            if (self.step_num < max_total_steps * self.config['exploration_perc']) and \
-                    (not self.config["fluctuation"]["disabled"]):
+            if (self.step_num < max_total_steps * self.config["exploration_perc"]) and (
+                not self.config["fluctuation"]["disabled"]
+            ):
                 cof = get_data_slope(stds)
                 fluctuations = estimate_fluctuation_rmse(cof, stds)
-                if fluctuations < self.config["fluctuation"]['fluctuation_rmse_min']:
-                    self.error_msg.append(self.main_msgs['fluctuated_reward'].format(
-                        self.config['exploration_perc'] * 100))
+                if fluctuations < self.config["fluctuation"]["fluctuation_rmse_min"]:
+                    self.error_msg.append(
+                        self.main_msgs["fluctuated_reward"].format(
+                            self.config["exploration_perc"] * 100
+                        )
+                    )
 
-            if self.step_num > max_total_steps * (self.config['exploitation_perc']) and \
-                    (not self.config["monotonicity"]["disabled"]):
-                cof = get_data_slope(stds/max_reward)
+            if self.step_num > max_total_steps * (
+                self.config["exploitation_perc"]
+            ) and (not self.config["monotonicity"]["disabled"]):
+                cof = get_data_slope(stds_nor)
                 self.check_reward_monotonicity(cof, max_reward)
 
-            self.episodes_rewards = []
+            self.episodes_rewards = torch.tensor([], device=self.device)
 
     def check_reward_monotonicity(self, cof, max_reward):
         """
@@ -115,13 +144,20 @@ class RewardsCheck(DebuggerInterface):
         """
         if torch.abs(cof[0]) > self.config["monotonicity"]["stagnation_thresh"]:
             self.error_msg.append(
-                self.main_msgs['decreasing_reward'].format(100 - (self.config["exploration_perc"] * 100)))
+                self.main_msgs["decreasing_reward"].format(
+                    100 - (self.config["exploration_perc"] * 100)
+                )
+            )
         else:
-            stagnated_reward = np.mean(self.episodes_rewards)
-            if stagnated_reward < max_reward * (1- self.config["monotonicity"]["reward_stagnation_tolerance"]):
+            stagnated_reward = torch.mean(self.episodes_rewards)
+            if stagnated_reward < max_reward * (
+                1 - self.config["monotonicity"]["reward_stagnation_tolerance"]
+            ):
                 self.error_msg.append(
-                    self.main_msgs['stagnated_reward'].format(
+                    self.main_msgs["stagnated_reward"].format(
                         100 - (self.config["exploration_perc"] * 100),
                         stagnated_reward,
-                        max_reward))
+                        max_reward,
+                    )
+                )
         return None

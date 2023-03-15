@@ -1,6 +1,7 @@
 import copy
 import statistics
 
+from debugger.config_data_classes.rl_checkers.action_config import ActionConfig
 from debugger.debugger_interface import DebuggerInterface
 import torch
 import numpy as np
@@ -13,29 +14,6 @@ As the agent gains more experience and becomes more confident in its policy, the
 to encourage exploitation of the learned policy.
 
 """
-
-
-def get_config():
-    """
-        Return the configuration dictionary needed to run the checkers.
-
-        Returns:
-            config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
-    """
-    config = {
-        "period": 50,
-        "start": 10,
-        "skip_run_threshold": 10,
-        "exploration_perc": 0.2,
-        "exploitation_perc": 0.8,
-        "low_start": {"disabled": False, "start": 3, "entropy_min_thresh": 0.3},
-        "monotonicity": {"disabled": False, "increase_thresh": 0.1, "stagnation_thresh": 1e-3},
-        "strong_decrease": {"disabled": False, "strong_decrease_thresh": 5, "acceleration_points_ratio": 0.2},
-        "fluctuation": {"disabled": False, "fluctuation_thresh": 0.5},
-        "action_stag": {"disabled": False, "start": 100, "similarity_pct_thresh": 0.8},
-        "action_stag_per_ep": {"disabled": False, "nb_ep_to_check": 2, "last_step_num": 50, "reward_tolerance": 0.5}
-    }
-    return config
 
 
 class ActionCheck(DebuggerInterface):
@@ -56,10 +34,10 @@ class ActionCheck(DebuggerInterface):
         _end_episode_indices : this parameter is to mark the index of the actions in the
         _action_buffer : Represents the indexes final actions in an episode. This would help us delimite the actions taken during one episode
         """
-        super().__init__(check_type="Action", config=get_config())
+        super().__init__(check_type="Action", config=ActionConfig)
         self._action_buffer = []
-        self._action_prob_buffer = torch.tensor([], device='cuda')
-        self._entropies = torch.tensor([], device='cuda')
+        self._action_prob_buffer = torch.tensor([], device=self.device)
+        self._entropies = torch.tensor([], device=self.device)
         self.episodes_rewards = []
         self._end_episode_indices = []
 
@@ -135,29 +113,34 @@ class ActionCheck(DebuggerInterface):
         """
         if self.is_final_step():
             self.episodes_rewards += [reward]
-        if self.skip_run(self.config['skip_run_threshold']):
+        if self.skip_run(self.config["skip_run_threshold"]):
             return
         actions_probs = copy.copy(actions_probs)
         if actions_probs.dim() < 2:
             actions_probs = actions_probs.reshape((1, -1))
-        if not torch.allclose(torch.sum(actions_probs, dim=1), torch.ones(actions_probs.shape[0], device='cuda')):
+        if not torch.allclose(
+            torch.sum(actions_probs, dim=1),
+            torch.ones(actions_probs.shape[0], device=self.device),
+        ):
             actions_probs = torch.softmax(actions_probs, dim=1)
-        self._action_prob_buffer = torch.cat((self._action_prob_buffer, actions_probs), dim=0)
+        self._action_prob_buffer = torch.cat(
+            (self._action_prob_buffer, actions_probs), dim=0
+        )
         if self.check_period():
             entropy = self.compute_entropy()
             self._entropies = torch.cat((self._entropies, entropy.view(1)))
-            self.wandb_metrics = {'entropy': entropy}
-            self._action_prob_buffer = torch.tensor([], device='cuda')
+            self.wandb_metrics = {"entropy": entropy}
+            self._action_prob_buffer = torch.tensor([], device=self.device)
             # start checking entropy of action probs
             self.check_entropy_start_very_low()
-            if len(self._entropies) >= self.config['start']:
+            if len(self._entropies) >= self.config["start"]:
                 entropy_slope = get_data_slope(self._entropies)
-                if self.step_num <= max_total_steps * self.config['exploration_perc']:
+                if self.step_num <= max_total_steps * self.config["exploration_perc"]:
                     self.check_entropy_monotonicity(entropy_slope=entropy_slope)
                     self.check_entropy_decrease_very_fast()
                 self.check_entropy_fluctuation(entropy_slope=entropy_slope)
         # start checking action stagnation
-        if self.step_num > max_total_steps * self.config['exploitation_perc']:
+        if self.step_num > max_total_steps * self.config["exploitation_perc"]:
             self._action_buffer.append(torch.argmax(actions_probs).item())
             if self.check_period():
                 self.check_action_stagnation_overall()
@@ -189,7 +172,7 @@ class ActionCheck(DebuggerInterface):
         if len(self._entropies) == self.config["low_start"]["start"]:
             mean = torch.mean(self._entropies)
             if mean < self.config["low_start"]["entropy_min_thresh"]:
-                self.error_msg.append(self.main_msgs['entropy_start'].format(mean))
+                self.error_msg.append(self.main_msgs["entropy_start"].format(mean))
         return None
 
     def check_entropy_monotonicity(self, entropy_slope):
@@ -203,9 +186,16 @@ class ActionCheck(DebuggerInterface):
         if self.config["monotonicity"]["disabled"]:
             return
         if entropy_slope_cof > self.config["monotonicity"]["increase_thresh"]:
-            self.error_msg.append(self.main_msgs['entropy_incr'].format(entropy_slope_cof))
-        elif torch.abs(entropy_slope_cof) < self.config["monotonicity"]["stagnation_thresh"]:
-            self.error_msg.append(self.main_msgs['entropy_stag'].format(entropy_slope_cof))
+            self.error_msg.append(
+                self.main_msgs["entropy_incr"].format(entropy_slope_cof)
+            )
+        elif (
+            torch.abs(entropy_slope_cof)
+            < self.config["monotonicity"]["stagnation_thresh"]
+        ):
+            self.error_msg.append(
+                self.main_msgs["entropy_stag"].format(entropy_slope_cof)
+            )
         return None
 
     def check_entropy_decrease_very_fast(self):
@@ -220,10 +210,18 @@ class ActionCheck(DebuggerInterface):
             return
         entropy_values = self._entropies.detach().cpu().numpy()
         second_derivative = np.gradient(np.gradient(entropy_values))
-        acceleration_ratio = np.mean(second_derivative < self.config["strong_decrease"]["strong_decrease_thresh"])
-        if acceleration_ratio >= self.config["strong_decrease"]["acceleration_points_ratio"]:
-            self.error_msg.append(self.main_msgs['entropy_strong_dec'].format(
-                self.config["strong_decrease"]["strong_decrease_thresh"]))
+        acceleration_ratio = np.mean(
+            second_derivative < self.config["strong_decrease"]["strong_decrease_thresh"]
+        )
+        if (
+            acceleration_ratio
+            >= self.config["strong_decrease"]["acceleration_points_ratio"]
+        ):
+            self.error_msg.append(
+                self.main_msgs["entropy_strong_dec"].format(
+                    self.config["strong_decrease"]["strong_decrease_thresh"]
+                )
+            )
         return None
 
     def check_entropy_fluctuation(self, entropy_slope):
@@ -238,9 +236,12 @@ class ActionCheck(DebuggerInterface):
         if self.config["fluctuation"]["disabled"]:
             return
         residuals = estimate_fluctuation_rmse(entropy_slope, self._entropies)
-        if residuals > self.config['fluctuation']["fluctuation_thresh"]:
-            self.error_msg.append(self.main_msgs['entropy_fluctuation'].format(residuals, self.config["fluctuation"][
-                "fluctuation_thresh"]))
+        if residuals > self.config["fluctuation"]["fluctuation_thresh"]:
+            self.error_msg.append(
+                self.main_msgs["entropy_fluctuation"].format(
+                    residuals, self.config["fluctuation"]["fluctuation_thresh"]
+                )
+            )
         return None
 
     def check_action_stagnation_overall(self):
@@ -251,15 +252,17 @@ class ActionCheck(DebuggerInterface):
         if self.config["action_stag"]["disabled"]:
             return
 
-        actions_tensor = torch.tensor(self._action_buffer, device="cuda")
-        if len(self._action_buffer) >= self.config['action_stag']['start']:
+        actions_tensor = torch.tensor(self._action_buffer, device=self.device)
+        if len(self._action_buffer) >= self.config["action_stag"]["start"]:
             mode_tensor = torch.mode(actions_tensor).values
 
             num_matching = sum(actions_tensor == mode_tensor)
             similarity_pct = num_matching / len(self._action_buffer)
 
-            if similarity_pct > self.config['action_stag']["similarity_pct_thresh"]:
-                self.error_msg.append(self.main_msgs['action_stagnation'].format(similarity_pct))
+            if similarity_pct > self.config["action_stag"]["similarity_pct_thresh"]:
+                self.error_msg.append(
+                    self.main_msgs["action_stagnation"].format(similarity_pct)
+                )
         return None
 
     def check_action_stagnation_per_episode(self, max_reward):
@@ -274,15 +277,24 @@ class ActionCheck(DebuggerInterface):
         """
         if self.config["action_stag_per_ep"]["disabled"]:
             return
-        if (len(self._end_episode_indices) >= self.config['action_stag_per_ep']['nb_ep_to_check']) and \
-                ((len(self.episodes_rewards) == 0) or (statistics.mean(self.episodes_rewards) < max_reward *
-                                                       self.config["action_stag_per_ep"][
-                                                           "reward_tolerance"])):
+        if (
+            len(self._end_episode_indices)
+            >= self.config["action_stag_per_ep"]["nb_ep_to_check"]
+        ) and (
+            (len(self.episodes_rewards) == 0)
+            or (
+                statistics.mean(self.episodes_rewards)
+                < max_reward * self.config["action_stag_per_ep"]["reward_tolerance"]
+            )
+        ):
             final_actions = []
             for i in self._end_episode_indices:
                 start_index = i - self.config["action_stag_per_ep"]["last_step_num"]
                 final_actions.append(self._action_buffer[start_index:i])
-            if all((final_actions[i] == final_actions[i + 1]) for i in range(len(final_actions) - 1)):
-                self.error_msg.append(self.main_msgs['actions_are_similar'])
+            if all(
+                (final_actions[i] == final_actions[i + 1])
+                for i in range(len(final_actions) - 1)
+            ):
+                self.error_msg.append(self.main_msgs["actions_are_similar"])
             self._end_episode_indices = []
         return None

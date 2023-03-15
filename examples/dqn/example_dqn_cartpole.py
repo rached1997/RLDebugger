@@ -12,7 +12,6 @@ from debugger import rl_debugger
 
 
 class DebuggableDQNAgent(DQNAgent):
-
     @torch.no_grad()
     def act(self, observation):
         if self._training:
@@ -37,13 +36,13 @@ class DebuggableDQNAgent(DQNAgent):
             # rl_debugger.run_debugging(actions_probs=qvals)
 
         if (
-                self._training
-                and self._logger.should_log(self._timescale)
-                and self._state["episode_start"]
+            self._training
+            and self._logger.should_log(self._timescale)
+            and self._state["episode_start"]
         ):
             self._state["episode_start"] = False
 
-        rl_debugger.run_debugging(actions_probs=qvals)
+        rl_debugger.debug(actions_probs=qvals)
         # rl_debugger.run_debugging(exploration_factor=epsilon)
         # rl_debugger.run_debugging(model=self._qnet)
         # rl_debugger.run_debugging(model=self._qnet, observations=observation, exploration_factor=self._test_epsilon)
@@ -59,9 +58,9 @@ class DebuggableDQNAgent(DQNAgent):
 
         self._replay_buffer.add(**self.preprocess_update_info(update_info))
         if (
-                self._learn_schedule.update()
-                and self._replay_buffer.size() > 0
-                and self._update_period_schedule.update()
+            self._learn_schedule.update()
+            and self._replay_buffer.size() > 0
+            and self._update_period_schedule.update()
         ):
             batch = self._replay_buffer.sample(batch_size=self._batch_size)
             (
@@ -79,7 +78,9 @@ class DebuggableDQNAgent(DQNAgent):
             # Compute 1-step Q targets
             next_qvals = self._target_qnet(*next_state_inputs)
             next_qvals, _ = torch.max(next_qvals, dim=1)
-            q_targets = batch["reward"] + self._discount_rate * next_qvals * (1 - batch["done"])
+            q_targets = batch["reward"] + self._discount_rate * next_qvals * (
+                1 - batch["done"]
+            )
 
             # rl_debugger.run_debugging(model=self._qnet,
             #                           target_model=self._target_qnet,
@@ -113,6 +114,7 @@ class DebuggableDQNAgent(DQNAgent):
         # Update target network
         if self._target_net_update_schedule.update():
             self._update_target()
+
 
 # def main():
 #     hive.registry.register('DebuggableDQNAgent', DebuggableDQNAgent, DebuggableDQNAgent)

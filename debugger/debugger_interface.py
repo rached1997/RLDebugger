@@ -2,6 +2,7 @@ import inspect
 import torch
 from debugger.utils.registry import Registrable
 from debugger.utils import settings
+from debugger.utils.utils import get_device
 
 
 # todo DOC: env in the first run, we can check this too
@@ -11,7 +12,7 @@ class DebuggerInterface(Registrable):
         self.main_msgs = settings.load_messages()
         self.config = config
         self.check_type = check_type
-        self.period = config["period"]
+        self.period = config.period
         self.iter_num = 0
         self.error_msg = list()
         self.step_num = None
@@ -20,6 +21,7 @@ class DebuggerInterface(Registrable):
         self.max_total_steps = None
         self.arg_names = None
         self.wandb_metrics = {}
+        self.device = get_device()
 
     def check_period(self):
         """
@@ -29,7 +31,8 @@ class DebuggerInterface(Registrable):
             True if the period is reached. False otherwise.
         """
         return ((self.period != 0) and (self.iter_num % self.period == 0)) or (
-                (self.period == 0) and (self.iter_num == 1))
+            (self.period == 0) and (self.iter_num == 1)
+        )
 
     def skip_run(self, threshold):
         step_diff = self.step_num - self.old_step_num
@@ -39,19 +42,15 @@ class DebuggerInterface(Registrable):
         self.iter_num -= 1
         return True
 
-    # TODO: implement this please
-    # def run(self):
-
-
     def increment_iteration(self):
         """
-            Increments the iteration
+        Increments the iteration
         """
         self.iter_num += 1
 
     def reset_error_msg(self):
         """
-            empties the error messageslist
+        empties the error messageslist
         """
         self.error_msg = list()
 
@@ -59,7 +58,6 @@ class DebuggerInterface(Registrable):
     def type_name(cls):
         return "debugger"
 
-    # todo DEBUG: add this to all checkers
     def flush(self, var_list_name=None, var_list_obj=None):
         if var_list_name is not None:
             for var_name in var_list_name:
@@ -85,4 +83,3 @@ class DebuggerInterface(Registrable):
         if self.arg_names is None:
             self.arg_names = inspect.getfullargspec(self.run).args[1:]
         return self.arg_names
-

@@ -10,7 +10,8 @@ def get_config() -> dict:
         config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
     """
     config = {
-        "period": 1, }
+        "period": 1,
+    }
     return config
 
 
@@ -18,7 +19,9 @@ class ValueFunctionCheck(DebuggerInterface):
     def __init__(self):
         super().__init__(check_type="ValueFunction", config=get_config())
 
-    def run(self, targets, steps_rewards, discount_rate, predicted_next_vals, steps_done) -> None:
+    def run(
+        self, targets, steps_rewards, discount_rate, predicted_next_vals, steps_done
+    ) -> None:
         """
         This checks is usefull for the DRL applicactions that uses q-value based learning. The q-value is calculated
         based on the bellman equation. Which is generally implemented manually by the developper. The goal of this
@@ -32,7 +35,7 @@ class ValueFunctionCheck(DebuggerInterface):
 
         The recommended fixes for the detected issues :
             - Fix the calculation of the Bellman function (checks that can be fixed: 1)
-        
+
         Args:
             targets: the actual next q values
             steps_rewards: the rewards received in each step of the data used to predicted predicted_next_vals
@@ -43,8 +46,8 @@ class ValueFunctionCheck(DebuggerInterface):
         Returns:
 
         """
-        q_targets = steps_rewards + discount_rate * predicted_next_vals * (1 - steps_done)
+        q_targets = steps_rewards + discount_rate * predicted_next_vals * (
+            1 - steps_done
+        )
         if not torch.equal(targets, q_targets):
-            self.error_msg.append(self.main_msgs['val_func_err'])
-
-        # todo IDEA: check if we can add the ppo/a2c
+            self.error_msg.append(self.main_msgs["val_func_err"])

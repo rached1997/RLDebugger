@@ -112,12 +112,13 @@ To run the debugging, use the following code:
 
 ```python
 from debugger import rl_debugger
+
 ....
-rl_debugger.run_debugging(observations= ...,
-                          model= ...,
-                          targets= ...,
-                          predictions= ....
-                          )
+rl_debugger.debug(observations=...,
+                  model=...,
+                  targets=...,
+                  predictions=....
+                  )
 ```
 This function will run the Checkers shosen by the user in the config file. 
 It can be called from any class or file in your project ( you can imagine it as a
