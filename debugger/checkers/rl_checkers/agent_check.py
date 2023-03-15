@@ -132,14 +132,14 @@ class AgentCheck(DebuggerInterface):
         if (
             (((self.step_num - 1) % target_model_update_period) == 0)
             and (self.step_num > 1)
-            and not self.config["target_update"]["disabled"]
+            and not self.config.target_update.disabled
         ):
             if not all_equal:
                 self.error_msg.append(self.main_msgs["target_network_not_updated"])
             self.old_target_model_params = target_params
 
         else:
-            if not self.config["similarity"]["disabled"]:
+            if not self.config.similarity.disabled:
                 if all_equal:
                     self.error_msg.append(
                         self.main_msgs["similar_target_and_main_network"]
@@ -159,7 +159,7 @@ class AgentCheck(DebuggerInterface):
             observations (Tensor): a batch of observations collected during the training
             action_probs (Tensor): the predictions on the observations
         """
-        if self.config["wrong_model_out"]["disabled"]:
+        if self.config.wrong_model_out.disabled:
             return
         pred_qvals = model(observations)
         if not torch.equal(action_probs, pred_qvals):
@@ -176,7 +176,7 @@ class AgentCheck(DebuggerInterface):
         Returns:
 
         """
-        if self.iter_num > 1 and (not self.config["kl_div"]["disabled"]):
+        if self.iter_num > 1 and (not self.config.kl_div.disabled):
             new_model_output = model(self.old_training_data)
             if not torch.allclose(
                 torch.sum(new_model_output, dim=1),
@@ -189,9 +189,9 @@ class AgentCheck(DebuggerInterface):
                 self.old_model_output,
                 reduction="batchmean",
             )
-            if torch.any(kl_div > self.config["kl_div"]["div_threshold"]):
+            if torch.any(kl_div > self.config.kl_div.div_threshold):
                 self.error_msg.append(
                     self.main_msgs["kl_div_high"].format(
-                        kl_div, self.config["kl_div"]["div_threshold"]
+                        kl_div, self.config.kl_div.div_threshold
                     )
                 )

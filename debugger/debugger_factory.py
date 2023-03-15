@@ -3,7 +3,8 @@ import debugger as debugger_lib
 from debugger.utils import settings
 from debugger.utils.registry import registry
 import yaml
-
+import torch
+from debugger.utils.utils import get_device
 from debugger.utils.settings import react, load_default_config
 
 
@@ -46,7 +47,7 @@ class DebuggerFactory:
                 self.observed_params["observations"] = self.observed_params[
                     "next_observations"
                 ]
-                self.observed_params["next_observations"] = results[0]
+                self.observed_params["next_observations"] = torch.tensor(results[0], device=get_device())
                 self.observed_params["reward"] += results[1]
                 self.observed_params["done"] = results[2]
                 self.observed_params_update_nums["observations"] += 1
@@ -64,7 +65,7 @@ class DebuggerFactory:
             """
             results = func_reset(*args, **kwargs)
             if self.training:
-                self.observed_params["observations"] = results
+                self.observed_params["observations"] = torch.tensor(results, device=get_device())
                 self.observed_params_update_nums["observations"] += 1
             return results
 

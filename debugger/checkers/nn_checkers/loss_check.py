@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-
 from debugger.config_data_classes.nn_checkers.loss_config import LossConfig
 from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.model_params_getters import get_loss, get_model_weights_and_biases
@@ -21,7 +20,7 @@ class LossCheck(DebuggerInterface):
     def run(
         self,
         targets: torch.Tensor,
-        actions_probs: torch.Tensor,
+        training_observations: torch.Tensor,
         loss_fn: torch.nn.Module,
         model: torch.nn.Module,
         actions: torch.Tensor,
@@ -39,6 +38,7 @@ class LossCheck(DebuggerInterface):
         predictions (Tensor): A sample of predictions collected periodically during the training.
         loss_fn (torch.nn.Module): the loss function of the model.
         """
+        actions_probs = model(training_observations)
         predictions = actions_probs[torch.arange(actions_probs.size(0)), actions]
         if self.iter_num == 1:
             self.run_pre_checks(targets, predictions, loss_fn, model)
@@ -76,7 +76,7 @@ class LossCheck(DebuggerInterface):
         Returns:
             (bool): True if there is any NaN or infinite value present, False otherwise.
         """
-        if self.config["numeric_ins"]["disabled"]:
+        if self.config.numeric_ins.disabled:
             return False
         if np.isnan(loss_value):
             self.error_msg.append(self.main_msgs["nan_loss"])
@@ -103,40 +103,40 @@ class LossCheck(DebuggerInterface):
 
         """
         n_losses = len(losses)
-        if n_losses >= self.config["non_dec"]["window_size"]:
+        if n_losses >= self.config.non_dec.window_size:
             dec_pers = np.array(
                 [
                     (losses[-i - 1] - losses[-i]) / losses[-i - 1]
-                    for i in range(1, self.config["non_dec"]["window_size"])
+                    for i in range(1, self.config.non_dec.window_size)
                 ]
             )
-            if (dec_pers < self.config["non_dec"]["decr_percentage"]).all() and not (
-                self.config["non_dec"]["disabled"]
+            if (dec_pers < self.config.non_dec.decr_percentage).all() and not (
+                self.config.non_dec.disabled
             ):
                 self.error_msg.append(self.main_msgs["stagnated_loss"])
-        if n_losses >= self.config["div"]["window_size"]:
+        if n_losses >= self.config.divwindow_size:
             abs_loss_incrs = [
                 losses[n_losses - i] / self.min_loss
-                for i in range(self.config["div"]["window_size"], 0, -1)
+                for i in range(self.config.divwindow_size, 0, -1)
             ]
             inc_rates = np.array(
                 [
                     abs_loss_incrs[-i] / abs_loss_incrs[-i - 1]
-                    for i in range(1, self.config["div"]["window_size"])
+                    for i in range(1, self.config.div.window_size)
                 ]
             )
-            if (
-                inc_rates >= self.config["div"]["incr_abs_rate_max_thresh"]
-            ).all() and not (self.config["div"]["disabled"]):
+            if (inc_rates >= self.config.div.incr_abs_rate_max_thresh).all() and not (
+                self.config.div.disabled
+            ):
                 self.error_msg.append(self.main_msgs["div_loss"].format(max(inc_rates)))
         # if n_losses >= self.config['fluct']['window_size']:
-        smoothness_val = smoothness(losses[-self.config["fluct"]["window_size"] :])
-        if smoothness_val < self.config["fluct"][
-            "smoothness_ratio_min_thresh"
-        ] and not (self.config["fluct"]["disabled"]):
+        smoothness_val = smoothness(losses[-self.config.fluct.window_size :])
+        if smoothness_val < self.config.fluct.smoothness_ratio_min_thresh and not (
+            self.config.fluct.disabled
+        ):
             self.error_msg.append(
                 self.main_msgs["fluctuated_loss"].format(
-                    smoothness_val, self.config["fluct"]["smoothness_ratio_min_thresh"]
+                    smoothness_val, self.config.fluct.smoothness_ratio_min_thresh
                 )
             )
 
@@ -163,22 +163,22 @@ class LossCheck(DebuggerInterface):
             model (nn.Module): The model to be trained.
         """
         losses = []
-        n = self.config["init_loss"]["size_growth_rate"]
+        n = self.config.init_loss.size_growth_rate
         while n <= (
-            self.config["init_loss"]["size_growth_rate"]
-            * self.config["init_loss"]["size_growth_iters"]
+            self.config.init_loss.size_growth_rate
+            * self.config.init_loss.size_growth_iters
         ):
             derived_batch_y = torch.cat([targets] * n, dim=0)
             derived_predictions = torch.cat(n * [predictions], dim=0)
             loss_value = float(get_loss(derived_predictions, derived_batch_y, loss_fn))
             losses.append(loss_value)
-            n *= self.config["init_loss"]["size_growth_rate"]
+            n *= self.config.init_loss.size_growth_rate
         rounded_loss_rates = [
             round(losses[i + 1] / losses[i]) for i in range(len(losses) - 1)
         ]
         equality_checks = sum(
             [
-                (loss_rate == self.config["init_loss"]["size_growth_rate"])
+                (loss_rate == self.config.init_loss.size_growth_rate)
                 for loss_rate in rounded_loss_rates
             ]
         )
@@ -191,7 +191,7 @@ class LossCheck(DebuggerInterface):
             number_of_actions = list(initial_weights.items())[-1][1].shape[0]
             expected_loss = -torch.log(torch.tensor(1 / number_of_actions))
             err = torch.abs(initial_loss - expected_loss)
-            if err >= self.config["init_loss"]["dev_ratio"] * expected_loss:
+            if err >= self.config.init_loss.dev_ratio * expected_loss:
                 self.error_msg.append(
                     self.main_msgs["poor_init_loss"].format(
                         round((err / expected_loss), 3)

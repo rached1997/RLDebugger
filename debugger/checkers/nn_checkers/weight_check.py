@@ -1,6 +1,5 @@
 import torch.nn
 import numpy as np
-
 from debugger.config_data_classes.nn_checkers.weight_config import WeightConfig
 from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.utils import is_non_2d, pure_f_test, almost_equal
@@ -31,7 +30,7 @@ class WeightsCheck(DebuggerInterface):
         Returns:
             None
         """
-        if self.skip_run(self.config["skip_run_threshold"]):
+        if self.skip_run(self.config.skip_run_threshold):
             return
         if self.iter_num == 1:
             self.run_pre_checks(model)
@@ -41,7 +40,7 @@ class WeightsCheck(DebuggerInterface):
                 w_array = param.data
                 is_conv = is_non_2d(w_array)
                 w_reductions = self.update_w_reductions(w_name, w_array)
-                if (self.iter_num >= self.config["start"]) and self.check_period():
+                if (self.iter_num >= self.config.start) and self.check_period():
                     if self.check_numerical_instabilities(w_name, w_array):
                         continue
                     self.check_sign(w_name, w_array, is_conv)
@@ -84,7 +83,7 @@ class WeightsCheck(DebuggerInterface):
         Returns:
             (bool)
         """
-        if self.config["numeric_ins"]["disabled"]:
+        if self.config.numeric_ins.disabled:
             return False
         if torch.isinf(weight_array).any():
             self.error_msg.append(self.main_msgs["w_inf"].format(weight_name))
@@ -112,10 +111,10 @@ class WeightsCheck(DebuggerInterface):
         Returns:
             None
         """
-        if self.config["neg"]["disabled"]:
+        if self.config.neg.disabled:
             return
         neg_ratio = (weight_array < 0.0).sum().item() / torch.numel(weight_array)
-        if neg_ratio > self.config["neg"]["ratio_max_thresh"]:
+        if neg_ratio > self.config.neg.ratio_max_thresh:
             main_msg = (
                 self.main_msgs["conv_w_sign"]
                 if is_conv
@@ -123,7 +122,7 @@ class WeightsCheck(DebuggerInterface):
             )
             self.error_msg.append(
                 main_msg.format(
-                    weight_name, neg_ratio, self.config["neg"]["ratio_max_thresh"]
+                    weight_name, neg_ratio, self.config.neg.ratio_max_thresh
                 )
             )
 
@@ -144,12 +143,12 @@ class WeightsCheck(DebuggerInterface):
         Returns:
 
         """
-        if self.config["dead"]["disabled"]:
+        if self.config.dead.disabled:
             return
         dead_ratio = torch.sum(
-            (torch.abs(weight_array) < self.config["dead"]["val_min_thresh"]).int()
+            (torch.abs(weight_array) < self.config.dead.val_min_thresh).int()
         ).item() / torch.numel(weight_array)
-        if dead_ratio > self.config["dead"]["ratio_max_thresh"]:
+        if dead_ratio > self.config.dead.ratio_max_thresh:
             main_msg = (
                 self.main_msgs["conv_w_dead"]
                 if is_conv
@@ -157,7 +156,7 @@ class WeightsCheck(DebuggerInterface):
             )
             self.error_msg.append(
                 main_msg.format(
-                    weight_name, dead_ratio, self.config["dead"]["val_min_thresh"]
+                    weight_name, dead_ratio, self.config.dead.val_min_thresh
                 )
             )
 
@@ -178,9 +177,9 @@ class WeightsCheck(DebuggerInterface):
         Returns:
             None
         """
-        if self.config["div"]["disabled"]:
+        if self.config.div.disabled:
             return
-        if weight_reductions[-1] > self.config["div"]["mav_max_thresh"]:
+        if weight_reductions[-1] > self.config.div.mav_max_thresh:
             main_msg = (
                 self.main_msgs["conv_w_div_1"]
                 if is_conv
@@ -190,15 +189,15 @@ class WeightsCheck(DebuggerInterface):
                 main_msg.format(
                     weight_name,
                     weight_reductions[-1],
-                    self.config["div"]["mav_max_thresh"],
+                    self.config.div.mav_max_thresh,
                 )
             )
-        elif len(weight_reductions) >= self.config["div"]["window_size"]:
+        elif len(weight_reductions) >= self.config.div.window_size:
             inc_rates = (
-                weight_reductions[1 - self.config["div"]["window_size"] :]
-                / weight_reductions[-self.config["div"]["window_size"] : -1]
+                weight_reductions[1 - self.config.div.window_size :]
+                / weight_reductions[-self.config.div.window_size : -1]
             )
-            if (inc_rates >= self.config["div"]["inc_rate_max_thresh"]).all():
+            if (inc_rates >= self.config.div.inc_rate_max_thresh).all():
                 main_msg = (
                     self.main_msgs["conv_w_div_2"]
                     if is_conv
@@ -208,7 +207,7 @@ class WeightsCheck(DebuggerInterface):
                     main_msg.format(
                         weight_name,
                         max(inc_rates),
-                        self.config["div"]["inc_rate_max_thresh"],
+                        self.config.div.inc_rate_max_thresh,
                     )
                 )
 
@@ -305,17 +304,17 @@ class WeightsCheck(DebuggerInterface):
         lecun_F, lecun_test = pure_f_test(
             weight_array,
             np.sqrt((1.0 / fan_in)),
-            self.config["Initial_Weight"]["f_test_alpha"],
+            self.config.initial_weight.f_test_alpha,
         )
         he_F, he_test = pure_f_test(
             weight_array,
             np.sqrt((2.0 / fan_in)),
-            self.config["Initial_Weight"]["f_test_alpha"],
+            self.config.initial_weight.f_test_alpha,
         )
         glorot_F, glorot_test = pure_f_test(
             weight_array,
             np.sqrt((2.0 / (fan_in + fan_out))),
-            self.config["Initial_Weight"]["f_test_alpha"],
+            self.config.initial_weight.f_test_alpha,
         )
 
         return lecun_test, he_test, glorot_test, fan_in, fan_out

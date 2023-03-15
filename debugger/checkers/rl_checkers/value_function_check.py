@@ -1,23 +1,12 @@
 import torch
+
+from debugger.config_data_classes.rl_checkers.value_function_config import ValueFunctionConfig
 from debugger.debugger_interface import DebuggerInterface
-
-
-def get_config() -> dict:
-    """
-    Return the configuration dictionary needed to run the checkers.
-
-    Returns:
-        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
-    """
-    config = {
-        "period": 1,
-    }
-    return config
 
 
 class ValueFunctionCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="ValueFunction", config=get_config())
+        super().__init__(check_type="ValueFunction", config=ValueFunctionConfig)
 
     def run(
         self, targets, steps_rewards, discount_rate, predicted_next_vals, steps_done

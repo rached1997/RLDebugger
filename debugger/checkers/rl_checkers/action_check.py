@@ -113,7 +113,7 @@ class ActionCheck(DebuggerInterface):
         """
         if self.is_final_step():
             self.episodes_rewards += [reward]
-        if self.skip_run(self.config["skip_run_threshold"]):
+        if self.skip_run(self.config.skip_run_threshold):
             return
         actions_probs = copy.copy(actions_probs)
         if actions_probs.dim() < 2:
@@ -133,14 +133,14 @@ class ActionCheck(DebuggerInterface):
             self._action_prob_buffer = torch.tensor([], device=self.device)
             # start checking entropy of action probs
             self.check_entropy_start_very_low()
-            if len(self._entropies) >= self.config["start"]:
+            if len(self._entropies) >= self.config.start:
                 entropy_slope = get_data_slope(self._entropies)
-                if self.step_num <= max_total_steps * self.config["exploration_perc"]:
+                if self.step_num <= max_total_steps * self.config.exploration_perc:
                     self.check_entropy_monotonicity(entropy_slope=entropy_slope)
                     self.check_entropy_decrease_very_fast()
                 self.check_entropy_fluctuation(entropy_slope=entropy_slope)
         # start checking action stagnation
-        if self.step_num > max_total_steps * self.config["exploitation_perc"]:
+        if self.step_num > max_total_steps * self.config.exploitation_perc:
             self._action_buffer.append(torch.argmax(actions_probs).item())
             if self.check_period():
                 self.check_action_stagnation_overall()
@@ -162,16 +162,16 @@ class ActionCheck(DebuggerInterface):
     def check_entropy_start_very_low(self):
         """
         Checks whether the entropy of the current action's probability distribution starts with a value that is
-        considered too low (less than self.config["low_start"]["entropy_min_thresh"]). A low entropy value at the start
+        considered too low (less than self.config.low_start.entropy_min_thresh). A low entropy value at the start
         of the exploration process may limit the randomness of the chosen actions, leading to less efficient
         exploration.
         """
-        if self.config["low_start"]["disabled"]:
+        if self.config.low_start.disabled:
             return
         # Check for very low mean and standard deviation of entropy
-        if len(self._entropies) == self.config["low_start"]["start"]:
+        if len(self._entropies) == self.config.low_start.start:
             mean = torch.mean(self._entropies)
-            if mean < self.config["low_start"]["entropy_min_thresh"]:
+            if mean < self.config.low_start.entropy_min_thresh:
                 self.error_msg.append(self.main_msgs["entropy_start"].format(mean))
         return None
 
@@ -183,16 +183,13 @@ class ActionCheck(DebuggerInterface):
             entropy_slope (float): The slope of the linear regression fit to the entropy values.
         """
         entropy_slope_cof = entropy_slope[0, 0]
-        if self.config["monotonicity"]["disabled"]:
+        if self.config.monotonicity.disabled:
             return
-        if entropy_slope_cof > self.config["monotonicity"]["increase_thresh"]:
+        if entropy_slope_cof > self.config.monotonicity.increase_thresh:
             self.error_msg.append(
                 self.main_msgs["entropy_incr"].format(entropy_slope_cof)
             )
-        elif (
-            torch.abs(entropy_slope_cof)
-            < self.config["monotonicity"]["stagnation_thresh"]
-        ):
+        elif torch.abs(entropy_slope_cof) < self.config.monotonicity.stagnation_thresh:
             self.error_msg.append(
                 self.main_msgs["entropy_stag"].format(entropy_slope_cof)
             )
@@ -206,20 +203,17 @@ class ActionCheck(DebuggerInterface):
         us that our profits are increasing, but the second derivative will tell us if the pace of the increase is
         increasing or decreasing.
         """
-        if self.config["strong_decrease"]["disabled"]:
+        if self.config.strong_decrease.disabled:
             return
         entropy_values = self._entropies.detach().cpu().numpy()
         second_derivative = np.gradient(np.gradient(entropy_values))
         acceleration_ratio = np.mean(
-            second_derivative < self.config["strong_decrease"]["strong_decrease_thresh"]
+            second_derivative < self.config.strong_decrease.strong_decrease_thresh
         )
-        if (
-            acceleration_ratio
-            >= self.config["strong_decrease"]["acceleration_points_ratio"]
-        ):
+        if acceleration_ratio >= self.config.strong_decrease.acceleration_points_ratio:
             self.error_msg.append(
                 self.main_msgs["entropy_strong_dec"].format(
-                    self.config["strong_decrease"]["strong_decrease_thresh"]
+                    self.config.strong_decrease.strong_decrease_thresh
                 )
             )
         return None
@@ -233,13 +227,13 @@ class ActionCheck(DebuggerInterface):
         Args:
             entropy_slope (float): The slope of the linear regression fit to the entropy values.
         """
-        if self.config["fluctuation"]["disabled"]:
+        if self.config.fluctuation.disabled:
             return
         residuals = estimate_fluctuation_rmse(entropy_slope, self._entropies)
-        if residuals > self.config["fluctuation"]["fluctuation_thresh"]:
+        if residuals > self.config.fluctuation.fluctuation_thresh:
             self.error_msg.append(
                 self.main_msgs["entropy_fluctuation"].format(
-                    residuals, self.config["fluctuation"]["fluctuation_thresh"]
+                    residuals, self.config.fluctuation.fluctuation_thresh
                 )
             )
         return None
@@ -249,17 +243,17 @@ class ActionCheck(DebuggerInterface):
         Checks whether the agent's chosen actions are stagnating, meaning that the agent consistently takes the same
         action throughout an episode.
         """
-        if self.config["action_stag"]["disabled"]:
+        if self.config.action_stag.disabled:
             return
 
         actions_tensor = torch.tensor(self._action_buffer, device=self.device)
-        if len(self._action_buffer) >= self.config["action_stag"]["start"]:
+        if len(self._action_buffer) >= self.config.action_stag.start:
             mode_tensor = torch.mode(actions_tensor).values
 
             num_matching = sum(actions_tensor == mode_tensor)
             similarity_pct = num_matching / len(self._action_buffer)
 
-            if similarity_pct > self.config["action_stag"]["similarity_pct_thresh"]:
+            if similarity_pct > self.config.action_stag.similarity_pct_thresh:
                 self.error_msg.append(
                     self.main_msgs["action_stagnation"].format(similarity_pct)
                 )
@@ -275,21 +269,21 @@ class ActionCheck(DebuggerInterface):
         Args:
             max_reward:  The reward threshold before the task is considered solved
         """
-        if self.config["action_stag_per_ep"]["disabled"]:
+        if self.config.action_stag_per_ep.disabled:
             return
         if (
             len(self._end_episode_indices)
-            >= self.config["action_stag_per_ep"]["nb_ep_to_check"]
+            >= self.config.action_stag_per_ep.nb_ep_to_check
         ) and (
             (len(self.episodes_rewards) == 0)
             or (
                 statistics.mean(self.episodes_rewards)
-                < max_reward * self.config["action_stag_per_ep"]["reward_tolerance"]
+                < max_reward * self.config.action_stag_per_ep.reward_tolerance
             )
         ):
             final_actions = []
             for i in self._end_episode_indices:
-                start_index = i - self.config["action_stag_per_ep"]["last_step_num"]
+                start_index = i - self.config.action_stag_per_ep.last_step_num
                 final_actions.append(self._action_buffer[start_index:i])
             if all(
                 (final_actions[i] == final_actions[i + 1])

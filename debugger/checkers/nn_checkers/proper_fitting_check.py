@@ -1,7 +1,6 @@
 import copy
 import numpy as np
 import torch.nn
-
 from debugger.config_data_classes.nn_checkers.proper_fitting_config import (
     ProperFittingConfig,
 )
@@ -64,8 +63,8 @@ class ProperFittingCheck(DebuggerInterface):
             ]
         )
         if (stability_test == False).any():
-            last_real_losses = real_losses[-self.config["sample_size_of_losses"] :]
-            last_fake_losses = fake_losses[-self.config["sample_size_of_losses"] :]
+            last_real_losses = real_losses[-self.config.sample_size_of_losses :]
+            last_fake_losses = fake_losses[-self.config.sample_size_of_losses :]
             if not (are_significantly_different(last_real_losses, last_fake_losses)):
                 self.error_msg.append(self.main_msgs["data_dep"])
 
@@ -114,7 +113,7 @@ class ProperFittingCheck(DebuggerInterface):
         zeroed_batch_x = torch.zeros_like(derived_batch_x)
         fake_losses = []
         zeroed_model.train(True)
-        for i in range(self.config["total_iters"]):
+        for i in range(self.config.total_iters):
             zeroed_opt.zero_grad()
             outputs = zeroed_model(zeroed_batch_x)
             outputs = outputs[torch.arange(outputs.size(0)), actions]
@@ -149,7 +148,7 @@ class ProperFittingCheck(DebuggerInterface):
 
         real_losses = []
         model.train(True)
-        for i in range(self.config["total_iters"]):
+        for i in range(self.config.total_iters):
             overfit_opt.zero_grad()
             outputs = model(derived_batch_x)
             outputs = outputs[torch.arange(outputs.size(0)), actions]
@@ -178,9 +177,9 @@ class ProperFittingCheck(DebuggerInterface):
         """
         loss_smoothness = smoothness(np.array(real_losses))
         min_loss = np.min(np.array(real_losses))
-        if min_loss <= self.config["abs_loss_min_thresh"] or (
-            min_loss <= self.config["loss_min_thresh"]
-            and loss_smoothness > self.config["smoothness_max_thresh"]
+        if min_loss <= self.config.abs_loss_min_thresh or (
+            min_loss <= self.config.loss_min_thresh
+            and loss_smoothness > self.config.smoothness_max_thresh
         ):
             self.error_msg.append(self.main_msgs["zero_loss"])
             return False

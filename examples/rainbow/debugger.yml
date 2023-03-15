@@ -1,7 +1,7 @@
 debugger:
   name: 'Debugger'
   kwargs:
-    params:
+    observed_params:
       constant: []
       variable: []
     check_type:

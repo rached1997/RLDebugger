@@ -1,28 +1,10 @@
 import copy
 import gym
 import torch
+
+from debugger.config_data_classes.rl_checkers.environment_config import EnvironmentConfig
 from debugger.debugger_interface import DebuggerInterface
 import numbers
-
-
-def get_config() -> dict:
-    """
-    Return the configuration dictionary needed to run the checkers.
-
-    Returns:
-        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
-    """
-    config = {
-        "period": 0,
-        "observations_std_coef_thresh": 0.001,
-        "Markovianity_check": {"disabled": False, "num_trajectories": 1000},
-        "normalization": {
-            "disabled": False,
-            "normalized_reward_min": -10.0,
-            "normalized_reward_max": 10.0,
-        },
-    }
-    return config
 
 
 class EnvironmentCheck(DebuggerInterface):
@@ -33,7 +15,7 @@ class EnvironmentCheck(DebuggerInterface):
         reward_list : A list of rewards collected in a random episode
         done_list : A list of done flag collected in a random episode
         """
-        super().__init__(check_type="Environment", config=get_config())
+        super().__init__(check_type="Environment", config=EnvironmentConfig)
         self.obs_list = torch.tensor([])
         self.reward_list = torch.tensor([])
         self.done_list = torch.tensor([])
@@ -85,7 +67,7 @@ class EnvironmentCheck(DebuggerInterface):
 
                 if (
                     torch.mean(torch.std(self.obs_list, dim=0))
-                    <= self.config["observations_std_coef_thresh"]
+                    <= self.config.observations_std_coef_thresh
                 ):
                     self.error_msg.append(
                         self.main_msgs["invalid_step_func"].format(
@@ -178,11 +160,11 @@ class EnvironmentCheck(DebuggerInterface):
             reward (float): the reward returned at each step
 
         """
-        if self.config["normalization"]["disabled"]:
+        if self.config.normalization.disabled:
             return
 
-        max_reward_value = self.config["normalization"]["normalized_reward_max"]
-        min_reward_value = self.config["normalization"]["normalized_reward_min"]
+        max_reward_value = self.config.normalization.normalized_reward_max
+        min_reward_value = self.config.normalization.normalized_reward_min
 
         if (
             torch.max(self.reward_list) > max_reward_value

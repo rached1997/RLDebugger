@@ -2,41 +2,14 @@ import hashlib
 import statistics
 
 import torch
+
+from debugger.config_data_classes.rl_checkers.states_config import StatesConfig
 from debugger.debugger_interface import DebuggerInterface
-
-
-def get_config() -> dict:
-    """
-    Return the configuration dictionary needed to run the checkers.
-
-    Returns:
-        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
-    """
-    config = {
-        "period": 1,
-        "skip_run_threshold": 2,
-        "exploitation_perc": 0.8,
-        "reset": {"disabled": True},
-        "normalization": {
-            "disabled": True,
-            "normalized_data_min": -10.0,
-            "normalized_data_max": 10.0,
-        },
-        "stagnation": {"disabled": True, "period": 500},
-        "states_convergence": {
-            "disabled": False,
-            "start": 10,
-            "last_obs_num": 10,
-            "reward_tolerance": 0.5,
-            "final_eps_perc": 0.2,
-        },
-    }
-    return config
 
 
 class StatesCheck(DebuggerInterface):
     def __init__(self):
-        super().__init__(check_type="State", config=get_config())
+        super().__init__(check_type="State", config=StatesConfig)
         self.env = None
         self.hashed_observations_buffer = []
         self.period_index = []
@@ -90,7 +63,7 @@ class StatesCheck(DebuggerInterface):
         if self.is_final_step():
             self.period_index += [len(self.hashed_observations_buffer)]
             self.episodes_rewards += [reward]
-        if self.skip_run(self.config["skip_run_threshold"]):
+        if self.skip_run(self.config.skip_run_threshold):
             return
         if self.check_period():
             self.check_normalized_observations(observations)
@@ -120,20 +93,18 @@ class StatesCheck(DebuggerInterface):
         Checks whether the observations are stagnating, meaning that the environment is consistently rendering the same
         observations throughout an episode.
         """
-        if self.config["stagnation"]["disabled"]:
+        if self.config.stagnation.disabled:
             return
-        if (
-            len(self.hashed_observations_buffer) % self.config["stagnation"]["period"]
-        ) == 0:
+        if (len(self.hashed_observations_buffer) % self.config.stagnation.period) == 0:
             if all(
                 (obs == self.hashed_observations_buffer[-1])
                 for obs in self.hashed_observations_buffer[
-                    -self.config["stagnation"]["period"] :
+                    -self.config.stagnation.period :
                 ]
             ):
                 self.error_msg.append(
                     self.main_msgs["observations_are_similar"].format(
-                        self.config["stagnation"]["stagnated_data_nbr_check"]
+                        self.config.stagnation.stagnated_data_nbr_check
                     )
                 )
 
@@ -149,20 +120,16 @@ class StatesCheck(DebuggerInterface):
             max_reward (int):  The reward threshold before the task is considered solved
             max_total_steps (int): The maximum total number of steps to finish the training.
         """
-        if self.config["states_convergence"]["disabled"]:
+        if self.config.states_convergence.disabled:
             return
-        if len(self.period_index) >= self.config["states_convergence"]["start"]:
+        if len(self.period_index) >= self.config.states_convergence.start:
             if (
                 statistics.mean(self.episodes_rewards)
-                < max_reward * self.config["states_convergence"]["reward_tolerance"]
-            ) and (
-                self.step_num >= max_total_steps * (self.config["exploitation_perc"])
-            ):
+                < max_reward * self.config.states_convergence.reward_tolerance
+            ) and (self.step_num >= max_total_steps * (self.config.exploitation_perc)):
                 final_obs = []
                 for i in self.period_index:
-                    starting_index = (
-                        i - self.config["states_convergence"]["last_obs_num"]
-                    )
+                    starting_index = i - self.config.states_convergence.last_obs_num
                     final_obs.append(self.hashed_observations_buffer[starting_index:i])
                 if all(
                     (final_obs[i] == final_obs[i + 1])
@@ -179,11 +146,11 @@ class StatesCheck(DebuggerInterface):
         Args:
             observations (Tensor): a batch of observations
         """
-        if self.config["normalization"]["disabled"]:
+        if self.config.normalization.disabled:
             return
 
-        max_data = self.config["normalization"]["normalized_data_max"]
-        min_data = self.config["normalization"]["normalized_data_min"]
+        max_data = self.config.normalization.normalized_data_max
+        min_data = self.config.normalization.normalized_data_min
 
         if torch.max(observations) > max_data or torch.min(observations) < min_data:
             self.error_msg.append(self.main_msgs["observations_unnormalized"])

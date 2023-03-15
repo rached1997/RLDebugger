@@ -1,5 +1,4 @@
 import torch
-
 from debugger.config_data_classes.nn_checkers.gradient_config import GradientConfig
 from debugger.debugger_interface import DebuggerInterface
 from torch.autograd import gradcheck
@@ -35,10 +34,10 @@ class GradientCheck(DebuggerInterface):
 
         inputs = (
             torch.randn(
-                self.config["sample_size"], dtype=torch.double, requires_grad=True
+                self.config.sample_size, dtype=torch.double, requires_grad=True
             ),
             torch.randn(
-                self.config["sample_size"], dtype=torch.double, requires_grad=True
+                self.config.sample_size, dtype=torch.double, requires_grad=True
             ),
         )
 
@@ -47,13 +46,11 @@ class GradientCheck(DebuggerInterface):
         theoretical_numerical_check = gradcheck(
             loss_fn,
             inputs,
-            eps=self.config["delta"],
-            rtol=self.config["relative_err_max_thresh"],
+            eps=self.config.delta,
+            rtol=self.config.relative_err_max_thresh,
         )
 
         if not theoretical_numerical_check:
             self.error_msg.append(
-                self.main_msgs["grad_err"].format(
-                    self.config["relative_err_max_thresh"]
-                )
+                self.main_msgs["grad_err"].format(self.config.relative_err_max_thresh)
             )

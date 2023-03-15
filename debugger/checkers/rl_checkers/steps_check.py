@@ -2,24 +2,9 @@ import statistics
 
 import numpy as np
 import torch
+
+from debugger.config_data_classes.rl_checkers.steps_config import StepsConfig
 from debugger.debugger_interface import DebuggerInterface
-
-
-def get_config() -> dict:
-    """
-    Return the configuration dictionary needed to run the checkers.
-
-    Returns:
-        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
-    """
-    config = {
-        "period": 1,
-        "exploitation_perc": 0.8,
-        "check_stagnation": {"disabled": False},
-        "poor_max_step_per_ep": {"disabled": False, "max_reward_tol": 0.1},
-    }
-
-    return config
 
 
 class StepCheck(DebuggerInterface):
@@ -30,7 +15,7 @@ class StepCheck(DebuggerInterface):
         episode_reward_buffer : lis storing the rewards accumulated in each episode
         last_step_num : an in meantioning in the previous episode what was the totla number of steps the agent did
         """
-        super().__init__(check_type="Step", config=get_config())
+        super().__init__(check_type="Step", config=StepsConfig)
         self.final_step_number_buffer = []
         self.episode_reward_buffer = []
         self.last_step_num = 0
@@ -76,16 +61,16 @@ class StepCheck(DebuggerInterface):
             max_total_steps (int): The maximum total number of steps to finish the training.
             max_steps_per_episode (int): the max steps for an episode
         """
-        if self.config["check_stagnation"]["disabled"]:
+        if self.config.check_stagnation.disabled:
             return
 
         if self.check_period() and (
-            self.step_num >= (max_total_steps * self.config["exploitation_perc"])
+            self.step_num >= (max_total_steps * self.config.exploitation_perc)
         ):
             if (
                 statistics.mean(self.final_step_number_buffer) >= max_steps_per_episode
             ) and (
                 statistics.mean(self.episode_reward_buffer)
-                < (max_reward * self.config["poor_max_step_per_ep"]["max_reward_tol"])
+                < (max_reward * self.config.poor_max_step_per_ep.max_reward_tol)
             ):
                 self.error_msg.append(self.main_msgs["poor_max_step_per_ep"])

@@ -1,30 +1,9 @@
 import numpy as np
 import torch
+
+from debugger.config_data_classes.rl_checkers.exploration_param_config import ExplorationPramConfig
 from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.utils import get_data_slope
-
-
-def get_config() -> dict:
-    """
-    Return the configuration dictionary needed to run the checkers.
-
-    Returns:
-        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
-    """
-    config = {
-        "period": 1000,
-        "starting_value": 1,
-        "ending_value": 0,
-        "check_initialization": {"disabled": False},
-        "check_monotonicity": {"disabled": False},
-        "check_quick_change": {
-            "disabled": False,
-            "strong_decrease_thresh": 5,
-            "acceleration_points_ratio": 0.5,
-        },
-    }
-
-    return config
 
 
 class ExplorationParameterCheck(DebuggerInterface):
@@ -34,7 +13,7 @@ class ExplorationParameterCheck(DebuggerInterface):
         exploration_factor_buffer : A buffer storing the values of the parameter controlling the ratio of exploration
         and exploitation
         """
-        super().__init__(check_type="ExplorationParameter", config=get_config())
+        super().__init__(check_type="ExplorationParameter", config=ExplorationPramConfig)
         self.exploration_factor_buffer = []
 
     def run(self, exploration_factor) -> None:
@@ -80,10 +59,10 @@ class ExplorationParameterCheck(DebuggerInterface):
         if (len(self.exploration_factor_buffer) == 1) and not self.config[
             "check_initialization"
         ]["disabled"]:
-            if self.exploration_factor_buffer[0] != self.config["starting_value"]:
+            if self.exploration_factor_buffer[0] != self.config.starting_value:
                 self.error_msg.append(
                     self.main_msgs["bad_exploration_param_initialization"].format(
-                        self.exploration_factor_buffer[0], self.config["starting_value"]
+                        self.exploration_factor_buffer[0], self.config.starting_value
                     )
                 )
 
@@ -92,18 +71,16 @@ class ExplorationParameterCheck(DebuggerInterface):
         Checks whether the exploration parameter value is grdually decreasing or increasing depending on its starting
         and ending values
         """
-        if self.config["check_quick_change"]["disabled"]:
+        if self.config.check_quick_change.disabled:
             return
         if self.check_period():
             slope = get_data_slope(
                 torch.tensor(self.exploration_factor_buffer, device=self.device)
             )[0]
-            if (slope > 0) and (
-                self.config["starting_value"] > self.config["ending_value"]
-            ):
+            if (slope > 0) and (self.config.starting_value > self.config.ending_value):
                 self.error_msg.append(self.main_msgs["increasing_exploration_factor"])
             elif (slope < 0) and (
-                self.config["starting_value"] < self.config["ending_value"]
+                self.config.starting_value < self.config.ending_value
             ):
                 self.error_msg.append(self.main_msgs["decreasing_exploration_factor"])
 
@@ -111,7 +88,7 @@ class ExplorationParameterCheck(DebuggerInterface):
         """
         Checks if the exploration parameter's value is changing too quickly
         """
-        if self.config["check_quick_change"]["disabled"]:
+        if self.config.check_quick_change.disabled:
             return
         if self.check_period():
             abs_second_derivative = np.abs(
@@ -119,7 +96,7 @@ class ExplorationParameterCheck(DebuggerInterface):
             )
             if np.any(
                 abs_second_derivative
-                > self.config["check_quick_change"]["strong_decrease_thresh"]
+                > self.config.check_quick_change.strong_decrease_thresh
             ):
                 self.error_msg.append(
                     self.main_msgs["quick_changing_exploration_factor"]

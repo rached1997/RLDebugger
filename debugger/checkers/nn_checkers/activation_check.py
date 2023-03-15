@@ -140,7 +140,7 @@ class ActivationCheck(DebuggerInterface):
             if self.config.patience <= 0:
                 self.error_msg.append(self.main_msgs["out_cons"])
         else:
-            self.config.patience = self.config.Output["patience"]
+            self.config.patience = self.config.Output.patience
 
         if "Softmax" == last_layer_activation_name:
             if outs_array.shape[1] == 1:

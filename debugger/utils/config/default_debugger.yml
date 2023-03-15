@@ -1,7 +1,7 @@
 debugger:
   name: 'Debugger'
   kwargs:
-    params:
+    observed_params:
       constant: [
         target_net_update_fraction,
         target_model_update_period,
@@ -24,7 +24,8 @@ debugger:
         observations,
         next_observations,
         reward,
-        done
+        done,
+        discount_rate,
       ]
     check_type:
   wand_logger:

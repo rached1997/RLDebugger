@@ -1,4 +1,3 @@
-import argparse
 import copy
 import time
 
@@ -74,10 +73,6 @@ class SingleAgentRunner(Runner):
         )
         action = agent.act(stacked_observation)
         next_observation, reward, done, _, other_info = self._environment.step(action)
-        # rl_debugger.run_debugging(
-        #                           max_reward=self._environment._env.spec.reward_threshold,
-        #                           max_steps_per_episode=self._max_steps_per_episode,
-        #                           max_total_steps= self._experiment_manager._config["train_steps"])
 
         info = {
             "observation": observation,
@@ -206,17 +201,12 @@ def set_up_experiment(config):
 
 
 def main():
-    # sum = 0
-    # for i in range(10):
     start = time.time()
     hive.registry.register("DebuggableDQNAgent", DebuggableDQNAgent, DebuggableDQNAgent)
     config = load_config(config="agent_configs/custom_agent_cartpole.yml")
     rl_debugger.set_config(config_path="debugger.yml")
 
     runner = set_up_experiment(config)
-    # runner._logger.register_timescale("debugger")
-    # wandb_logger = runner._logger._logger_list[1]
-    # rl_debugger.set_wandb_logger(wandb_logger)
     rl_debugger.debug(
         environment=runner._environment._env,
         max_reward=runner._environment._env.spec.reward_threshold,
@@ -226,9 +216,6 @@ def main():
     runner.run_training()
     end = time.time()
     print(end - start)
-
-    #     sum += end - start
-    # print(sum/10)
 
 
 if __name__ == "__main__":

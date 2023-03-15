@@ -1,7 +1,5 @@
 # Based on implementation from Barhate, Nikhil repository (https://github.com/nikhilbarhate99/PPO-PyTorch)
 # Accessed on 3/11/2023
-import cProfile as profile
-import pstats
 import time
 import torch
 import gym
@@ -9,10 +7,8 @@ from examples.ppo.ppo import PPO
 from debugger import rl_debugger
 import numpy as np
 
-# Set seeds for Torch
 torch.manual_seed(42)
 
-# Set seeds for Torch's backend (CPU or GPU)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(42)
 else:
@@ -74,13 +70,13 @@ def main():
                 ppo_agent.update()
 
             # printing average reward
-            # if time_step % print_freq == 0:
-            #     print_avg_reward = print_running_reward / print_running_episodes
-            #     print_avg_reward = round(print_avg_reward, 2)
-            #     print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step,
-            #                                                                             print_avg_reward))
-            #     print_running_reward = 0
-            #     print_running_episodes = 0
+            if time_step % print_freq == 0:
+                print_avg_reward = print_running_reward / print_running_episodes
+                print_avg_reward = round(print_avg_reward, 2)
+                print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step,
+                                                                                        print_avg_reward))
+                print_running_reward = 0
+                print_running_episodes = 0
 
             # break; if the episode is over
             if done:
@@ -88,16 +84,6 @@ def main():
 
         print_running_reward += current_ep_reward
         print_running_episodes += 1
-
-        print_avg_reward = print_running_reward / print_running_episodes
-        print_avg_reward = round(print_avg_reward, 2)
-        print(
-            "Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(
-                i_episode, time_step, print_avg_reward
-            )
-        )
-        print_running_reward = 0
-        print_running_episodes = 0
         i_episode += 1
 
     env.close()
@@ -108,13 +94,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # perform profiling
-    # prof = profile.Profile()
-    # prof.enable()
     rl_debugger.set_config(config_path="debugger.yml")
     main()
-    # prof.disable()
-    # # print profiling output
-    # stats = pstats.Stats(prof).strip_dirs().sort_stats("ncalls")
-    # stats.print_stats('.*')  # top 10 rows
-    # print(rl_debugger.time)

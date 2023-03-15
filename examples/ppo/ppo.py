@@ -4,16 +4,9 @@ import torch
 import torch.nn as nn
 from examples.ppo.actor_critic import RolloutBuffer, ActorCritic
 from debugger import rl_debugger
-import numpy as np
 
 # Set seeds for Torch
 torch.manual_seed(42)
-
-# Set seeds for Torch's backend (cuda or GPU)
-# if torch.cuda.is_available():
-#     torch.cuda.manual_seed_all(42)
-# else:
-#     np.random.seed(42)
 
 
 def get_device():
@@ -33,8 +26,8 @@ class PPO:
         self.policy = ActorCritic(state_dim, action_dim).to(get_device())
         self.optimizer = torch.optim.Adam(
             [
-                {"observed_params": self.policy.actor.parameters(), "lr": lr_actor},
-                {"observed_params": self.policy.critic.parameters(), "lr": lr_critic},
+                {"params": self.policy.actor.parameters(), "lr": lr_actor},
+                {"params": self.policy.critic.parameters(), "lr": lr_critic},
             ]
         )
 
