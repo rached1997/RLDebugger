@@ -10,9 +10,9 @@ import numpy as np
 # Set seeds for Torch
 torch.manual_seed(42)
 
-# Set seeds for Torch's backend (CPU or GPU)
-# if torch.cpu.is_available():
-#     torch.cpu.manual_seed_all(42)
+# Set seeds for Torch's backend (cuda or GPU)
+# if torch.cuda.is_available():
+#     torch.cuda.manual_seed_all(42)
 # else:
 #     np.random.seed(42)
 
@@ -26,20 +26,20 @@ class PPO:
 
         self.buffer = RolloutBuffer()
 
-        self.policy = ActorCritic(state_dim, action_dim).to("cpu")
+        self.policy = ActorCritic(state_dim, action_dim).to("cuda")
         self.optimizer = torch.optim.Adam([
             {'params': self.policy.actor.parameters(), 'lr': lr_actor},
             {'params': self.policy.critic.parameters(), 'lr': lr_critic}
         ])
 
-        self.policy_old = ActorCritic(state_dim, action_dim).to("cpu")
+        self.policy_old = ActorCritic(state_dim, action_dim).to("cuda")
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
 
     def select_action(self, state, incr):
         with torch.no_grad():
-            state = torch.FloatTensor(state).to("cpu")
+            state = torch.FloatTensor(state).to("cuda")
             action, action_logprob, state_val, action_probs = self.policy_old.act(state)
 
         # if incr % 2:
@@ -64,14 +64,14 @@ class PPO:
             rewards.insert(0, discounted_reward)
 
         # Normalizing the rewards
-        rewards = torch.tensor(rewards, dtype=torch.float32).to("cpu")
+        rewards = torch.tensor(rewards, dtype=torch.float32).to("cuda")
         rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
 
         # convert list to tensor
-        old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to("cpu")
-        old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to("cpu")
-        old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to("cpu")
-        old_state_values = torch.squeeze(torch.stack(self.buffer.state_values, dim=0)).detach().to("cpu")
+        old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to("cuda")
+        old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to("cuda")
+        old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to("cuda")
+        old_state_values = torch.squeeze(torch.stack(self.buffer.state_values, dim=0)).detach().to("cuda")
         rl_debugger.run_debugging(training_observations=old_states)
 
         # calculate advantages
