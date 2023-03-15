@@ -40,30 +40,92 @@ def get_config():
 
 class ActionCheck(DebuggerInterface):
     """
-    # Performs mulitple checks on the actions taken by the agent during the learning process
+    This function performs multiple checks on the actions taken by the agent during the learning process. You can check
+    the functions run for more details on the checks that are done by this function.
+
     """
 
     def __init__(self):
+        """
+        Initilizes the following parameters:
+        _action_buffer : the buffer collecting the list of actions taken in each step
+        _action_prob_buffer : the buffer collecting the actions probabilities collected during the training.
+        _entropies : the list collecting the action entropies measured each period
+        episodes_rewards : The list collecting the rewards of each episode (This list is useful to avoid doing the
+        check_action_stagnation_per_episode when the agent reaches or is close to reach its goal)
+        _end_episode_indices : this parameter is to mark the index of the actions in the
+        _action_buffer : Represents the indexes final actions in an episode. This would help us delimite the actions taken during one episode
+        """
         super().__init__(check_type="Action", config=get_config())
+        self._action_buffer = []
         self._action_prob_buffer = torch.tensor([], device='cuda')
         self._entropies = torch.tensor([], device='cuda')
-        self._action_buffer = []
-        self._end_episode_indices = []
         self.episodes_rewards = []
+        self._end_episode_indices = []
 
     def run(self, actions_probs, max_total_steps, reward, max_reward):
         """
-        This function performs the following checks on the actions:
-         - During the exploration phase (in the first "exploration_perc" percentage of the total steps):
+        The goal of this function is to do multiple checks on the actions taken to catch abnormal behaviours that can
+        occure during the training process
+
+        - The checks on the actions are mainly based on analysing the beahviour of the entropy. The entropy consists of
+        analysing the randomness of the actions taken by the agent. The normal behaviour of the actions entropy should be as following:
+
+            * During the exploration the entropy of the actions should first start from a high value as during the
+            exploration the agent should start by taking random actions than the randomness should keep on decreasing
+            gradually during the exploration until the agent stops exploring and starts the exploitation fase. The wrong
+            behaviours that can occure in the entropy behaviour during the exploration are to find that the entropystarts
+            with a low value, detect if there is a sharp drop in the entropy valu, the entropy value is stagnating and
+            the entropy value is increasing instead of decreasing
+
+            * In addition one wrong behaviour that can be detected during the whole training process of the agent is a
+            fluctuating entropy. A fluctuation in the entropy would generally be a sign of an unstable learning process.
+
+        In addtion to the entropy, another factor that can show a problem in the learning process or in the
+        interactions between the DRL components is the stagnation in the sequence of actions taken. The stagnation
+        can have two main forms:
+
+            * The stagnation can be in one episode which means that the agent is consistently taking the same action
+            throughout an episode
+
+            * The stagnation can be in the sequence of actions taken in multiple successive episodes. For example if
+            an agent's possible actions are (up/ down) and we find that in each episode the agent takes the sequence
+            (up,up,down,up) this can be a behavioural error
+
+        The action check performs the following :
+         - During the exploration phase (in the first "exploration_perc" percentage of the total steps) it does the the wrong behaviours that the action check can detect are:
             (1) Checks whether the entropy of the actions starts with a low value.
             (2) Checks whether the entropy has decreased very quickly.
             (3) Checks whether the entropy is increasing.
             (4) Checks whether the entropy is stagnating.
         - During the exploitation (after "exploitation_perc" percentage of the total steps)):
-            (1) Checks whether the sequence of actions taken in multiple episodes is stagnating (i.e. the sequence of
+            (5) Checks whether the sequence of actions taken in multiple episodes is stagnating (i.e. the sequence of
             actions of multiple episodes are similar).
-            (2) Checks whether the actions taken within a single episode are stagnating.
-        - Checks whether the entropy of the actions is fluctuating
+            (6) Checks whether the actions taken within a single episode are stagnating.
+        - (7) Checks whether the entropy of the actions is fluctuating
+
+
+        The potential root causes behind the warnings that can be detected are
+            - Missing Exploration (checks triggered : 1..7)
+            - Suboptimal exploration rate (checks triggered : 1..7)
+            - The agent is stuck in a local optimum (checks triggered : 5,6)
+            - Noisy tv problem (checks triggered : 5,6)
+            - Bad conception of the environment
+                - For example the environment is not returning the right rewards or states (checks triggered : 1..7)
+
+        The recommended fixes for the detected issues:
+        - Check whether you are doing the exploration ( checks tha can be fixed: 1..7)
+        - Increase the exploration (1..7)
+        - Check if the environment is doing the stepping correctly ( checks tha can be fixed: 1..7)
+        - Change the architecture of the agent (checks tha can be fixed: 1..7)
+        - Adjust the agent's parameters
+            - Increase the batch size ( checks tha can be fixed: 5,6)
+            - Decrease the learning rate (checks tha can be fixed: 5,6)
+            - Add more regularization (checks tha can be fixed: 5,6)
+            - Use a different optimizer (checks tha can be fixed: 5,6)
+            - Increase the network size (checks tha can be fixed: 1..7)
+            - Use a target network if possible (checks tha can be fixed: 5..6)
+
 
         Args:
             actions_probs: The predictions of the model on a batch of observations.

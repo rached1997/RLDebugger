@@ -24,6 +24,12 @@ def get_config() -> dict:
 
 class StepCheck(DebuggerInterface):
     def __init__(self):
+        """
+        Initializes the following parameters:
+        final_step_number_buffer :  list storing the number of steps taken in each episode
+        episode_reward_buffer : lis storing the rewards accumulated in each episode
+        last_step_num : an in meantioning in the previous episode what was the totla number of steps the agent did
+        """
         super().__init__(check_type="Step", config=get_config())
         self.final_step_number_buffer = []
         self.episode_reward_buffer = []
@@ -31,7 +37,17 @@ class StepCheck(DebuggerInterface):
 
     def run(self, reward, max_reward, max_total_steps, max_steps_per_episode) -> None:
         """
-        Checks whether the max step per episode is poorly initialised.
+        Checks if episodes are being ended prematurely due to the max step limit being reached during the
+        exploitation phase when the agent is not learning (i.e. the reward is far from the max reward).
+
+        The steps check performs the following check:
+            (1) Checks whether the max steps per episode has a low value.
+
+        The potential root causes behind the warnings that can be detected are:
+            - The max steps per episode has a low value (checks triggered : 1)
+
+        The recommended fixes for the detected issues :
+            - Increase the max stepsper episode value (checks that can be fixed: 1)
 
         Args:
             reward (float): the cumulative reward collected in one episode

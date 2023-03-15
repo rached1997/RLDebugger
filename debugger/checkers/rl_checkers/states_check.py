@@ -36,10 +36,35 @@ class StatesCheck(DebuggerInterface):
     # todo IDEA: ADD the state coverage check
     def run(self, observations, environment, reward, max_reward, max_total_steps) -> None:
         """
-        Does the following checks on the observations :
-        (1) Checks if the observations are normalized
-        (2) Checks if the states are stagnating in one episode
-        (3) Checks if the observations are being repeated across episodes during exploitation phase
+        The states represents the main output of the environment that the agent uses to predict the next action to
+        take. Generally DRL is applied in complex environments that have either a continuous observations space or a
+        very high number of possible states. One of the wrong behaviours of the agent that can be detected through
+        the states is that the agent is repeating it's behaviour without being close to reach its expected goal. The
+        repeated behaviour can be within one episode or the agent is repeating a sequence of actions in each episode
+        which can be due to issues such as the agent being stuck in a local optimum. For example, an agent is
+        learning to solve a maze, however the agent didn't do enough exploration, and is repeating its beahviour in
+        each episode, which means that every episode the agent follows the same path which can't lead it to reach its
+        goal. This wrong bihaviour can be detecetd by analysung the behaviour of the observations returned in each
+        episode.
+
+
+        The states check does the following checks on the observations :
+            (1) Checks if the observations are normalized,
+            (2) Checks if the states are stagnating in one episode
+            (3) Checks if the observations are being repeated across episodes during exploitation phase
+
+        The potential root causes behind the warnings that can be detected are
+            - Missing exploration or suboptimal exploration rate (checks triggered : 2,3)
+            - Bad conception of the step function (checks triggered : 1, 2)
+            - Unstable learning (checks triggered : 2)
+            - Coding error (e.g. saving the same data in the memory) (checks triggered : 1, 2, 3)
+
+        The recommended fixes for the detected issues :
+            - Add more exploration (checks that can be fixed: 2,3)
+            - Change the ratio of exploration exploitation (checks that can be fixed: 2,3)
+            - Check if the observations are normalized (checks that can be fixed: 1)
+            - Check if the step function is working correctly (checks that can be fixed: 1,2,3 )
+            - verify that if the agent is learning correctly, and change its architecture (checks that can be fixed: 2, 3 )
 
         Args:
             observations (Tensor): the observations returned from the step functions

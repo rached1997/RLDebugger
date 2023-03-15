@@ -5,27 +5,27 @@ debugger:
       constant: []
       variable: []
     check_type:
-      - name: Activation
-        period: 10
-      - name: Bias
-        period: 10
-      - name: Loss
-        period: 10000
-      - name: Weight
-        period: 10000
-      - name: ProperFitting
-      - name: Gradient
-      - name: Action
-        period: 1000
-      - name: Agent
-      - name : ExplorationParameter
+#      - name: Activation
+#        period: 10
+#      - name: Bias
+#        period: 10
+#      - name: Loss
+#        period: 10000
+#      - name: Weight
+#        period: 10000
+#      - name: ProperFitting
+#      - name: Gradient
+#      - name: Action
+#        period: 1000
+#      - name: Agent
+#      - name : ExplorationParameter
       - name: Reward
         period: 1000
-      - name: State
-        period: 1000
-      - name: Step
-        period: 10000
-      - name: UncertaintyAction
-        period: 10000
-      - name: ValueFunction
-      - name: Environment
+#      - name: State
+#        period: 1000
+#      - name: Step
+#        period: 10000
+#      - name: UncertaintyAction
+#        period: 10000
+#      - name: ValueFunction
+#      - name: Environment

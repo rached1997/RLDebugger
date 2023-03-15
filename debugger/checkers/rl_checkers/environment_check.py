@@ -26,6 +26,12 @@ def get_config() -> dict:
 
 class EnvironmentCheck(DebuggerInterface):
     def __init__(self):
+        """
+        Initializes the following parameters:
+        obs_list : A list of observations collected in a random episode
+        reward_list : A list of rewards collected in a random episode
+        done_list : A list of done flag collected in a random episode
+        """
         super().__init__(check_type="Environment", config=get_config())
         self.obs_list = torch.tensor([])
         self.reward_list = torch.tensor([])
@@ -33,10 +39,35 @@ class EnvironmentCheck(DebuggerInterface):
 
     def run(self, environment) -> None:
         """
-        Does the following checks in the environment:
-        (1) Checks the conception of the environment
-        (2) Checks if the max reward threshold is too low
-        (3) Checks whether the reward value is normalized
+        The environment checks consists of verifying that environment was correctly implemented. This class is mainly
+        usefull when you implement your own environment, in other words you are not using a predifined environement.
+        The main goal of the function is to verify the good conception of the environment and making sure that it
+        doesn't violate the multiple predefined rules. The checks are done once before starting the training to make
+        sure that the environment would work well during the training. A normal environement is required to provide
+        mainlytwo functions the reset and the steps function. The reset function should return a state, and the step
+        function should return three essential elements, namely the state, the reward and done (ot can also return
+        other variables).
+
+        To evalaute the good conception of the environmnet, the environement check does the following checks in the
+        training environment before starting the learning process:
+
+            (1) Checks the conception of the environment: checks multiple features required in any DRL environment you
+            can check the function check_env_conception for more details
+            (2) Checks if the max reward threshold is too low
+            (3) Checks whether the reward value is normalized
+
+        The potential root causes behind the warnings that can be detected are
+            - A bad conception of the environment (checks triggered : 1,2,3)
+            - Bad hyperparameters of the environment (checks triggered : 2)
+            - The environement is too easy to solve (checks triggered : 2)
+            - Lack of preprocessing of the reward returned (checks triggered : 3)
+
+        The recommended fixes for the detected issues :
+            - Check if the step function is coded correctly (checks that can be fixed: 1,2,3)
+            - Check if the reset function is coded correctly (checks that can be fixed: 1)
+            - Check the hyperparameters of the environment (checks that can be fixed: 2)
+            - Check if the reward is returned correctly (checks that can be fixed: 3)
+
 
         Args:
             environment (gym.env): the training RL environment
