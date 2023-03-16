@@ -26,12 +26,49 @@ class LossCheck(DebuggerInterface):
         actions: torch.Tensor,
     ) -> None:
         """
-        This function performs multiple checks on the loss function during the training:
+        The loss in Deep Learning in general is an indicator of how accurate is the neural network, and generally the
+        expected ehaviour of the loss function is that it starts from a high value and keeps on decreasing until
+        reaching 0. Howeve, in Deep Reinforcement Learning, the loss doesn't have the same impact as in the deep
+        learning, since the goal of the DRL agent is to try to reach an expected maximum reward. But, the loss still
+        plays a key role in updating the agents in DRL that consists of one or multiple neural networks in
+        interaction.The loss in this context is the value that indicates to the neural networks whether they are
+        close to reach their expected goals or not. An unstable behaviour in the loss function can indicate many
+        potential issues that are detabilizing the learning or reducing the performance of the agnet. For example,
+        in many cases in DRL, it's recommandedto use two seperate copies of the netwprk, called main and target
+        network, that are updated in different periods. This helps the agent stabilize more its learning. One error
+        that can occureis choosing a low update period, this can be detected by the behaviour of the loss which would
+        be fluctuating a lot
 
-        (1) run the pre-checks described in the function run_pre_checks
-        (2) Check the numerical instabilities of loss values. (check the function check_numerical_instabilities
-        for more details)
+        This loss check class performs multiple checks on the loss function during the training:
+
+        (1) run the following pre-checks:
+            a. Ensure correct reduction of the loss function. this is more useful for custom loss
+            function implementations. Loss is calculated with increasing batch sizes to confirm proportional increase,
+            indicating that the loss estimation is based on average, not sum.
+
+            b. Verify that the optimizer's initial loss is as expected. An initial loss approximation can be
+            calculated for most of the predefined loss functions. This function compares the model's initial loss to the
+            calculated approximation.
+
+        (2) Check the numerical instabilities of loss values. (check whehter they havenan or infinite values)
         (3) Check the abnormal loss curvature of the loss (check the function check_loss_curve for more details)
+            a. Non-or Slow-Decreasing loss.
+            b. Diverging loss
+            c. Highly-Fluctuating loss
+
+        The potential root causes behind the warnings that can be detected are
+            - Using a bad loss function (checks triggered : 1,2,3)
+            - Wrong implementation of the loss function (checks triggered : 1,2,3)
+            - An unstable learning process (checks triggered : 2,3) :
+                * Bad hyperparameters values
+                * Low update period of the target network (a probel related to the agent in DRL)
+                * Bad architecture of the model
+
+        The recommended fixes for the detected issues:
+            - Change the loss function ( checks tha can be fixed: 1,2,3)
+            - Verify that the loss function works correctly (checks tha can be fixed: 1,2,3)
+            - Increase the update period of the target network (checks tha can be fixed: 2,3)
+            - Change the architecture of the neural network (checks tha can be fixed: 2,3)
 
         Args:
         targets (Tensor): A sample of targets collected periodically during the training.

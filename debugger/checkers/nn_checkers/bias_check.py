@@ -20,12 +20,33 @@ class BiasCheck(DebuggerInterface):
 
     def run(self, model: torch.nn.Module, observations: torch.Tensor = None) -> None:
         """
-        This function performs multiple checks on the bias during the training:
+        Bias are essential features in any neural network that helps the neural network learn more complex and non
+        lineair patterns in the data. The bias is crucial to reduce the underfitting of the neural network. Generally
+        the bias should e initialised to values different from zero and during the training it should remain stable (
+        i.e. no divergence, no inifinite values, no nan values ...)
 
+        This function performs multiple checks on the bias during the training:
         (1) Run the pre-checks described in the function run_pre_checks
-        (2) Check the numerical instabilities of bias values (check the function check_numerical_instabilities
-        for more details)
-        (3) Check the divergence of bias values (check the function check_divergence for more details)
+            a. Verifies the existence of the bias
+            b. Checks if the bias of the last layer is non-zero when the model's output in the initial observation set
+            is imbalanced.
+            c. Validates if the bias of the last layer matches the label ratio when the output of the model in the
+            initial observation set is imbalanced, using the formula bi = log(pi / (1-pi)), where pi is the proportion of
+            observations of the label (actions) corresponding to the bias bi of unit i.
+            d. Confirms that the bias is not set to zero.
+        (2) Validates the numerical stability of bias values during training (i.e. no inf or nan values)
+        (3) Check bias divergence, as biases risk divergence, and may go towards inf. Biases can become huge in cases when features do not adequately explain the predicted outcome or are ineffective.
+
+        The potential root causes behind the warnings that can be detected are
+            - Bad initialisation of te bias values (checks triggered : 1)
+            - Unstable learning process (checks triggered : 2,3)
+            - Bad data preprocessing (checks triggered : 3)
+            - The data doesn't have a signal (checks triggered : 3)
+
+        The recommended fixes for the detected issues:
+            - reinitialize the biases ( checks tha can be fixed: 1)
+            - satabilize the learning (e.g change the hyperparameters, change the neural network's architecture) (checks tha can be fixed: 2,3)
+            - Improve the datapreprocessing towards reducing the noise contained in the data (checks tha can be fixed: 3)
 
         Args:
             model (nn.model): The model being trained

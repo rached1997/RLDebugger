@@ -34,21 +34,42 @@ class ActivationCheck(DebuggerInterface):
 
     def run(self, training_observations: torch.Tensor, model: torch.nn.Module) -> None:
         """
-        Does multiple checks on the activation values during the training. The checks it does are :
-        (1) checks the outputs (check the function check_outputs for more details)
-        Per activation layer it does the following checks :
-        (2) checks the activation per activation layer (check the function check_activations_range for more details)
-        (3) checks numerical instabilities (check the function check_numerical_instabilities for more details)
-        (4) checks saturated layers in the case of a bounded activation layer (check the function check_saturated_layers
-        for more details)
-        (5) checks dead layers in the case of an activation function that can stagnate to zero (e.g. Relu) (check the
-         function check_dead_layers for more details)
-        (6) checks acts distribution (check the function check_acts_distribution for more details)
+        This class performs multiple checks on the activations values of the neural network. Activation consists of
+        non-lineair functions applied to each output neuron in order to determine if the neuron will be activated or
+        not. The activation are the one that lets the neural network learn non lineair and complex patterns in the
+        data. Thus it's crucial to make sure that the activations are behaving normally and doesn't show any unusual
+        behaviour.
+
+        This class does multiple checks on the activation values during the training. The checks it does are :
+        (1) checks the behaviour of the neural network outputs. This check Validate the Output Activation Domain of the model. It performs the following checks:
+            a. Numerical Stability of the output activation by verifying if there are any NaN or infinite values.
+            b. Variance of the output layer's activations to ensure that they are constantly changing.
+            c. Outputs are probabilities, i.e., positive values within [0, 1] and summing to one for multidimensional outputs.
+
+        Then per activation layer it does the following checks :
+            (2) Checks if the activations produced by the specified activation layer are within the expected range of values based on the activation function used.
+            (3) Validates the numerical stability of activation values in the given activation layer
+            (4) Detects saturation in the activation values for bounded activation functions using the 𝜌𝐵 metric as proposed in the paper "Measuring Saturation in Neural Networks" by Rakitianskaia and Engelbrecht.
+            (5) Detects dead neurons in the activation layer by measuring the ratio of neurons that always produce a zero activation. If the ratio exceeds a predefined threshold, it is considered that the activation layer has dead neurons.
+            (6) Checks the stability of the activation values over multiple iterations. To do this we watch the histograms of sampled activation layer while expecting to have normally-distributed values with unit standard deviation, e.g., a value within [0.5, 2]. the test would pass the actual std belongs to the range of [0.5, 2]; otherwise, we perform an f-test to compare std with either the low-bound 0.5 if std < 0.5 or 2.0 if std > 2.0.
+
+        The potential root causes behind the warnings that can be detected are
+            - Bad neural network hyperparameters (checks triggered : 1..6)
+            - Bad architecture of the neural network (checks triggered : 1..6)
+            - Poor initialisation of the weights and biases (checks triggered : 1..6)
+            - Using the wrong activation function (checks triggered : 1..6)
+            - Coding error (checks triggered : 1..6)
+            - Using a bad output layer (checks triggered : 1)
+
+        The recommended fixes for the detected issues:
+            - Change the neural network's hyperparameters to stabilize more the learning ( checks tha can be fixed: 1..6)
+            - Change the number of layers or parameters of our neural network ( checks tha can be fixed: 1..6)
+            - Verify that you are usgin the activation function correctly and in the right application ( checks tha can be fixed: 1..6)
+            - Verify that you are using the right output function correctly and in the right application ( checks tha can be fixed: 1..6)
+
         Args:
             training_observations (Tensor): A sample of observations collected during the training
             model (torch.nn.Module)): The model being trained
-        Returns:
-            None
         """
         model = copy.deepcopy(model)
         activations = {}

@@ -7,32 +7,24 @@ import torch
 import numpy as np
 from debugger.utils.utils import estimate_fluctuation_rmse, get_data_slope
 
-"""
-the entropy regularization or exploration bonus.  In the early stages of learning, the entropy of the policy 
-distribution should be high to encourage exploration and to prevent the agent from becoming too deterministic. 
-As the agent gains more experience and becomes more confident in its policy, the entropy can be gradually reduced 
-to encourage exploitation of the learned policy.
-
-"""
-
 
 class ActionCheck(DebuggerInterface):
     """
-    This function performs multiple checks on the actions taken by the agent during the learning process. You can check
-    the functions run for more details on the checks that are done by this function.
-
+    This function performs checks on the actions taken by the agent during the learning process to detect abnormal
+    behaviors that may hinder the training process.
+    For more details on the specific checks performed, refer to the `run()` function.
     """
 
     def __init__(self):
         """
-        Initilizes the following parameters:
-        _action_buffer : the buffer collecting the list of actions taken in each step
-        _action_prob_buffer : the buffer collecting the actions probabilities collected during the training.
-        _entropies : the list collecting the action entropies measured each period
-        episodes_rewards : The list collecting the rewards of each episode (This list is useful to avoid doing the
-        check_action_stagnation_per_episode when the agent reaches or is close to reach its goal)
-        _end_episode_indices : this parameter is to mark the index of the actions in the
-        _action_buffer : Represents the indexes final actions in an episode. This would help us delimite the actions taken during one episode
+        Initializes the following parameters:
+           * _action_buffer (list): The buffer collecting the list of actions taken in each step.
+           * _action_prob_buffer (list): The buffer collecting the actions probabilities collected during training.
+           * _entropies (list): The list collecting the action entropies measured each period.
+           * episodes_rewards (list): The list collecting the rewards of each episode. This list is useful to avoid
+                checking action stagnation per episode when the agent reaches or is close to reaching its goal.
+           * _end_episode_indices (list): This parameter marks the index of the actions in the _action_buffer that
+                represent the final actions in an episode. This helps to delimit the actions taken during one episode.
         """
         super().__init__(check_type="Action", config=ActionConfig)
         self._action_buffer = []
@@ -43,67 +35,66 @@ class ActionCheck(DebuggerInterface):
 
     def run(self, actions_probs, max_total_steps, reward, max_reward):
         """
-        The goal of this function is to do multiple checks on the actions taken to catch abnormal behaviours that can
-        occure during the training process
+        I. The goal of this class is to perform multiple checks on the actions taken to detect abnormal behaviors that
+        can occur during the training process.
 
-        - The checks on the actions are mainly based on analysing the beahviour of the entropy. The entropy consists of
-        analysing the randomness of the actions taken by the agent. The normal behaviour of the actions entropy should be as following:
+            - Checks on the actions are primarily based on analyzing the behavior of the entropy, which measures the
+            randomness of the actions taken by the agent. The normal behavior of the actions' entropy is as follows:
 
-            * During the exploration the entropy of the actions should first start from a high value as during the
-            exploration the agent should start by taking random actions than the randomness should keep on decreasing
-            gradually during the exploration until the agent stops exploring and starts the exploitation fase. The wrong
-            behaviours that can occure in the entropy behaviour during the exploration are to find that the entropystarts
-            with a low value, detect if there is a sharp drop in the entropy valu, the entropy value is stagnating and
-            the entropy value is increasing instead of decreasing
+                * During exploration, the entropy of the actions should start from a high value as the agent should
+                initially take random actions. The randomness should gradually decrease during the exploration until
+                the agent stops exploring and starts the exploitation phase. Abnormal behaviors in the entropy during
+                exploration can include low initial values, sharp drops, stagnation, increase instead of a decrease
+                in entropy, or a fluctuating entropy during the training process which can be a sign of an unstable
+                learning process.
 
-            * In addition one wrong behaviour that can be detected during the whole training process of the agent is a
-            fluctuating entropy. A fluctuation in the entropy would generally be a sign of an unstable learning process.
+            - In addition to the entropy, another factor that can indicate a problem in the learning process or the
+            interactions between the DRL components is stagnation in the sequence of actions taken. Stagnation can take
+            two main forms:
 
-        In addtion to the entropy, another factor that can show a problem in the learning process or in the
-        interactions between the DRL components is the stagnation in the sequence of actions taken. The stagnation
-        can have two main forms:
+                * The stagnation can be within one episode, meaning that the agent consistently takes the same action
+                throughout an episode.
+                * The stagnation can occur in the sequence of actions taken in multiple successive episodes. For
+                example, if an agent's possible actions are up/down, and we find that in each episode,
+                the agent takes the sequence (up, up, down, up), this can be a behavioral error.
 
-            * The stagnation can be in one episode which means that the agent is consistently taking the same action
-            throughout an episode
+        II. The action check function performs the following checks:
+                 * During the exploration phase (in the first "exploration_perc" percentage of the total steps):
+                    (1) Checks whether the entropy of the actions starts with a low value.
+                    (2) Checks whether the entropy has decreased very quickly.
+                    (3) Checks whether the entropy is increasing.
+                    (4) Checks whether the entropy is stagnating.
 
-            * The stagnation can be in the sequence of actions taken in multiple successive episodes. For example if
-            an agent's possible actions are (up/ down) and we find that in each episode the agent takes the sequence
-            (up,up,down,up) this can be a behavioural error
+                 * During the exploitation phase (after "exploitation_perc" percentage of the total steps):
 
-        The action check performs the following :
-         - During the exploration phase (in the first "exploration_perc" percentage of the total steps) it does the the wrong behaviours that the action check can detect are:
-            (1) Checks whether the entropy of the actions starts with a low value.
-            (2) Checks whether the entropy has decreased very quickly.
-            (3) Checks whether the entropy is increasing.
-            (4) Checks whether the entropy is stagnating.
-        - During the exploitation (after "exploitation_perc" percentage of the total steps)):
-            (5) Checks whether the sequence of actions taken in multiple episodes is stagnating (i.e. the sequence of
-            actions of multiple episodes are similar).
-            (6) Checks whether the actions taken within a single episode are stagnating.
-        - (7) Checks whether the entropy of the actions is fluctuating
+                    (5) Checks whether the sequence of actions taken in multiple episodes is stagnating (i.e.,
+                    the sequence of actions in multiple episodes is similar).
+                    (6) Checks whether the actions taken within a single episode are stagnating.
+
+                *(7) Checks whether the entropy of the actions is fluctuating.
 
 
-        The potential root causes behind the warnings that can be detected are
-            - Missing Exploration (checks triggered : 1..7)
-            - Suboptimal exploration rate (checks triggered : 1..7)
-            - The agent is stuck in a local optimum (checks triggered : 5,6)
-            - Noisy tv problem (checks triggered : 5,6)
-            - Bad conception of the environment
-                - For example the environment is not returning the right rewards or states (checks triggered : 1..7)
+        III. The potential root causes behind the warnings that can be detected are:
+            - Missing Exploration (checks triggered: 1..7)
+            - Suboptimal exploration rate (checks triggered: 1..7)
+            - The agent is stuck in a local optimum (checks triggered: 5,6)
+            - Noisy tv problem (checks triggered: 5,6)
+            - Bad conception of the environment (checks triggered: 1..7)
+                . For example, the environment is not returning the right rewards or states
 
-        The recommended fixes for the detected issues:
-        - Check whether you are doing the exploration ( checks tha can be fixed: 1..7)
-        - Increase the exploration (1..7)
-        - Check if the environment is doing the stepping correctly ( checks tha can be fixed: 1..7)
-        - Change the architecture of the agent (checks tha can be fixed: 1..7)
-        - Adjust the agent's parameters
-            - Increase the batch size ( checks tha can be fixed: 5,6)
-            - Decrease the learning rate (checks tha can be fixed: 5,6)
-            - Add more regularization (checks tha can be fixed: 5,6)
-            - Use a different optimizer (checks tha can be fixed: 5,6)
-            - Increase the network size (checks tha can be fixed: 1..7)
-            - Use a target network if possible (checks tha can be fixed: 5..6)
 
+        IV. The recommended fixes for the detected issues:
+            - Check whether you are doing the exploration (checks that can be fixed: 1..7)
+            - Increase the exploration (1..7)
+            - Check if the environment is doing the stepping correctly (checks that can be fixed: 1..7)
+            - Change the architecture of the agent (checks that can be fixed: 1..7)
+            - Adjust the agent's parameters:
+                * Increase the batch size (checks that can be fixed: 5,6)
+                * Decrease the learning rate (checks that can be fixed: 5,6)
+                * Add more regularization (checks that can be fixed: 5,6)
+                * Use a different optimizer (checks that can be fixed: 5,6)
+                * Increase the network size (checks that can be fixed: 1..7)
+                * Use a target network if possible (checks that can be fixed: 5,6)
 
         Args:
             actions_probs: The predictions of the model on a batch of observations.
@@ -119,8 +110,8 @@ class ActionCheck(DebuggerInterface):
         if actions_probs.dim() < 2:
             actions_probs = actions_probs.reshape((1, -1))
         if not torch.allclose(
-            torch.sum(actions_probs, dim=1),
-            torch.ones(actions_probs.shape[0], device=self.device),
+                torch.sum(actions_probs, dim=1),
+                torch.ones(actions_probs.shape[0], device=self.device),
         ):
             actions_probs = torch.softmax(actions_probs, dim=1)
         self._action_prob_buffer = torch.cat(
@@ -150,8 +141,10 @@ class ActionCheck(DebuggerInterface):
 
     def compute_entropy(self):
         """
-        Computes the entropy of the action probabilities. self._action_prob_buffer is  tensor containing the action
-        probabilities of shape (batch_size, num_actions)
+        Computes the entropy of the action probabilities. The entropy formula is defined as:
+            H(p) = - sum(p_i * log2(p_i)) for i in 1 to n,
+        where p_i is the probability of the ith action and n is the total number of actions.
+
 
         Returns: entropy (torch.Tensor): A scalar tensor containing the average entropy of the action probabilities.
         """
@@ -180,7 +173,7 @@ class ActionCheck(DebuggerInterface):
         Check if the entropy is increasing with time, or is stagnated during the exploration.
 
         Args:
-            entropy_slope (float): The slope of the linear regression fit to the entropy values.
+            entropy_slope : The slope of the linear regression fit to the entropy values.
         """
         entropy_slope_cof = entropy_slope[0, 0]
         if self.config.monotonicity.disabled:
@@ -272,22 +265,22 @@ class ActionCheck(DebuggerInterface):
         if self.config.action_stag_per_ep.disabled:
             return
         if (
-            len(self._end_episode_indices)
-            >= self.config.action_stag_per_ep.nb_ep_to_check
+                len(self._end_episode_indices)
+                >= self.config.action_stag_per_ep.nb_ep_to_check
         ) and (
-            (len(self.episodes_rewards) == 0)
-            or (
-                statistics.mean(self.episodes_rewards)
-                < max_reward * self.config.action_stag_per_ep.reward_tolerance
-            )
+                (len(self.episodes_rewards) == 0)
+                or (
+                        statistics.mean(self.episodes_rewards)
+                        < max_reward * self.config.action_stag_per_ep.reward_tolerance
+                )
         ):
             final_actions = []
             for i in self._end_episode_indices:
                 start_index = i - self.config.action_stag_per_ep.last_step_num
                 final_actions.append(self._action_buffer[start_index:i])
             if all(
-                (final_actions[i] == final_actions[i + 1])
-                for i in range(len(final_actions) - 1)
+                    (final_actions[i] == final_actions[i + 1])
+                    for i in range(len(final_actions) - 1)
             ):
                 self.error_msg.append(self.main_msgs["actions_are_similar"])
             self._end_episode_indices = []

@@ -9,12 +9,21 @@ import torch.nn.functional as F
 
 
 class AgentCheck(DebuggerInterface):
+    """
+    This function performs checks on the neural networks composing the agent, ensuring they are being updated and
+    interacting correctly.
+    For more details on the specific checks performed, refer to the `run()` function.
+    """
+
     def __init__(self):
         """
-        Initilizes the following parameters:
-        old_target_model_params :it's a dict saving the last parameters of the target network before being updated
-        old_training_data : It a fix batch of data we use to measure the kl divergence. This data can be seen as the benchmarking data
-        old_model_output : the main model's predictions on the old_training_data before being updated. This is usefull  to measure the KL divergence
+        Initializes the following parameters:
+            * old_target_model_params: a dictionary containing the last parameters of the target network before being
+            updated.
+            * old_training_data: a fixed batch of data used to measure the KL divergence. This data can be seen as
+            the benchmarking data.
+            * old_model_output: the main model's predictions on the old_training_data before being updated. This is
+            useful to measure the KL divergence.
         """
         super().__init__(check_type="Agent", config=AgentConfig)
         self.old_target_model_params = None
@@ -31,45 +40,53 @@ class AgentCheck(DebuggerInterface):
         target_net_update_fraction=1,
     ) -> None:
         """
-        This class checks if the agent's neural networks are being updated and coordinated correctly. By agent's
-        neural network we refer to the main and target network. This class will check if the two networks are being
-        updated and used correctly. In many DRL applications the agent can  be composed of a main and target network
-        (which is a copy of the main network), being updated in different periods. The main reason behind using the
-        two different networks in DRL is to improve the stability and efficiency of the learning process. Thus the
-        normal behaviour of the agent should consist of periodically updating the target netwok with the values of
-        the main network. Other than the update period the main and target network should have different parameters,
-        and the target network parameters should be fix. In addition, it's essential to check that the network being
-        used to predict the next action is the main network, otherwise, there will be an unstable learning process.
-        In addition, when updating the main network it's essential to make sure that the main network's update is
-        smooth and there is no catastrophic forgetting in the agent's behaviour, to ensure a stable and robust learning.
+        I. This class checks whether the agent's neural networks are being updated and coordinated correctly. The
+        agent typically consists of a main and target network, with the latter being a copy of the former. The two
+        networks are updated periodically at different intervals to enhance the stability and efficiency of the
+        learning process.
 
-        Note, that the update of the target model can have two forms:
-            - Hard update :  the weights of the target network are copied directly from the main network
-            - Soft update : the weights of the target network are updated gradually over time by interpolating
-            between the weights of the target network and the main network.
+            * This class ensures that the target network is updated correctly when it reaches the update period ,
+              otherwise has fixed parameters in the other steps. For the main network's parameters, it's essential to
+              verify that it has parameters different from the target network's parameters, when it's not the target
+              network's update period. In addition, it is also important to check that the main network is used to
+              predict the next action and not hte target network, as using the target network can cause an unstable
+              learning process.
 
-        The agent check does multiple checks on the agent's behaviour including:
-        (1) Verifies that the target model has been updated at the correct time and with the correct parameter values.
-        (2) Checks that the main and target model have different parameter values (when it's not the target network's update period).
-        (3) Checks whether the agent's predictions are being made by the correct model.
-        (4) Detects significant divergence in the model's behavior between successive updates, which can indicate learning instability.
+            * Additionally, this class checks that the main network's updates are smooth and do not result in
+              catastrophic forgetting, which can lead to an unstable and unreliable learning process.
 
-        The potential root causes behind the warnings that can be detected are
-            - A wrong network update :
-                - The target network is not updated in the wrong period (checks triggered : 1,2)
-                - The target network is not updated with the values of the main network (it can be a hard or a soft update) (checks triggered : 1)
-            - Mixing up between the main and target networks (checks triggered : 1,2,3)
-            - An unstable learning process (checks triggered : 4)
-            - Coding errors (checks triggered : 1,2,3)
+        Note that the update of the target model can be achieved through one of two forms: hard update or soft update.
+            * In a hard update, the weights of the target network are directly copied from the main network.
 
-        The recommended fixes for the detected issues :
-            - Check whether you are updating the target model in the right period (checks that can be fixed: 1,2,3)
+            * In a soft update, the weights of the target network are gradually updated over time by interpolating
+              between the weights of the target network and the main network.
+
+        II. This class is responsible for performing several checks on the agent's behavior during the learning
+            process. It does the following checks :
+            (1) Verifies that the target model has been updated at the correct period with the correct parameter values.
+            (2) Verifies that the main and target model have different parameter values when it's not the target
+                network's update period.
+            (3) Verifies that the agent's predictions are being made by the correct model.
+            (4) Detects significant divergence in the model's behavior between successive updates, which can indicate
+                learning instability.
+
+        III. The potential root causes behind the warnings that can be detected are
+            - Incorrect network updates:
+                * Target network not updated at the correct period (checks triggered: 1, 2)
+                * Target network not updated with the values of the main network (whether it's a hard or soft update)
+                  (checks triggered: 1)
+            - Confusion between the main and target networks (checks triggered: 1, 2, 3)
+            - Unstable learning process (checks triggered: 4)
+            - Coding errors (checks triggered: 1, 2, 3)
+
+        IV. The recommended fixes for the detected issues :
+            - Check whether the target model is being updated at the correct time (checks that can be fixed: 1,2,3).
             - Check if you haven't mixed the main and target network:
                 - You are using the main model to predict the next action (checks that can be fixed: 3)
                 - You are updating the target network with the parameters of the main network (checks that can be fixed: 3)
-            - Check if you are updating the main model correctly (checks that can be fixed: 4)
-            - Check the models hyperparameters (checks that can be fixed: 4)
-            - Change the update period of the target network (checks that can be fixed: 4)
+            - Make sure the main model is updated correctly (checks that can be fixed: 4).
+            - Check the models' hyperparameters to ensure that they are appropriately set (checks that can be fixed: 4).
+            - Consider changing the update period of the target network to address learning instability issues (checks that can be fixed: 4).
 
         Args:
             model (nn.Module): the main model
