@@ -171,7 +171,7 @@ to carefully review these messages and take the necessary actions to resolve any
 issues that they highlight.
 
 ### 6. data visualization
-To help you better understand the results of the debugging process, you added visualization
+To help you better understand the results of the debugging process, we added visualization
 options for some checkers (`Action` and `Reward` checkers) using `Wandb`. You can follow the 
 same logic in your custom checkers if you want to add visualization to them. Please explore 
 [here](https://github.com/rached1997/RLDebugger/blob/dev/debugger/utils/wandb_logger.py) for more details.

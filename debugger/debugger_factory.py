@@ -8,6 +8,7 @@ from debugger.utils.utils import get_device
 from debugger.utils.settings import react, load_default_config
 
 
+# TODO: add the skip parameters
 class DebuggerFactory:
     def __init__(self):
         self.logger = settings.set_logger()
