@@ -13,6 +13,7 @@ from debugger.utils.model_params_getters import get_loss
 class ProperFittingCheck(DebuggerInterface):
     """
     The check in charge of verifying the proper fitting of the DNN before training.
+    For more details on the specific checks performed, refer to the `run()` function.
     """
 
     def __init__(self):
@@ -20,13 +21,36 @@ class ProperFittingCheck(DebuggerInterface):
 
     def run(self, training_observations, targets, actions, opt, model, loss_fn):
         """
-        Evaluate the convergence (ability to fit a sample of data) of the proposed model using an initial sample of
-        data. This function performs the following checks:
+        --------------------------------- I. Introduction of the Proper Fitting Check ---------------------------------
 
-        (1) Stability of the loss function (refer to _loss_is_stable for details)
-        (2) Regularization (refer to regularization_verification for details)
-        (3) Input dependency verification, which compares training performance on real observations and zeroed
-         observations
+        The ProperFittingCheck function evaluates the convergence ability  of the neural network model by testing its
+        ability to fit a small sample of data.
+
+        The function trains the model on a sample of data and then uses it to predict the output values for the same
+        sample. It then compares the predicted values with the actual values to calculate the model's accuracy.
+
+        ------------------------------------------   II. The performed checks  -----------------------------------------
+        The ProperFittingCheck function performs the following checks:
+            (1) Checks the stability of the loss function
+            (2) Checks if there is a Regularization
+            (3) Input dependency verification, which compares training performance on real observations and zeroed
+                observations
+
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
+
+        The potential root causes behind the warnings that can be detected are
+            - Bad architecture of the neural network (checks triggered : 1,2,3)
+            - Bad hyperparameters (checks triggered : 1,2,3)
+            - Bad initialization of the model's parameters (checks triggered : 1,2,3)
+
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
+
+        The recommended fixes for the detected issues:
+            - Change the architecture of the neural network ( checks tha can be fixed: 1,2,3)
+            - Do a hyperparameter tuning ( checks tha can be fixed: 1,2,3)
+            - Reinitialize the model ( checks tha can be fixed: 1,2,3)
+
+
 
         Args:
             training_observations (Tensor): Initial sample of observations.
