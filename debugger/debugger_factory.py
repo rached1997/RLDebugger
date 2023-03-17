@@ -138,10 +138,24 @@ class DebuggerFactory:
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
+    # todo improve the documentation of this function
     def debug(self, **kwargs):
         """
-        Calls the `set_parameters` method with the provided `kwargs`, and then calls the `run` method, to start running
-        the checks
+        This function is used to initiate debugging of the DRL. It requires the parameters that the debugger is
+        tracking in order to automatically run the checkers that are relevant to the received parameters. The
+        checkers will not work unless you call the debug function and provide them with the required parameters. It
+        is important to ensure that the parameter names you use in your code match those in the configuration file.
+        This function can be called from different parts of the user's code. It stores the values of the parameters
+        and keeps checking if there are checkers that can be run at any given moment.
+        The class operates by calling the `set_parameters` method with the provided `kwargs`, and then calling the
+        `run` method to start running the possible checks.
+
+        Note : -It's very important to send the parameter environment before starting any training because it's used
+        to track multiple parameters automatically during the training (e.g. rewards, observations, done ...).
+        Without the environment variable being sent at the beginning the checker won't work correctly.
+        - It's also recommended to send all the constant variables before starting the training
+        - Make sure to use the correct names of variables in the kwargs. The names should be the same as the ones
+        mentioned in the default_debugger.config file
         """
         try:
             # print(self.step_num)
@@ -166,7 +180,20 @@ class DebuggerFactory:
 
     def set_config(self, config_path=None):
         """
-        Set the `debugger` object with the provided `config_path` or with the default config.
+        This function is in responsible for setting the debugger's configuration. By configuration, we mean the
+        parameters that the debugger will observe and the checks that will be executed.
+
+        When you import the debugger, this function sets the default settings (see utils/config/default debugger.yml
+        for more information) which provides the names of the parameters needed to execute the checks.
+
+        In addition to the default call for this function, the user must supply his config file location where he
+        mentions which checks to activate and for what period (the number of times the check will run during the
+        training). The user can also specify a list of custom variables to track, which is particularly useful when
+        creating his own checker. The variables provided by the user should belong to either constants or variables
+        lists.
+
+        Note It is important to note that the user must call this function before beginning his training,
+        as the debugger needs to know which types of checks the user wants to use.
 
         Args:
             config_path (str): The path to the configuration dict
@@ -215,13 +242,17 @@ class DebuggerFactory:
 
     def turn_off(self):
         """
-        Turn off the debugger. This function is useful when there are testing episodes that occur during training.
+        Turns off the debugger. This function is useful when there are testing episodes that occur during training.
+        It's highly commanded to turn off the debugger if you have testing steps that occures during the training
+        phase
         """
         self.training = False
 
     def turn_on(self):
         """
-        Turn on the debugger. This function is useful when there are testing episodes that occur during training.
+        Turns on the debugger. This function is useful when there are testing episodes that occur during training.
+        This function should only be used after finishing the testing episodes that occur during th training. To call
+        this function you should have already called the function turn_off
         """
         self.training = True
 

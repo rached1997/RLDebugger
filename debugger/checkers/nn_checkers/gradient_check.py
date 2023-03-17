@@ -6,7 +6,8 @@ from torch.autograd import gradcheck
 
 class GradientCheck(DebuggerInterface):
     """
-    The check is in charge of verifying the gradient values during pre-training.
+    The check is in charge of verifying the bias values during training.
+    For more details on the specific checks performed, refer to the `run()` function.
     """
 
     def __init__(self):
@@ -14,21 +15,26 @@ class GradientCheck(DebuggerInterface):
 
     def run(self, loss_fn):
         """
-        The gradient represents the directions towards which the weights will be updated. Its the feature responsible
-        for updating the parameters of the model. Thus it's crucial to make sure that the gradient is doing the right
-        behaviour and check if it's calculated correctly
+        -----------------------------------   I. Introduction of the Gradient Check  -----------------------------------
 
-        This Gradient check performs the following pre-check:
-            (1) compares the numerical gradient with the analytic gradient. we perform a numerical gradient
-            checking that consists of comparing the analytic and numerical calculated gradients (i.e., the gradient
-            produced by the analytic formula and the centered finite difference approximation). Both gradients should be
-            approximately equal for the same data points. This check is very useful when DL developers add hand-crafted
-            math operations and gradient estimators. More details on theoretical proof of this function can be found
-            here: - https://link.springer.com/article/10.1007/s10710-017-9314-z -
-            https://cs231n.github.io/neural-networks-3/
+        This class is responsible for performing checks on the gradients of the model. Gradients represent the
+        direction towards which the weights will be updated, making it a crucial feature for updating the parameters
+        of the model during training. It is important to ensure that the gradient is behaving correctly and being
+        calculated accurately, as any errors can lead to suboptimal model performance. This class helps identify any
+        issues with the gradients and ensures that they are being calculated correctly.
+
+        ------------------------------------------   II. The performed checks  -----------------------------------------
+
+        The Gradient check class performs the following pre-check:
+            (1) compares the numerical gradient with the analytic gradient. To see if the gradient is being
+            calculated correctly
+
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
 
         The potential root causes behind the warnings that can be detected are
-            - Wring calculation of the gradient (checks triggered : 1)
+            - Wrong calculation of the gradient (checks triggered : 1)
+
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
 
         The recommended fixes for the detected issues:
             - Verify that the gradient is calculated correctly ( checks tha can be fixed: 1)

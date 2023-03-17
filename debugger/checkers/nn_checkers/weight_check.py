@@ -17,35 +17,38 @@ class WeightsCheck(DebuggerInterface):
 
     def run(self, model: torch.nn.Module) -> None:
         """
-        The weights represents the main component that controls the neural network 's behaviour. during the trainging
-        the neural network triesin each step to update the values of the weights towards reaching the expected goal.
-        Thus it is essential to detect unstabilities in the weights as they may indicate unstabilities and issues in
-        the learning process. The instabilities that may occure consists of having a lot of dead neurons (i.e zeroed
-        weights), having a lot of negative neurons, having unexpected values like nan or inf.
+        -----------------------------------   I. Introduction of the loss Check  -----------------------------------
+
+        This class performs checks on the weights of a neural network, which play a crucial role in determining the
+        network's behavior. During training, the network updates the values of its weights in order to reach its
+        expected goals. As such, it is important to detect any instabilities in the weights, as they may indicate
+        problems in the learning process. These instabilities may take the form of dead neurons (i.e.,
+        zeroed weights), negative weights, or unexpected values such as NaN or Inf. By performing these checks on the
+        weights, this class can help ensure that the neural network is learning effectively and efficiently.
+
+        ------------------------------------------   II. The performed checks  -----------------------------------------
 
         The weight check performs the following checks on the weight during the training:
-        (1) run the following pre-checks
-                    a. Confirming if there is substantial differences between parameter values by computing their variance and
-                    verifying it is not equal to zero.
+        (1) run the following pre-checks on the weights to verify that they have been initialized correctly:
+                    a. Check if the weights are not initialized with the same value.
                     b. Ensuring the distribution of initial random values matches the recommended distribution for the chosen
-                    activation function. This is done by comparing the variance of weights with the recommended variance,
-                    using the f-test. The recommended variances for different activation layers are:
-                        . Lecun initialization for sigmoid activation. (check this paper for more details
-                            http://yann.lecun.org/exdb/publis/pdf/lecun-98b.pdf )
-                        . Glorot initialization for tanh activation (check this paper for more details
-                            https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf )
-                        . He initialization for ReLU activation. (check this paper for more details
-                            https://arxiv.org/pdf/1502.01852.pdf )
-        (2) Check the numerical instabilities of weight values (i.e checks if there is any nan or inf values)
-        (3) This function check weight divergence, as weights risk divergence, and may go towards inf.
+                    activation function. :
+                        . Lecun initialization for sigmoid activation.
+                        . Glorot initialization for tanh activation.
+                        . He initialization for ReLU activation.
+        (2) Check the numerical instabilities of weight values (i.e. checks if there is any nan or inf values)
+        (3) Check weight divergence, as weights risk divergence, and may go towards inf.
 
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
 
         The potential root causes behind the warnings that can be detected are
-            - Bad initialisation of te weights values (checks triggered : 1)
+            - Bad initialization of te weights values (checks triggered : 1)
             - Unstable learning process (checks triggered : 2,3)
 
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
+
         The recommended fixes for the detected issues:
-            - reinitialize the weights ( checks tha can be fixed: 1)
+            - Reinitialize the weights ( checks tha can be fixed: 1)
             - Change the model's hyperparameter ( checks tha can be fixed: 2,3)
             - Change the model's architecture ( checks tha can be fixed: 2,3)
 

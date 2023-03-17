@@ -12,41 +12,54 @@ from debugger.utils.utils import get_balance, get_probas
 class BiasCheck(DebuggerInterface):
     """
     The check is in charge of verifying the bias values during training.
+    For more details on the specific checks performed, refer to the `run()` function.
     """
 
     def __init__(self):
+        """
+        Initializes the following parameters:
+            * b_reductions: a dictionary tracking the bias of each layer
+        """
         super().__init__(check_type="Bias", config=BiasConfig)
         self._b_reductions = dict()
 
     def run(self, model: torch.nn.Module, observations: torch.Tensor = None) -> None:
         """
-        Bias are essential features in any neural network that helps the neural network learn more complex and non
-        lineair patterns in the data. The bias is crucial to reduce the underfitting of the neural network. Generally
-        the bias should e initialised to values different from zero and during the training it should remain stable (
-        i.e. no divergence, no inifinite values, no nan values ...)
+        -----------------------------------   I. Introduction of the Bias Check  -----------------------------------
 
-        This function performs multiple checks on the bias during the training:
-        (1) Run the pre-checks described in the function run_pre_checks
-            a. Verifies the existence of the bias
-            b. Checks if the bias of the last layer is non-zero when the model's output in the initial observation set
-            is imbalanced.
-            c. Validates if the bias of the last layer matches the label ratio when the output of the model in the
-            initial observation set is imbalanced, using the formula bi = log(pi / (1-pi)), where pi is the proportion of
-            observations of the label (actions) corresponding to the bias bi of unit i.
-            d. Confirms that the bias is not set to zero.
-        (2) Validates the numerical stability of bias values during training (i.e. no inf or nan values)
-        (3) Check bias divergence, as biases risk divergence, and may go towards inf. Biases can become huge in cases when features do not adequately explain the predicted outcome or are ineffective.
+        The BiasCheck class is responsible for performing various checks on the neural network's bias. Bias is an
+        essential feature in any neural network that helps it learn more complex and non-linear patterns in the data.
+        It is crucial for reducing the underfitting of the neural network. Generally, bias should be initialized to
+        values different from zero and during training, it should remain stable, i.e., it should not diverge,
+        contain infinite or NaN values, or exhibit any other abnormal behavior. By ensuring that the bias is behaving
+        normally, this class helps improve the overall performance and learning efficiency of the neural network.
+
+        ------------------------------------------   II. The performed checks  -----------------------------------------
+
+        This class performs the following checks on the bias during the training:
+            (1) Run the pre-checks on the bias values, before starting the
+                a. Verifies the existence of the bias
+                b. Checks if the bias of the last layer is non-zero.
+                c. Validates if the bias of the last layer matches the label ratio.
+                d. Confirms that the bias is not set to zero.
+            (2) Validates the numerical stability of bias values during training (i.e. no inf or nan values)
+            (3) Check if the bias values are diverging
+
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
 
         The potential root causes behind the warnings that can be detected are
             - Bad initialisation of te bias values (checks triggered : 1)
             - Unstable learning process (checks triggered : 2,3)
             - Bad data preprocessing (checks triggered : 3)
-            - The data doesn't have a signal (checks triggered : 3)
+            - The data training data (e.g. unbalances, doesn't have a signal) (checks triggered : 3)
+
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
 
         The recommended fixes for the detected issues:
-            - reinitialize the biases ( checks tha can be fixed: 1)
-            - satabilize the learning (e.g change the hyperparameters, change the neural network's architecture) (checks tha can be fixed: 2,3)
-            - Improve the datapreprocessing towards reducing the noise contained in the data (checks tha can be fixed: 3)
+            - Reinitialize the biases ( checks that can be fixed: 1)
+            - Stabilize the learning (e.g. change the hyperparameters, change the neural network's architecture) (
+            checks tha can be fixed: 2,3)
+            - Improve the data preprocessing towards reducing the noise contained in the data (checks that can be fixed: 3)
 
         Examples
         --------
