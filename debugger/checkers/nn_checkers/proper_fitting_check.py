@@ -28,6 +28,20 @@ class ProperFittingCheck(DebuggerInterface):
         (3) Input dependency verification, which compares training performance on real observations and zeroed
          observations
 
+        Examples
+        --------
+        To perform value function checks, the debugger needs to be called when updating the agent.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> next_qvals = target_qnet(next_states)
+        >>> next_qvals, _ = torch.max(next_qvals, dim=1)
+        >>> batch = replay_buffer.sample(batch_size=32)
+        >>> q_targets = batch["reward"] + discount_rate * next_qvals * (1 - batch["done"])
+        >>> rl_debugger.debug(training_observations=batch["state"], targets=q_targets.detach(), actions=actions,
+        >>>                   opt=optimizer, model=qnet, loss_fn=loss_fn)
+        >>> loss = loss_fn(pred_qvals, q_targets).mean()
+
         Args:
             training_observations (Tensor): Initial sample of observations.
             targets (Tensor): Ground truth of the initial observations.

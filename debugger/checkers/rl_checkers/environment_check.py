@@ -10,7 +10,7 @@ import numbers
 class EnvironmentCheck(DebuggerInterface):
     """
     This class performs checks on the environment to ensure that it was designed correctly. These checks are mainly
-    useful when you implement your new custom checks
+    useful when you implement your new custom checks. This code is designed for Gym Environment.
 
     For more details on the specific checks performed, refer to the `run()` function.
     """
@@ -18,14 +18,15 @@ class EnvironmentCheck(DebuggerInterface):
     def __init__(self):
         """
         Initializes the following parameters:
-            * obs_list : A list of observations collected in a random episode
-            * reward_list : A list of rewards collected in a random episode
-            * done_list : A list of done flag collected in a random episode
+            * _obs_list : A list of observations collected in a random episode
+            * _reward_list : A list of rewards collected in a random episode
+            * _done_list : A list of done flag collected in a random episode
         """
         super().__init__(check_type="Environment", config=EnvironmentConfig)
-        self.obs_list = torch.tensor([])
-        self.reward_list = torch.tensor([])
-        self.done_list = torch.tensor([])
+        # TODO: maybe add the "device=self.get_device) for these lists
+        self._obs_list = torch.tensor([])
+        self._reward_list = torch.tensor([])
+        self._done_list = torch.tensor([])
 
     def run(self, environment) -> None:
         """
@@ -68,6 +69,19 @@ class EnvironmentCheck(DebuggerInterface):
             - Check the hyperparameters of the environment (checks that can be fixed: 2)
             - Check if the reward is returned correctly (checks that can be fixed: 3)
 
+        Examples
+        --------
+        The environment is the only parameter required for the debugger to properly operate. Also, the environment
+        needs to be passed at the begining of your code and in the first call of ".debug()".
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> env = gym.make("CartPole-v1")
+        >>> rl_debugger.debug(environment=env)
+
+        Please note that by passing the environment, the debugger will automatically observe the "state," "reward," and
+        "done," and you won't be required to pass them to the debugger.
+
 
         Args:
             environment (gym.env): the training RL environment
@@ -76,16 +90,16 @@ class EnvironmentCheck(DebuggerInterface):
             if environment.spec.max_episode_steps:
                 self.generate_random_eps(environment)
                 self.check_env_conception(environment)
-                if sum(self.reward_list) > environment.spec.reward_threshold:
+                if sum(self._reward_list) > environment.spec.reward_threshold:
                     self.error_msg.append(self.main_msgs['weak_reward_threshold'])
 
                 if (
-                        torch.mean(torch.std(self.obs_list, dim=0))
+                        torch.mean(torch.std(self._obs_list, dim=0))
                         <= self.config.observations_std_coef_thresh
                 ):
                     self.error_msg.append(
                         self.main_msgs["invalid_step_func"].format(
-                            torch.mean(torch.std(self.obs_list, dim=0))
+                            torch.mean(torch.std(self._obs_list, dim=0))
                         )
                     )
 
@@ -103,7 +117,7 @@ class EnvironmentCheck(DebuggerInterface):
         environment = copy.deepcopy(environment)
         done = False
         initial_obs = torch.tensor(environment.reset())
-        self.obs_list = torch.cat((self.obs_list, initial_obs), dim=0)
+        self._obs_list = torch.cat((self._obs_list, initial_obs), dim=0)
 
         step = 0
         while (not done) and (step < environment.spec.max_episode_steps):
@@ -111,11 +125,11 @@ class EnvironmentCheck(DebuggerInterface):
             obs, reward, done, info = environment.step(
                 environment.action_space.sample()
             )
-            self.obs_list = torch.cat((self.obs_list, torch.tensor(obs)), dim=0)
-            self.reward_list = torch.cat(
-                (self.reward_list, torch.tensor([reward])), dim=0
+            self._obs_list = torch.cat((self._obs_list, torch.tensor(obs)), dim=0)
+            self._reward_list = torch.cat(
+                (self._reward_list, torch.tensor([reward])), dim=0
             )
-            self.done_list = torch.cat((self.done_list, torch.tensor([done])), dim=0)
+            self._done_list = torch.cat((self._done_list, torch.tensor([done])), dim=0)
 
     def check_env_conception(self, env: gym.envs):
         """
@@ -152,13 +166,13 @@ class EnvironmentCheck(DebuggerInterface):
         ):
             self.error_msg.append(self.main_msgs["bounded_actions"])
 
-        if torch.any(torch.isnan(self.obs_list)):
+        if torch.any(torch.isnan(self._obs_list)):
             self.error_msg.append(self.main_msgs["observation_not_returned"])
 
-        if not all((isinstance(b, bool) or (b in [0, 1])) for b in self.done_list):
+        if not all((isinstance(b, bool) or (b in [0, 1])) for b in self._done_list):
             self.error_msg.append(self.main_msgs["non_bool_done"])
 
-        if all(is_numerical(r) for r in self.reward_list):
+        if all(is_numerical(r) for r in self._reward_list):
             self.error_msg.append(self.main_msgs["reward_not_numerical"])
 
         if is_numerical(env.spec.max_episode_steps):
@@ -185,7 +199,7 @@ class EnvironmentCheck(DebuggerInterface):
         min_reward_value = self.config.normalization.normalized_reward_min
 
         if (
-                torch.max(self.reward_list) > max_reward_value
-                or torch.min(self.reward_list) < min_reward_value
+                torch.max(self._reward_list) > max_reward_value
+                or torch.min(self._reward_list) < min_reward_value
         ):
             self.error_msg.append(self.main_msgs["reward_unnormalized"])

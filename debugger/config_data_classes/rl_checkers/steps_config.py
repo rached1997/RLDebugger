@@ -12,6 +12,7 @@ class PoorMaxStepPerEpConfig:
 @dataclass
 class StepsConfig:
     period: int = 1
+    skip_run_threshold: int = 2
     exploitation_perc: float = 0.8
     check_stagnation: CheckStagnationConfig = CheckStagnationConfig()
     poor_max_step_per_ep: PoorMaxStepPerEpConfig = PoorMaxStepPerEpConfig()

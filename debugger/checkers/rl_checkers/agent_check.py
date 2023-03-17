@@ -11,33 +11,33 @@ import torch.nn.functional as F
 class AgentCheck(DebuggerInterface):
     """
     This class performs checks on the neural networks composing the agent, ensuring they are being updated and
-    interacting correctly.
+    interacting correctly. This class of checks is dedicated to Q-Learning-based and Hybrid RL algorithms.
     For more details on the specific checks performed, refer to the `run()` function.
     """
 
     def __init__(self):
         """
         Initializes the following parameters:
-            * old_target_model_params: a dictionary containing the last parameters of the target network before being
+            * _old_target_model_params: a dictionary containing the last parameters of the target network before being
             updated.
-            * old_training_data: a fixed batch of data used to measure the KL divergence. This data can be seen as
+            * _old_training_data: a fixed batch of data used to measure the KL divergence. This data can be seen as
             the benchmarking data.
-            * old_model_output: the main model's predictions on the old_training_data before being updated. This is
+            * _old_model_output: the main model's predictions on the _old_training_data before being updated. This is
             useful to measure the KL divergence.
         """
         super().__init__(check_type="Agent", config=AgentConfig)
-        self.old_target_model_params = None
-        self.old_training_data = None
-        self.old_model_output = None
+        self._old_target_model_params = None
+        self._old_training_data = None
+        self._old_model_output = None
 
     def run(
-        self,
-        model,
-        target_model,
-        actions_probs,
-        target_model_update_period,
-        training_observations,
-        target_net_update_fraction=1,
+            self,
+            model,
+            target_model,
+            actions_probs,
+            target_model_update_period,
+            training_observations,
+            target_net_update_fraction=1,
     ) -> None:
         """
         I. This class checks whether the agent's neural networks are being updated and coordinated correctly. The
@@ -83,7 +83,23 @@ class AgentCheck(DebuggerInterface):
                 - You are updating the target network with the parameters of the main network (checks that can be fixed: 3)
             - Make sure the main model is updated correctly (checks that can be fixed: 4).
             - Check the models' hyperparameters to ensure that they are appropriately set (checks that can be fixed: 4).
-            - Consider changing the update period of the target network to address learning instability issues (checks that can be fixed: 4).
+            - Consider changing the update period of the target network to address learning instability issues (checks
+            that can be fixed: 4).
+
+        Examples
+        --------
+        To perform agent checks, the debugger needs to be called when updating the main and target networks. Note that
+        the debugger needs to be called before performing the backward prop (.backward()) and the update of target
+        network (.update_target()).
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> batch = replay_buffer.sample(batch_size=32)
+        >>> rl_debugger.debug(model=qnet, target_model=target_qnet, target_model_update_period=period,
+        >>>                   target_net_update_fraction=update_fraction, training_observations=batch["state"])
+        >>> loss = loss_fn(pred_qvals, q_targets).mean()
+        >>> loss.backward()
+        >>> update_target()
 
         Args:
             model (nn.Module): the main model
@@ -97,9 +113,9 @@ class AgentCheck(DebuggerInterface):
         """
         target_params = target_model.state_dict()
         current_params = model.state_dict()
-        if self.old_target_model_params is None:
-            self.old_target_model_params = target_params
-            self.old_training_data = training_observations
+        if self._old_target_model_params is None:
+            self._old_target_model_params = target_params
+            self._old_training_data = training_observations
         self.check_main_target_models_behaviour(
             target_params,
             current_params,
@@ -110,14 +126,14 @@ class AgentCheck(DebuggerInterface):
         if self.check_period():
             self.check_wrong_model_output(model, training_observations, actions_probs)
             self.check_kl_divergence(model)
-        self.old_model_output = model(self.old_training_data)
+        self._old_model_output = model(self._old_training_data)
 
     def check_main_target_models_behaviour(
-        self,
-        target_params,
-        current_params,
-        target_net_update_fraction,
-        target_model_update_period,
+            self,
+            target_params,
+            current_params,
+            target_net_update_fraction,
+            target_model_update_period,
     ):
         """
         Checks whether the main and target models are being updated correctly during the learning process. This function
@@ -139,18 +155,18 @@ class AgentCheck(DebuggerInterface):
         all_equal = torch.equal(
             target_params[random_layer_name],
             (1 - target_net_update_fraction)
-            * self.old_target_model_params[random_layer_name]
+            * self._old_target_model_params[random_layer_name]
             + target_net_update_fraction * current_params[random_layer_name],
         )
 
         if (
-            (((self.step_num - 1) % target_model_update_period) == 0)
-            and (self.step_num > 1)
-            and not self.config.target_update.disabled
+                (((self.step_num - 1) % target_model_update_period) == 0)
+                and (self.step_num > 1)
+                and not self.config.target_update.disabled
         ):
             if not all_equal:
                 self.error_msg.append(self.main_msgs["target_network_not_updated"])
-            self.old_target_model_params = target_params
+            self._old_target_model_params = target_params
 
         else:
             if not self.config.similarity.disabled:
@@ -159,11 +175,12 @@ class AgentCheck(DebuggerInterface):
                         self.main_msgs["similar_target_and_main_network"]
                     )
                 if not torch.equal(
-                    self.old_target_model_params[random_layer_name],
-                    target_params[random_layer_name],
+                        self._old_target_model_params[random_layer_name],
+                        target_params[random_layer_name],
                 ):
                     self.error_msg.append(self.main_msgs["target_network_changing"])
 
+    # TODO: check action_probs != observations
     def check_wrong_model_output(self, model, observations, action_probs):
         """
         Checks whether the wrong model is being used to predict the following action during the learning process.
@@ -191,16 +208,16 @@ class AgentCheck(DebuggerInterface):
 
         """
         if self.iter_num > 1 and (not self.config.kl_div.disabled):
-            new_model_output = model(self.old_training_data)
+            new_model_output = model(self._old_training_data)
             if not torch.allclose(
-                torch.sum(new_model_output, dim=1),
-                torch.ones(new_model_output.shape[0], device=self.device),
+                    torch.sum(new_model_output, dim=1),
+                    torch.ones(new_model_output.shape[0], device=self.device),
             ):
                 new_model_output = F.softmax(new_model_output, dim=1)
-                self.old_model_output = F.softmax(self.old_model_output, dim=1)
+                self._old_model_output = F.softmax(self._old_model_output, dim=1)
             kl_div = F.kl_div(
                 torch.log(new_model_output),
-                self.old_model_output,
+                self._old_model_output,
                 reduction="batchmean",
             )
             if torch.any(kl_div > self.config.kl_div.div_threshold):

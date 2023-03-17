@@ -13,9 +13,9 @@ class LossCheck(DebuggerInterface):
 
     def __init__(self):
         super().__init__(check_type="Loss", config=LossConfig)
-        self.min_loss = np.inf
-        self.current_losses = []
-        self.average_losses = []
+        self._min_loss = np.inf
+        self._current_losses = []
+        self._average_losses = []
 
     def run(
         self,
@@ -70,10 +70,27 @@ class LossCheck(DebuggerInterface):
             - Increase the update period of the target network (checks tha can be fixed: 2,3)
             - Change the architecture of the neural network (checks tha can be fixed: 2,3)
 
+        Examples
+        --------
+        To perform loss checks, the debugger needs to be called when updating the agent.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> next_qvals = target_qnet(next_states)
+        >>> next_qvals, _ = torch.max(next_qvals, dim=1)
+        >>> batch = replay_buffer.sample(batch_size=32)
+        >>> q_targets = batch["reward"] + discount_rate * next_qvals * (1 - batch["done"])
+        >>> rl_debugger.debug(training_observations=batch["state"], targets=q_targets.detach(), actions=actions,
+        >>>                   model=qnet, loss_fn=loss_fn)
+        >>> loss = loss_fn(pred_qvals, q_targets).mean()
+
         Args:
         targets (Tensor): A sample of targets collected periodically during the training.
-        predictions (Tensor): A sample of predictions collected periodically during the training.
+        training_observations(Tensor): the batch of observations collected during the training used to obtain
+            actions_probs
         loss_fn (torch.nn.Module): the loss function of the model.
+        model (nn.Module): the main model.
+        actions (Tensor): A sample of actions collected periodically during the training.
         """
         actions_probs = model(training_observations)
         predictions = actions_probs[torch.arange(actions_probs.size(0)), actions]
@@ -82,11 +99,11 @@ class LossCheck(DebuggerInterface):
         loss_val = float(get_loss(predictions, targets, loss_fn))
         if self.check_numerical_instabilities(loss_val):
             return
-        self.current_losses += [loss_val]
+        self._current_losses += [loss_val]
         if self.check_period():
-            losses = self.update_losses(np.mean(self.current_losses))
+            losses = self.update_losses(np.mean(self._current_losses))
             self.check_loss_curve(losses)
-            self.current_losses = []
+            self._current_losses = []
 
     def update_losses(self, curr_loss: np.ndarray) -> np.ndarray:
         """
@@ -99,9 +116,9 @@ class LossCheck(DebuggerInterface):
             (numpy.ndarray) : The array of all average (smoothed) loss values.
 
         """
-        self.min_loss = min(curr_loss, self.min_loss)
-        self.average_losses += [curr_loss]
-        return np.array(self.average_losses)
+        self._min_loss = min(curr_loss, self._min_loss)
+        self._average_losses += [curr_loss]
+        return np.array(self._average_losses)
 
     def check_numerical_instabilities(self, loss_value: float) -> bool:
         """
@@ -153,7 +170,7 @@ class LossCheck(DebuggerInterface):
                 self.error_msg.append(self.main_msgs["stagnated_loss"])
         if n_losses >= self.config.div.window_size:
             abs_loss_incrs = [
-                losses[n_losses - i] / self.min_loss
+                losses[n_losses - i] / self._min_loss
                 for i in range(self.config.div.window_size, 0, -1)
             ]
             inc_rates = np.array(

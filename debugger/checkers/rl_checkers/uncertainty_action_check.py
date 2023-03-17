@@ -59,9 +59,32 @@ class UncertaintyActionCheck(DebuggerInterface):
         super().__init__(check_type="UncertaintyAction", config=UncertaintyActionConfig)
         self._buffer = Memory(max_size=self.config.buffer_max_size)
 
-    def run(self, model, observations, environment):
+    def run(self, model: torch.nn.Module, observations: torch.Tensor, environment):
         """
         Checks whether the actions predictions uncertainty over time is reducing during the learning process
+
+        Examples
+        --------
+        To perform uncertainty action checks, the debugger needs to be called after the RL agent has predicted the
+        action. The debugger needs "model" parameter only to perform these checks. The 'observations' parameter is
+        automatically observed by debugger, and you don't need to pass it to the 'debug()' function.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> action, action_logprob, state_val, action_probs = policy_old.act(state)
+        >>> rl_debugger.debug(model=policy_old.actor)
+
+        In the context of DQN, the act() method is the ideal location to invoke the debugger to perform uncertainty
+        action checks.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> state, reward, done, _ = env.step(action)
+        >>> qvals = qnet(state)
+        >>> rl_debugger.debug(model=qnet)
+
+        If you feel that this check is slowing your code, you can increase the value of "skip_run_threshold" in
+        UncertaintyActionConfig.
 
         Args:
             model (nn.Module): the main model

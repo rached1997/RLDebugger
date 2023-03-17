@@ -11,18 +11,19 @@ class StatesCheck(DebuggerInterface):
     def __init__(self):
         """
         Initializes the following parameters:
-            * hashed_observations_buffer : A buffer storing the hashed version of the observations
-            * episodes_rewards : A list storing the reward accumulated in each episode
-            * period_index (list): This parameter marks the index of the observations in the
-            hashed_observations_buffer that represent the final observation in an episode. This helps to delimit the
+            * _hashed_observations_buffer : A buffer storing the hashed version of the observations
+            * _episodes_rewards : A list storing the reward accumulated in each episode
+            * _period_index (list): This parameter marks the index of the observations in the
+            _hashed_observations_buffer that represent the final observation in an episode. This helps to delimit the
             observation of one episode.
         """
         super().__init__(check_type="State", config=StatesConfig)
-        self.hashed_observations_buffer = []
-        self.episodes_rewards = []
-        self.period_index = []
+        self._hashed_observations_buffer = []
+        self._episodes_rewards = []
+        self._period_index = []
 
-    # todo IDEA: ADD the state coverage check
+    # TODO IDEA: ADD the state coverage check
+    # TODO: maybe changing the observations parameter into state parameter
     def run(
             self, observations, environment, reward, max_reward, max_total_steps
     ) -> None:
@@ -76,6 +77,23 @@ class StatesCheck(DebuggerInterface):
             - verify that if the agent is learning correctly, and change its architecture (checks that can be fixed:
             2, 3 )
 
+        Examples
+        --------
+        To perform state checks, the debugger needs "max_total_steps" and "max_reward" parameters only (constant
+        parameters). The 'observations' and 'reward' parameters are automatically observed by debugger, and you don't
+        need to pass them to the 'debug()' function. Also, the environment needs to be passed at the begining of your
+        code and in the first call of ".debug()".
+        The best way to run these checks is to provide the "max_total_steps" and "max_reward" at the begging of your
+        code.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> env = gym.make("CartPole-v1")
+        >>> rl_debugger.debug(max_reward=max_reward, max_total_steps=max_total_steps)
+
+        If you feel that these checks are slowing your code, you can increase the value of "skip_run_threshold" in
+        RewardConfig.
+
         Args:
             observations (Tensor): the observations returned from the step functions
             environment (gym.env): the training RL environment
@@ -87,8 +105,8 @@ class StatesCheck(DebuggerInterface):
 
         """
         if self.is_final_step():
-            self.period_index += [len(self.hashed_observations_buffer)]
-            self.episodes_rewards += [reward]
+            self._period_index += [len(self._hashed_observations_buffer)]
+            self._episodes_rewards += [reward]
         if self.skip_run(self.config.skip_run_threshold):
             return
         if self.check_period():
@@ -108,11 +126,11 @@ class StatesCheck(DebuggerInterface):
         observation_shape = environment.observation_space.shape
         if observations.shape == observation_shape:
             hashed_obs = str(hashlib.sha256(str(observations).encode()).hexdigest())
-            self.hashed_observations_buffer += [hashed_obs]
+            self._hashed_observations_buffer += [hashed_obs]
         else:
             for obs in observations:
                 hashed_obs = str(hashlib.sha256(str(obs).encode()).hexdigest())
-                self.hashed_observations_buffer += [hashed_obs]
+                self._hashed_observations_buffer += [hashed_obs]
 
     def check_states_stagnation(self):
         """
@@ -121,10 +139,10 @@ class StatesCheck(DebuggerInterface):
         """
         if self.config.stagnation.disabled:
             return
-        if (len(self.hashed_observations_buffer) % self.config.stagnation.period) == 0:
+        if (len(self._hashed_observations_buffer) % self.config.stagnation.period) == 0:
             if all(
-                    (obs == self.hashed_observations_buffer[-1])
-                    for obs in self.hashed_observations_buffer[
+                    (obs == self._hashed_observations_buffer[-1])
+                    for obs in self._hashed_observations_buffer[
                                -self.config.stagnation.period:
                                ]
             ):
@@ -148,22 +166,22 @@ class StatesCheck(DebuggerInterface):
         """
         if self.config.states_convergence.disabled:
             return
-        if len(self.period_index) >= self.config.states_convergence.start:
+        if len(self._period_index) >= self.config.states_convergence.start:
             if (
-                    statistics.mean(self.episodes_rewards)
+                    statistics.mean(self._episodes_rewards)
                     < max_reward * self.config.states_convergence.reward_tolerance
             ) and (self.step_num >= (max_total_steps * self.config.exploitation_perc)):
                 final_obs = []
-                for i in self.period_index:
+                for i in self._period_index:
                     starting_index = i - self.config.states_convergence.last_obs_num
-                    final_obs.append(self.hashed_observations_buffer[starting_index:i])
+                    final_obs.append(self._hashed_observations_buffer[starting_index:i])
                 if all(
                         (final_obs[i] == final_obs[i + 1])
                         for i in range(len(final_obs) - 1)
                 ):
                     self.error_msg.append(self.main_msgs["observations_are_similar"])
-                self.period_index = []
-                self.episodes_rewards = []
+                self._period_index = []
+                self._episodes_rewards = []
 
     def check_normalized_observations(self, observations):
         """

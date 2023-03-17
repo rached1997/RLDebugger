@@ -21,7 +21,7 @@ class ActionCheck(DebuggerInterface):
            * _action_buffer (list): The buffer collecting the list of actions taken in each step.
            * _action_prob_buffer (list): The buffer collecting the actions probabilities collected during training.
            * _entropies (list): The list collecting the action entropies measured each period.
-           * episodes_rewards (list): The list collecting the rewards of each episode. This list is useful to avoid
+           * _episodes_rewards (list): The list collecting the rewards of each episode. This list is useful to avoid
                 checking action stagnation per episode when the agent reaches or is close to reaching its goal.
            * _end_episode_indices (list): This parameter marks the index of the actions in the _action_buffer that
                 represent the final actions in an episode. This helps to delimit the actions taken during one episode.
@@ -30,7 +30,7 @@ class ActionCheck(DebuggerInterface):
         self._action_buffer = []
         self._action_prob_buffer = torch.tensor([], device=self.device)
         self._entropies = torch.tensor([], device=self.device)
-        self.episodes_rewards = []
+        self._episodes_rewards = []
         self._end_episode_indices = []
 
     def run(self, actions_probs, max_total_steps, reward, max_reward):
@@ -80,7 +80,8 @@ class ActionCheck(DebuggerInterface):
             - Missing Exploration (checks triggered: 1..7)
             - Suboptimal exploration rate (checks triggered: 1..7)
             - The agent is stuck in a local optimum (checks triggered: 5,6)
-            - Noisy tv problem (checks triggered: 5,6)
+            # TODO: we can put references in the doc
+            - Noisy tv problem [ref] (checks triggered: 5,6)
             - Bad conception of the environment (checks triggered: 1..7)
                 . For example, the environment is not returning the right rewards or states
 
@@ -98,6 +99,28 @@ class ActionCheck(DebuggerInterface):
                 * Increase the network size (checks that can be fixed: 1..7)
                 * Use a target network if possible (checks that can be fixed: 5,6)
 
+        Examples
+        --------
+        To perform action checks, the debugger needs to be called after the RL agent has predicted the action.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> action, action_logprob, state_val, action_probs = policy_old.act(state)
+        >>> rl_debugger.debug(actions_probs=action_probs, max_total_steps=max_total_steps, max_reward=max_reward)
+
+        Note that you don't need to pass the reward to the 'debug()' function as it's automatically observed by the
+        debugger.
+        In the context of DQN, the act() method is the ideal location to invoke the debugger to perform action checks.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> state, reward, done, _ = env.step(action)
+        >>> qvals = qnet(state)
+        >>> rl_debugger.debug(actions_probs=qvals.detach(), max_total_steps=max_total_steps, max_reward=max_reward)
+
+        If you feel that this check is slowing your code, you can increase the value of "skip_run_threshold" in
+        ActionConfig.
+
         Args:
             actions_probs: The predictions of the model on a batch of observations.
             max_total_steps: The maximum total number of steps to finish the training.
@@ -105,7 +128,7 @@ class ActionCheck(DebuggerInterface):
             max_reward: The reward threshold before the task is considered solved.
         """
         if self.is_final_step():
-            self.episodes_rewards += [reward]
+            self._episodes_rewards += [reward]
         if self.skip_run(self.config.skip_run_threshold):
             return
         actions_probs = copy.copy(actions_probs)
@@ -270,15 +293,15 @@ class ActionCheck(DebuggerInterface):
                 len(self._end_episode_indices)
                 >= self.config.action_stag_per_ep.nb_ep_to_check
         ) and (
-                (len(self.episodes_rewards) == 0)
+                (len(self._episodes_rewards) == 0)
                 or (
-                        statistics.mean(self.episodes_rewards)
+                        statistics.mean(self._episodes_rewards)
                         < max_reward * self.config.action_stag_per_ep.reward_tolerance
                 )
         ):
             final_actions = []
             for i in self._end_episode_indices:
-                start_index = i - self.config.action_stag_per_ep.last_step_num
+                start_index = i - self.config.action_stag_per_ep._last_step_num
                 final_actions.append(self._action_buffer[start_index:i])
             if all(
                     (final_actions[i] == final_actions[i + 1])

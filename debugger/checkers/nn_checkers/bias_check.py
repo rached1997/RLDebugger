@@ -16,7 +16,7 @@ class BiasCheck(DebuggerInterface):
 
     def __init__(self):
         super().__init__(check_type="Bias", config=BiasConfig)
-        self.b_reductions = dict()
+        self._b_reductions = dict()
 
     def run(self, model: torch.nn.Module, observations: torch.Tensor = None) -> None:
         """
@@ -47,6 +47,39 @@ class BiasCheck(DebuggerInterface):
             - reinitialize the biases ( checks tha can be fixed: 1)
             - satabilize the learning (e.g change the hyperparameters, change the neural network's architecture) (checks tha can be fixed: 2,3)
             - Improve the datapreprocessing towards reducing the noise contained in the data (checks tha can be fixed: 3)
+
+        Examples
+        --------
+        To perform bias checks, the debugger can be called when the RL agent is predictiong the action ("act()"
+        function) or when the RL is updating its networks.
+        The debugger needs "model" parameter only to perform these checks. The 'observations' parameter is
+        automatically observed by debugger, and you don't need to pass it to the 'debug()' function.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> action, action_logprob, state_val, action_probs = policy_old.act(state)
+        >>> rl_debugger.debug(model=policy_old.actor)
+
+        In the context of DQN, the act() method is one location to invoke the debugger to perform bias checks.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> state, reward, done, _ = env.step(action)
+        >>> qvals = qnet(state)
+        >>> rl_debugger.debug(model=qnet)
+
+         The debugger can also be called in the update() method to perform bias checks.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> batch = replay_buffer.sample(batch_size=32)
+        >>> pred_qvals = qnet(batch['state'])
+        >>> rl_debugger.debug(model=qnet)
+        >>> loss = loss_fn(pred_qvals, q_targets).mean()
+        >>> loss.backward()
+
+        If you feel that this check is slowing your code, you can increase the value of "skip_run_threshold" in
+        BiasConfig.
 
         Args:
             model (nn.model): The model being trained
@@ -82,12 +115,12 @@ class BiasCheck(DebuggerInterface):
         Returns:
             (Tensor): all average biases obtained during training.
         """
-        if bias_name not in self.b_reductions:
-            self.b_reductions[bias_name] = torch.tensor([], device=self.device)
-        self.b_reductions[bias_name] = torch.cat(
-            (self.b_reductions[bias_name], torch.mean(torch.abs(bias_array)).view(1))
+        if bias_name not in self._b_reductions:
+            self._b_reductions[bias_name] = torch.tensor([], device=self.device)
+        self._b_reductions[bias_name] = torch.cat(
+            (self._b_reductions[bias_name], torch.mean(torch.abs(bias_array)).view(1))
         )
-        return self.b_reductions[bias_name]
+        return self._b_reductions[bias_name]
 
     def check_numerical_instabilities(
         self, bias_name: str, bias_array: torch.Tensor

@@ -16,11 +16,11 @@ class ExplorationParameterCheck(DebuggerInterface):
     def __init__(self):
         """
         Initializes the following parameters:
-            * exploration_factor_buffer : A buffer storing the values of the parameter controlling the ratio of
+            * _exploration_factor_buffer : A buffer storing the values of the parameter controlling the ratio of
                                           exploration and exploitation
         """
         super().__init__(check_type="ExplorationParameter", config=ExplorationPramConfig)
-        self.exploration_factor_buffer = []
+        self._exploration_factor_buffer = []
 
     def run(self, exploration_factor) -> None:
         """
@@ -61,13 +61,23 @@ class ExplorationParameterCheck(DebuggerInterface):
             - Change the update frequency of the exploration (checks that can be fixed: 3)
             - Change the update rule of the exploration parameter (checks that can be fixed: 3)
 
+        Examples
+        --------
 
+           To perform exploration parameter checks, the debugger needs to be called when updating the exploration
+            parameter. In the case of DQN for example, the debugger needs to be called in the action function "act()" after
+            updating the epsilon value.
+
+            >>> from debugger import rl_debugger
+            >>> ...
+            >>> epsilon = update_epsilon()
+            >>> rl_debugger.debug(exploration_factor=epsilon)
 
         Args:
             exploration_factor (float): the value of the exploration parameter
         """
         if self.is_final_step():
-            self.exploration_factor_buffer += [exploration_factor]
+            self._exploration_factor_buffer += [exploration_factor]
         self.check_initial_value()
         self.check_exploration_parameter_monotonicity()
         self.check_is_changing_too_quickly()
@@ -76,11 +86,11 @@ class ExplorationParameterCheck(DebuggerInterface):
         """
         Checks if the initial value is correctly set.
         """
-        if (len(self.exploration_factor_buffer) == 1) and not self.config.check_initialization.disabled:
-            if self.exploration_factor_buffer[0] != self.config.starting_value:
+        if (len(self._exploration_factor_buffer) == 1) and not self.config.check_initialization.disabled:
+            if self._exploration_factor_buffer[0] != self.config.starting_value:
                 self.error_msg.append(
                     self.main_msgs["bad_exploration_param_initialization"].format(
-                        self.exploration_factor_buffer[0], self.config.starting_value
+                        self._exploration_factor_buffer[0], self.config.starting_value
                     )
                 )
 
@@ -93,7 +103,7 @@ class ExplorationParameterCheck(DebuggerInterface):
             return
         if self.check_period():
             slope = get_data_slope(
-                torch.tensor(self.exploration_factor_buffer, device=self.device)
+                torch.tensor(self._exploration_factor_buffer, device=self.device)
             )[0]
             if (slope > 0) and (self.config.starting_value > self.config.ending_value):
                 self.error_msg.append(self.main_msgs["increasing_exploration_factor"])
@@ -110,7 +120,7 @@ class ExplorationParameterCheck(DebuggerInterface):
             return
         if self.check_period():
             abs_second_derivative = np.abs(
-                np.gradient(np.gradient(self.exploration_factor_buffer))
+                np.gradient(np.gradient(self._exploration_factor_buffer))
             )
             if np.any(
                 abs_second_derivative

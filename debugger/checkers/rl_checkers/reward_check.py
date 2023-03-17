@@ -2,7 +2,6 @@ import torch
 
 from debugger.config_data_classes.rl_checkers.reward_config import RewardConfig
 from debugger.debugger_interface import DebuggerInterface
-import numpy as np
 
 from debugger.utils.utils import get_data_slope, estimate_fluctuation_rmse
 
@@ -15,10 +14,10 @@ class RewardsCheck(DebuggerInterface):
     def __init__(self):
         """
         Initializes the following parameters:
-            * episodes_rewards : The reward accumulated in each episode
+            * _episodes_rewards : The reward accumulated in each episode
         """
         super().__init__(check_type="Reward", config=RewardConfig)
-        self.episodes_rewards = torch.tensor([], device=self.device)
+        self._episodes_rewards = torch.tensor([], device=self.device)
 
     def run(self, reward, max_total_steps, max_reward) -> None:
         """
@@ -66,15 +65,31 @@ class RewardsCheck(DebuggerInterface):
                 - change the number of layers
             - Check if the step function of the environment is working correctly (checks that can be fixed: 1, 2, 3)
 
+        Examples
+        --------
+        To perform reward checks, the debugger needs "max_total_steps" and "max_reward" parameters only (constant
+        parameters). The reward parameter is automatically observed by debugger, and you don't need to pass the reward to
+        the 'debug()' function.
+        The best way to run these checks is to provide the "max_total_steps" and "max_reward" at the begging of your
+        code.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> env = gym.make("CartPole-v1")
+        >>> rl_debugger.debug(max_reward=max_reward, max_total_steps=max_total_steps)
+
+        If you feel that these checks are slowing your code, you can increase the value of "skip_run_threshold" in
+        RewardConfig.
+
         Args:
             reward (float): the cumulative reward collected in one episode
             max_reward (int):  The reward threshold before the task is considered solved
             max_total_steps (int): The maximum total number of steps to finish the training.
         """
         if self.is_final_step():
-            self.episodes_rewards = torch.cat(
+            self._episodes_rewards = torch.cat(
                 (
-                    self.episodes_rewards,
+                    self._episodes_rewards,
                     torch.tensor(reward, device=self.device).view(1),
                 ),
                 dim=0,
@@ -82,20 +97,20 @@ class RewardsCheck(DebuggerInterface):
 
         if self.skip_run(self.config.skip_run_threshold):
             return
-        n_rewards = len(self.episodes_rewards)
+        n_rewards = len(self._episodes_rewards)
         if self.check_period() and (
             n_rewards >= self.config.window_size * self.config.start
         ):
             stds = []
             stds_nor = []
 
-            for i in range(0, len(self.episodes_rewards) // self.config.window_size):
+            for i in range(0, len(self._episodes_rewards) // self.config.window_size):
                 count = i * self.config.window_size
                 reward_std = torch.std(
-                    self.episodes_rewards[count : count + self.config.window_size]
+                    self._episodes_rewards[count: count + self.config.window_size]
                 )
                 reward_std_nor = torch.std(
-                    self.episodes_rewards[count : count + self.config.window_size]
+                    self._episodes_rewards[count: count + self.config.window_size]
                     / max_reward
                 )
                 self.wandb_metrics = {
@@ -126,7 +141,7 @@ class RewardsCheck(DebuggerInterface):
                 cof = get_data_slope(stds_nor)
                 self.check_reward_monotonicity(cof, max_reward)
 
-            self.episodes_rewards = torch.tensor([], device=self.device)
+            self._episodes_rewards = torch.tensor([], device=self.device)
 
     def check_reward_monotonicity(self, cof, max_reward):
         """
@@ -144,7 +159,7 @@ class RewardsCheck(DebuggerInterface):
                 )
             )
         else:
-            stagnated_reward = torch.mean(self.episodes_rewards)
+            stagnated_reward = torch.mean(self._episodes_rewards)
             if stagnated_reward < max_reward * (
                 1 - self.config.monotonicity.reward_stagnation_tolerance
             ):

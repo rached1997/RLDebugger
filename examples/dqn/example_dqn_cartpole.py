@@ -1,12 +1,8 @@
+# The following code was taken from the RLHive project(https://github.com/chandar-lab/RLHive)
 import torch
 import numpy as np
-import hive
-from hive.runners.utils import load_config
-from hive.runners.single_agent_loop import set_up_experiment
 from hive.agents.dqn import DQNAgent
 from debugger import rl_debugger
-
-
 # uncomment the following line if you want to use the custom check provided in the examples folder
 # from custom_checker import CustomChecker
 

@@ -33,6 +33,22 @@ class GradientCheck(DebuggerInterface):
         The recommended fixes for the detected issues:
             - Verify that the gradient is calculated correctly ( checks tha can be fixed: 1)
 
+        Examples
+        --------
+
+        To perform gradient checks, the debugger needs to be called after defining the loss function. The ideal location
+        would be in the first call of ".debug()".
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> loss_function = torch.nn.SmoothL1Loss
+        >>> ...
+        >>> env = gym.make("CartPole-v1")
+        >>> rl_debugger.debug(environment=env, loss_fn=loss_function)
+
+        Please note that the environment needs to be always passed in the first call of ".debug()". The environment is
+        the only parameter required for the debugger to properly operate.
+
         Args:
             loss_fn: (torch.nn.Module) the loss function of the model.
 

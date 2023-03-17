@@ -13,7 +13,7 @@ class WeightsCheck(DebuggerInterface):
 
     def __init__(self):
         super().__init__(check_type="Weight", config=WeightConfig)
-        self.w_reductions = dict()
+        self._w_reductions = dict()
 
     def run(self, model: torch.nn.Module) -> None:
         """
@@ -48,6 +48,38 @@ class WeightsCheck(DebuggerInterface):
             - reinitialize the weights ( checks tha can be fixed: 1)
             - Change the model's hyperparameter ( checks tha can be fixed: 2,3)
             - Change the model's architecture ( checks tha can be fixed: 2,3)
+
+        Examples
+        --------
+        To perform weight checks, the debugger can be called when the RL agent is predictiong the action ("act()"
+        function) or when the RL is updating its networks.
+        The debugger needs "model" parameter to perform these checks.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> action, action_logprob, state_val, action_probs = policy_old.act(state)
+        >>> rl_debugger.debug(model=policy_old.actor)
+
+        In the context of DQN, the act() method is one location to invoke the debugger to perform bias checks.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> state, reward, done, _ = env.step(action)
+        >>> qvals = qnet(state)
+        >>> rl_debugger.debug(model=qnet)
+
+         The debugger can also be called in the update() method to perform bias checks.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> batch = replay_buffer.sample(batch_size=32)
+        >>> pred_qvals = qnet(batch['state'])
+        >>> rl_debugger.debug(model=qnet)
+        >>> loss = loss_fn(pred_qvals, q_targets).mean()
+        >>> loss.backward()
+
+        If you feel that this check is slowing your code, you can increase the value of "skip_run_threshold" in
+        WeightConfig.
 
         Args:
             model (torch.nn.Module): The model being trained
@@ -85,15 +117,15 @@ class WeightsCheck(DebuggerInterface):
         Returns:
             None
         """
-        if weight_name not in self.w_reductions:
-            self.w_reductions[weight_name] = torch.tensor([], device=self.device)
-        self.w_reductions[weight_name] = torch.cat(
+        if weight_name not in self._w_reductions:
+            self._w_reductions[weight_name] = torch.tensor([], device=self.device)
+        self._w_reductions[weight_name] = torch.cat(
             (
-                self.w_reductions[weight_name],
+                self._w_reductions[weight_name],
                 torch.mean(torch.abs(weight_array)).view(1),
             )
         )
-        return self.w_reductions[weight_name]
+        return self._w_reductions[weight_name]
 
     def check_numerical_instabilities(
         self, weight_name: str, weight_array: torch.Tensor

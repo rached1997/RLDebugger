@@ -11,14 +11,14 @@ class StepCheck(DebuggerInterface):
     def __init__(self):
         """
         Initializes the following parameters:
-            * final_step_number_buffer :  list storing the number of steps taken in each episode
-            * episode_reward_buffer : list storing the rewards accumulated in each episode
-            * last_step_num : an integetr storing the total number of steps the agent did in the previous episode
+            * _final_step_number_buffer :  list storing the number of steps taken in each episode
+            * _episode_reward_buffer : list storing the rewards accumulated in each episode
+            * _last_step_num : an integetr storing the total number of steps the agent did in the previous episode
         """
         super().__init__(check_type="Step", config=StepsConfig)
-        self.final_step_number_buffer = []
-        self.episode_reward_buffer = []
-        self.last_step_num = 0
+        self._final_step_number_buffer = []
+        self._episode_reward_buffer = []
+        self._last_step_num = 0
 
     def run(self, reward, max_reward, max_total_steps, max_steps_per_episode) -> None:
         """
@@ -47,6 +47,23 @@ class StepCheck(DebuggerInterface):
         The recommended fixes for the detected issues :
             - Increase the max step number per episode value (checks that can be fixed: 1)
 
+        Examples
+        --------
+        To perform step checks, the debugger needs "max_reward", "max_total_steps" and "max_steps_per_episode"
+        parameters only (constant parameters). The 'reward' parameter is automatically observed by debugger, and you
+        don't need to pass it to the 'debug()' function.
+        The best way to run these checks is to provide the "max_reward", "max_total_steps" and "max_steps_per_episode"
+        at the begging of your code.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> env = gym.make("CartPole-v1")
+        >>> rl_debugger.debug(max_reward=max_reward, max_total_steps=max_total_steps,
+        >>>                   max_steps_per_episode=max_steps_per_episode)
+
+        If you feel that these checks are slowing your code, you can increase the value of "skip_run_threshold" in
+        RewardConfig.
+
         Args:
             reward (float): the cumulative reward collected in one episode
             max_reward (int):  The reward threshold before the task is considered solved
@@ -54,9 +71,12 @@ class StepCheck(DebuggerInterface):
             max_steps_per_episode (int): the max steps for an episode
         """
         if self.is_final_step():
-            self.final_step_number_buffer += [self.step_num - self.last_step_num]
-            self.episode_reward_buffer += [reward]
-            self.last_step_num = self.step_num
+            self._final_step_number_buffer += [self.step_num - self._last_step_num]
+            self._episode_reward_buffer += [reward]
+            self._last_step_num = self.step_num
+        # TODO: check if this change is working
+        if self.skip_run(self.config.skip_run_threshold):
+            return
 
         self.check_step_is_not_changing(
             max_reward, max_total_steps, max_steps_per_episode
@@ -81,9 +101,9 @@ class StepCheck(DebuggerInterface):
             self.step_num >= (max_total_steps * self.config.exploitation_perc)
         ):
             if (
-                statistics.mean(self.final_step_number_buffer) >= max_steps_per_episode
+                    statistics.mean(self._final_step_number_buffer) >= max_steps_per_episode
             ) and (
-                statistics.mean(self.episode_reward_buffer)
+                statistics.mean(self._episode_reward_buffer)
                 < (max_reward * self.config.poor_max_step_per_ep.max_reward_tol)
             ):
                 self.error_msg.append(self.main_msgs["poor_max_step_per_ep"])

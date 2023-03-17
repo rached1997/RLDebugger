@@ -25,8 +25,8 @@ class ActivationCheck(DebuggerInterface):
 
     def __init__(self):
         super().__init__(check_type="Activation", config=ActivationConfig)
-        self.acts_data = {}
-        self.outputs_metadata = {
+        self._acts_data = {}
+        self._outputs_metadata = {
             "non_zero_variance": {"status": None},
             "max_abs_greater_than_one": {"status": None},
             "can_be_negative": {"status": None},
@@ -67,6 +67,18 @@ class ActivationCheck(DebuggerInterface):
             - Verify that you are usgin the activation function correctly and in the right application ( checks tha can be fixed: 1..6)
             - Verify that you are using the right output function correctly and in the right application ( checks tha can be fixed: 1..6)
 
+        Examples
+        --------
+        To perform activation checks, the debugger needs to be called when updating the agent. Note that
+        the debugger needs to be called before performing the backward prop (.backward()).
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> batch = replay_buffer.sample(batch_size=32)
+        >>> rl_debugger.debug(model=qnet, training_observations=batch["state"])
+        >>> loss = loss_fn(pred_qvals, q_targets).mean()
+        >>> loss.backward()
+
         Args:
             training_observations (Tensor): A sample of observations collected during the training
             model (torch.nn.Module)): The model being trained
@@ -84,7 +96,7 @@ class ActivationCheck(DebuggerInterface):
 
         get_activation()
         outputs = model(training_observations)
-        if self.acts_data == {}:
+        if self._acts_data == {}:
             self.set_acts_data(training_observations.shape[0], activations)
 
         self.update_outs_conds(outputs)
@@ -114,24 +126,24 @@ class ActivationCheck(DebuggerInterface):
         Returns:
             None
         """
-        if self.outputs_metadata["non_zero_variance"]["status"] is None:
-            self.outputs_metadata["non_zero_variance"]["status"] = (
+        if self._outputs_metadata["non_zero_variance"]["status"] is None:
+            self._outputs_metadata["non_zero_variance"]["status"] = (
                 outs_array.var(dim=0) > 0
             )
-            self.outputs_metadata["max_abs_greater_than_one"]["status"] = (
+            self._outputs_metadata["max_abs_greater_than_one"]["status"] = (
                 torch.abs(outs_array) > 1
             ).any(dim=0)
-            self.outputs_metadata["can_be_negative"]["status"] = (outs_array < 0).any(
+            self._outputs_metadata["can_be_negative"]["status"] = (outs_array < 0).any(
                 dim=0
             )
         else:
-            self.outputs_metadata["non_zero_variance"]["status"] |= (
+            self._outputs_metadata["non_zero_variance"]["status"] |= (
                 outs_array.var(dim=0) > 0
             )
-            self.outputs_metadata["max_abs_greater_than_one"]["status"] |= (
+            self._outputs_metadata["max_abs_greater_than_one"]["status"] |= (
                 torch.abs(outs_array) > 1
             ).any(dim=0)
-            self.outputs_metadata["can_be_negative"]["status"] |= (outs_array < 0).any(
+            self._outputs_metadata["can_be_negative"]["status"] |= (outs_array < 0).any(
                 dim=0
             )
 
@@ -156,7 +168,7 @@ class ActivationCheck(DebuggerInterface):
         elif torch.isnan(outs_array).any():
             self.error_msg.append(self.main_msgs["out_nan"])
             return
-        if (self.outputs_metadata["non_zero_variance"]["status"] == False).any():
+        if (self._outputs_metadata["non_zero_variance"]["status"] == False).any():
             self.config.patience -= 1
             if self.config.patience <= 0:
                 self.error_msg.append(self.main_msgs["out_cons"])
@@ -335,11 +347,11 @@ class ActivationCheck(DebuggerInterface):
         (numpy.ndarray) : The updated buffer containing the activations' data of the specified activation layer.
         """
         n = acts_array.shape[0]
-        self.acts_data[acts_name][0:-n] = self.acts_data[acts_name][
+        self._acts_data[acts_name][0:-n] = self._acts_data[acts_name][
             -(self.config.buff_scale - 1) * n :
-        ]
-        self.acts_data[acts_name][-n:] = acts_array.cpu().detach().numpy()
-        return self.acts_data[acts_name]
+                                           ]
+        self._acts_data[acts_name][-n:] = acts_array.cpu().detach().numpy()
+        return self._acts_data[acts_name]
 
     def set_acts_data(self, observations_size: int, activations: dict) -> None:
         """
@@ -356,4 +368,4 @@ class ActivationCheck(DebuggerInterface):
             dims = [int(dim) for dim in acts_array.shape[1:]]
             buffer_size = self.config.buff_scale * observations_size
             acts_data[acts_name] = np.zeros(shape=(buffer_size, *dims))
-        self.acts_data = acts_data
+        self._acts_data = acts_data
