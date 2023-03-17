@@ -8,12 +8,19 @@ import numbers
 
 
 class EnvironmentCheck(DebuggerInterface):
+    """
+    This class performs checks on the environment to ensure that it was designed correctly. These checks are mainly
+    useful when you implement your new custom checks
+
+    For more details on the specific checks performed, refer to the `run()` function.
+    """
+
     def __init__(self):
         """
         Initializes the following parameters:
-        obs_list : A list of observations collected in a random episode
-        reward_list : A list of rewards collected in a random episode
-        done_list : A list of done flag collected in a random episode
+            * obs_list : A list of observations collected in a random episode
+            * reward_list : A list of rewards collected in a random episode
+            * done_list : A list of done flag collected in a random episode
         """
         super().__init__(check_type="Environment", config=EnvironmentConfig)
         self.obs_list = torch.tensor([])
@@ -22,30 +29,40 @@ class EnvironmentCheck(DebuggerInterface):
 
     def run(self, environment) -> None:
         """
-        The environment checks consists of verifying that environment was correctly implemented. This class is mainly
-        usefull when you implement your own environment, in other words you are not using a predifined environement.
-        The main goal of the function is to verify the good conception of the environment and making sure that it
-        doesn't violate the multiple predefined rules. The checks are done once before starting the training to make
-        sure that the environment would work well during the training. A normal environement is required to provide
-        mainlytwo functions the reset and the steps function. The reset function should return a state, and the step
-        function should return three essential elements, namely the state, the reward and done (ot can also return
-        other variables).
+        I. The EnvironmentChecks class is designed to verify the proper implementation of a custom environment. It is
+        particularly useful when creating a new environment from scratch, rather than using a predefined one. The
+        purpose of this class is to ensure that the environment adheres to the predefined rules, and to identify any
+        issues before the training begins.
+        To ensure the environment works as intended, two main functions are tested to check the behaviour of the
+        environment:
+            * The reset() function and the step() function. The reset() function should return an initial
+            state and is used at the beginning of each episode to initialise it.
+            * The step() function should return three essential elements: the state, the reward, and done a boolean
+            indicating if the episode is finished, and other variables, if applicable.
 
-        To evalaute the good conception of the environmnet, the environement check does the following checks in the
-        training environment before starting the learning process:
+        II. Before beginning the learning process, the environment check performs the following checks in the training
+        environment to evaluate the environment's relevancy:
+            (1) Verifies the environment's conception: verifies various features required in any DRL environment
+                a. Verifies that observations and actions are bounded within a valid range.
+                b. Checks that the step function returns valid observation values and does not produce NaN values.
+                c. Ensures that the done flag is a boolean value and that the reward returned from the environment is
+                   numerical.
+                d. Verifies that the max_episode_steps parameter is numerical and sets a valid upper limit on episode
+                   length.
+                e. Checks that the max_reward parameter is numerical and sets a valid threshold for solving the task.
+                f. Verifies that the reset function returns None to indicate that the environment is ready to start a
+                   new episode.
 
-            (1) Checks the conception of the environment: checks multiple features required in any DRL environment you
-            can check the function check_env_conception for more details
             (2) Checks if the max reward threshold is too low
             (3) Checks whether the reward value is normalized
 
-        The potential root causes behind the warnings that can be detected are
+        III. The potential root causes behind the warnings that can be detected are
             - A bad conception of the environment (checks triggered : 1,2,3)
             - Bad hyperparameters of the environment (checks triggered : 2)
-            - The environement is too easy to solve (checks triggered : 2)
+            - The environment is too easy to solve (checks triggered : 2)
             - Lack of preprocessing of the reward returned (checks triggered : 3)
 
-        The recommended fixes for the detected issues :
+        IV. The recommended fixes for the detected issues :
             - Check if the step function is coded correctly (checks that can be fixed: 1,2,3)
             - Check if the reset function is coded correctly (checks that can be fixed: 1)
             - Check the hyperparameters of the environment (checks that can be fixed: 2)
@@ -54,9 +71,6 @@ class EnvironmentCheck(DebuggerInterface):
 
         Args:
             environment (gym.env): the training RL environment
-
-        Returns:
-
         """
         if self.check_period():
             if environment.spec.max_episode_steps:
@@ -66,14 +80,16 @@ class EnvironmentCheck(DebuggerInterface):
                     self.error_msg.append(self.main_msgs['weak_reward_threshold'])
 
                 if (
-                    torch.mean(torch.std(self.obs_list, dim=0))
-                    <= self.config.observations_std_coef_thresh
+                        torch.mean(torch.std(self.obs_list, dim=0))
+                        <= self.config.observations_std_coef_thresh
                 ):
                     self.error_msg.append(
                         self.main_msgs["invalid_step_func"].format(
                             torch.mean(torch.std(self.obs_list, dim=0))
                         )
                     )
+
+                self.check_normalized_rewards()
 
     def generate_random_eps(self, environment):
         """
@@ -106,10 +122,12 @@ class EnvironmentCheck(DebuggerInterface):
         Performs several checks on the agent's behavior to ensure its proper conception:
             - Verifies that observations and actions are bounded within a valid range.
             - Checks that the step function returns valid observation values and does not produce NaN values.
-            - Ensures that the done flag is a boolean value and that the reward returned from the environment is numerical.
+            - Ensures that the done flag is a boolean value and that the reward returned from the environment is
+              numerical.
             - Verifies that the max_episode_steps parameter is numerical and sets a valid upper limit on episode length.
             - Checks that the max_reward parameter is numerical and sets a valid threshold for solving the task.
-            - Verifies that the reset function returns None to indicate that the environment is ready to start a new episode.
+            - Verifies that the reset function returns None to indicate that the environment is ready to start a new
+              episode.
 
         Args:
             env (gym.env): the training RL environment
@@ -117,20 +135,20 @@ class EnvironmentCheck(DebuggerInterface):
 
         def is_numerical(x):
             return (
-                isinstance(None, numbers.Number)
-                and (x is not torch.inf)
-                and (x is not torch.nan)
+                    isinstance(None, numbers.Number)
+                    and (x is not torch.inf)
+                    and (x is not torch.nan)
             )
 
         if not (
-            isinstance(env.observation_space, gym.spaces.Box)
-            or isinstance(env.observation_space, gym.spaces.Discrete)
+                isinstance(env.observation_space, gym.spaces.Box)
+                or isinstance(env.observation_space, gym.spaces.Discrete)
         ):
             self.error_msg.append(self.main_msgs["bounded_observations"])
 
         if not (
-            isinstance(env.action_space, gym.spaces.Box)
-            or (isinstance(env.action_space, gym.spaces.Discrete))
+                isinstance(env.action_space, gym.spaces.Box)
+                or (isinstance(env.action_space, gym.spaces.Discrete))
         ):
             self.error_msg.append(self.main_msgs["bounded_actions"])
 
@@ -152,7 +170,7 @@ class EnvironmentCheck(DebuggerInterface):
         if env.reset() is None:
             self.error_msg.append(self.main_msgs["wrong_reset_func"])
 
-    def check_normalized_rewards(self, reward):
+    def check_normalized_rewards(self):
         """
         Check if the reward value is normalized.
 
@@ -167,7 +185,7 @@ class EnvironmentCheck(DebuggerInterface):
         min_reward_value = self.config.normalization.normalized_reward_min
 
         if (
-            torch.max(self.reward_list) > max_reward_value
-            or torch.min(self.reward_list) < min_reward_value
+                torch.max(self.reward_list) > max_reward_value
+                or torch.min(self.reward_list) < min_reward_value
         ):
             self.error_msg.append(self.main_msgs["reward_unnormalized"])

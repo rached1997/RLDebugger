@@ -8,40 +8,58 @@ from debugger.utils.utils import get_data_slope, estimate_fluctuation_rmse
 
 
 class RewardsCheck(DebuggerInterface):
+    """
+    This class performs checks on the accumulated reward.
+    For more details on the specific checks performed, refer to the `run()` function.
+    """
     def __init__(self):
+        """
+        Initializes the following parameters:
+            * episodes_rewards : The reward accumulated in each episode
+        """
         super().__init__(check_type="Reward", config=RewardConfig)
         self.episodes_rewards = torch.tensor([], device=self.device)
 
     def run(self, reward, max_total_steps, max_reward) -> None:
         """
-        This class checks if the behaviour of the reward is normal or not.  DRL agent's goal is  to maximize the
-        reward it gets from the environment by improving the accuracy of the action it takes. The normal behaviour of
-        a reward is that during the exploration the agent keeps on getting rewards with variable magnitude in each
-        episode and the more it learns the more the accumulated reward becomes more stable and the agent approaches
-        from reaching the maximum reward expected. Thus, in order to analyse the behaviour of the reward and to
-        smoothen the reward plot this classe employs the standard deviation (std) of the reward to reduce the noise
-        and the outliers. What is expected is that the std starts with fluctuating values during the exploration as
-        the agent's behaviour is more based on random actions. The more the exploration is reduced the more the std
-        of the accumulated reward stabilise and in the last episodes the max reward should be close to zero.
+        -----------------------------------   I. Introduction of the Reward Check   -----------------------------------
+
+        The Reward Check class evaluates the behavior of the reward obtained by a DRL agent during the training
+        process. The goal of a DRL agent is to maximize the reward it receives from the environment by improving the
+        precision of the actions it takes.
+        The normal behavior of a reward is that, during the exploration phase, the agent receives rewards with
+        variable magnitudes in each episode. As the agent learns, the accumulated reward becomes more stable,
+        and the agent approaches reaching the maximum expected reward.
+        This class uses the reward's standard deviation (std) to analyse the agent's accumulated reward behaviour.
+        The use of std helps remove noise and outliers and smooth the reward plot. During the exploration the
+        behavior of the DRL application is mostly dependent on random actions, thus, the std should ideally begin
+        with fluctuating reward values. As the exploration phase reduces, the std of the accumulated reward
+        stabilizes, and the maximum reward in the final episodes should be close to zero.
+        This class helps identify issues related to the behavior of the reward and facilitates the monitoring and
+        improvement of the DRL agent's training process.
+
+        ------------------------------------------   II. The performed checks  -----------------------------------------
 
         The reward check class does the following checks on the reward values accumulated in each episode :
-        (1) checks if the reward per episode is fluctuating during the exploration
-        (2) checks if the reward per episode is stagnating in the last episodes of the exploitation
-        (3) checks whether the agent in the last episodes is stuck in a value far from the max reward expected in the
-        last episodes of training
+            (1) Checks if the reward per episode is fluctuating during the exploration
+            (2) Checks if the reward per episode is stagnating in the last episodes of the exploitation
+            (3) Checks whether the agent in the last episodes is stuck in a value far from the max reward expected in
+                the last episodes of training
 
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
 
-        The potential root causes behind the warnings that can be detected are
+        The potential root causes behind the warnings that can be detected are :
             - Missing exploration (checks triggered : 1,2,3)
-            - An unbalanced exploration-exploitation rate (checks triggered : 1,2,3)
+            - An unbalanced exploration-exploitation trade-off (checks triggered : 1,2,3)
             - Wrong max reward value (checks triggered : 3)
             - Bad conception of the environment (checks triggered : 1, 2, 3)
-            - Bad agent's architecture (i.e the agent is not learning correctly) (checks triggered : 1, 2, 3)
+            - Bad agent's architecture (i.e. the agent is not learning correctly) (checks triggered : 1, 2, 3)
 
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
 
         The recommended fixes for the detected issues :
             - Do more exploration (checks that can be fixed: 1,2,3)
-            - Change the ration of the exploration-exploitation (checks that can be fixed: 1,2,3)
+            - Change the ratio of the exploration-exploitation (checks that can be fixed: 1,2,3)
             - Reduce the max_reward value if possible (checks that can be fixed: 3)
             - Change the architecture of the agent (checks that can be fixed: 1, 2, 3)
                 - change its parameters

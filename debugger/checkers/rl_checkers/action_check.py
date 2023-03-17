@@ -10,7 +10,7 @@ from debugger.utils.utils import estimate_fluctuation_rmse, get_data_slope
 
 class ActionCheck(DebuggerInterface):
     """
-    This function performs checks on the actions taken by the agent during the learning process to detect abnormal
+    This class performs checks on the actions taken by the agent during the learning process to detect abnormal
     behaviors that may hinder the training process.
     For more details on the specific checks performed, refer to the `run()` function.
     """
@@ -35,6 +35,8 @@ class ActionCheck(DebuggerInterface):
 
     def run(self, actions_probs, max_total_steps, reward, max_reward):
         """
+        -----------------------------------   I. Introduction of the Actions Check  -----------------------------------
+
         I. The goal of this class is to perform multiple checks on the actions taken to detect abnormal behaviors that
         can occur during the training process.
 
@@ -142,7 +144,7 @@ class ActionCheck(DebuggerInterface):
     def compute_entropy(self):
         """
         Computes the entropy of the action probabilities. The entropy formula is defined as:
-            H(p) = - sum(p_i * log2(p_i)) for i in 1 to n,
+            . H(p) = - sum(p_i * log2(p_i)) for i in 1 to n,
         where p_i is the probability of the ith action and n is the total number of actions.
 
 

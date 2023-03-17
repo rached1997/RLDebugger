@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 class AgentCheck(DebuggerInterface):
     """
-    This function performs checks on the neural networks composing the agent, ensuring they are being updated and
+    This class performs checks on the neural networks composing the agent, ensuring they are being updated and
     interacting correctly.
     For more details on the specific checks performed, refer to the `run()` function.
     """
@@ -44,20 +44,17 @@ class AgentCheck(DebuggerInterface):
         agent typically consists of a main and target network, with the latter being a copy of the former. The two
         networks are updated periodically at different intervals to enhance the stability and efficiency of the
         learning process.
-
             * This class ensures that the target network is updated correctly when it reaches the update period ,
               otherwise has fixed parameters in the other steps. For the main network's parameters, it's essential to
               verify that it has parameters different from the target network's parameters, when it's not the target
               network's update period. In addition, it is also important to check that the main network is used to
               predict the next action and not hte target network, as using the target network can cause an unstable
               learning process.
-
             * Additionally, this class checks that the main network's updates are smooth and do not result in
               catastrophic forgetting, which can lead to an unstable and unreliable learning process.
 
         Note that the update of the target model can be achieved through one of two forms: hard update or soft update.
             * In a hard update, the weights of the target network are directly copied from the main network.
-
             * In a soft update, the weights of the target network are gradually updated over time by interpolating
               between the weights of the target network and the main network.
 

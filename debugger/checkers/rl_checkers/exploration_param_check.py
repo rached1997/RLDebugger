@@ -7,41 +7,61 @@ from debugger.utils.utils import get_data_slope
 
 
 class ExplorationParameterCheck(DebuggerInterface):
+    """
+    This class performs checks on the exploration parameter. The exploration parameter is the one responsible for the
+    trade-off between the exploration and exploitation. In case you don't have an exploration parameter you can
+    deactivate this check.
+    For more details on the specific checks performed, refer to the `run()` function.
+    """
     def __init__(self):
         """
         Initializes the following parameters:
-        exploration_factor_buffer : A buffer storing the values of the parameter controlling the ratio of exploration
-        and exploitation
+            * exploration_factor_buffer : A buffer storing the values of the parameter controlling the ratio of
+                                          exploration and exploitation
         """
         super().__init__(check_type="ExplorationParameter", config=ExplorationPramConfig)
         self.exploration_factor_buffer = []
 
     def run(self, exploration_factor) -> None:
         """
-        Checks the evolution of the exploration parameter during training. A good exploration strategy is one that
-        starts with a high exploration rate to encourage the agent to try different actions and then gradually
-        reduces the exploration rate to shift towards exploitation. In many exploration strategies there is a
-        parameter that cpntrols the ratio of exploration and exploitation. For example in the epsilon greedy the
-        epsilon is the one responsible for the exploration exploitation trade off. It's essential to make sure that
-        the parameter controlling the exploration is being updated correctly otherwise it would lead to a weak
-        exploration or exagerated exploration which will destabilise the behaviour of the learning
+        ------------------------------   I. Introduction of the Exploration Params Check  ------------------------------
 
-        The exploration parameters check performs the following checks:
-        (1) Ensures that the initial value of the exploration parameter is set correctly.
-        (2) Verifies that the exploration parameter is decreasing (or increasing depending on its start and end values) over time as the agent learns.
-        (3) Checks if the exploration parameter is changing too rapidly, which can lead to unstable behavior.
+        The Exploration Parameter Check class evaluates the evolution of the exploration parameter during training.
+        An effective exploration strategy involves starting with a high exploration rate to encourage the agent to
+        explore different actions, and gradually reducing the exploration rate to shift towards exploitation. In many
+        exploration strategies, a parameter controls the ratio of exploration and exploitation. For example,
+        in epsilon-greedy, epsilon is responsible for the exploration-exploitation trade-off.
+        It is essential to ensure that the parameter controlling the exploration is updated correctly to prevent weak
+        exploration or exaggerated exploration, which can destabilize the learning behavior.  The Exploration
+        Parameter Check class enables a more efficient training process by assisting in the identification and
+        resolution of any exploration-related difficulties.
+
+        ------------------------------------------   II. The performed checks  -----------------------------------------
+
+        The Exploration Parameters Check performs the following checks:
+            (1) Ensures that the initial value of the exploration parameter is set correctly.
+            (2) Verifies that the exploration parameter is decreasing (or increasing depending on its start and end
+            values) over time as the agent learns.
+            (3) Checks if the exploration parameter is changing too rapidly, which can lead to an unstable learning
+            behavior.
+
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
 
         The potential root causes behind the warnings that can be detected are:
             - Wrong initialization of the exploration parameter (checks triggered : 1)
             - Wrong update rule of the exploration parameter (checks triggered : 1,2,3)
             - Wrong update frequency of the exploration parameter (checks triggered : 3)
 
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
+
         The recommended fixes for the detected issues :
             - Check if the exploration parameter is correctly initialized (checks that can be fixed: 1,2,3)
-            - Check if the exploration parameter is being update (checks that can be fixed: 2)
-            - Check if the exploration parameter is being update correctly (checks that can be fixed: 2)
+            - Check if the exploration parameter is being updated (checks that can be fixed: 2)
+            - Check if the exploration parameter is being updated correctly (checks that can be fixed: 2)
             - Change the update frequency of the exploration (checks that can be fixed: 3)
-            - Change the update rule of the exploration (checks that can be fixed: 3)
+            - Change the update rule of the exploration parameter (checks that can be fixed: 3)
+
+
 
         Args:
             exploration_factor (float): the value of the exploration parameter
