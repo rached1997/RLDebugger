@@ -72,7 +72,7 @@ class EnvironmentCheck(DebuggerInterface):
         Examples
         --------
         The environment is the only parameter required for the debugger to properly operate. Also, the environment
-        needs to be passed at the begining of your code and in the first call of ".debug()".
+        needs to be passed at the beginning of your code and in the first call of ".debug()".
 
         >>> from debugger import rl_debugger
         >>> ...
