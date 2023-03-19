@@ -83,16 +83,19 @@ def set_logger():
     return file_logger(log_fpath, "logger")
 
 
-def set_wandb_logger(config_path=None):
-    if config_path is None:
-        config_path = load_default_config()
-
+def set_wandb_logger(config_path):
     with open(config_path) as f:
         config = yaml.safe_load(f)
-        return WandbLogger(
-            project=config["debugger"]["wand_logger"]["project"],
-            name=config["debugger"]["wand_logger"]["name"],
-        )
+        if "wandb_logger" in config["debugger"].keys():
+            if bool(config["debugger"]["wandb_logger"]["disable"]):
+                return None
+            return WandbLogger(
+                project=config["debugger"]["wandb_logger"]["project"],
+                name=config["debugger"]["wandb_logger"]["name"],
+            )
+        return None
+
+
 
 
 def react(logger, messages, fail_on=False):

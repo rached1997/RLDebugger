@@ -7,20 +7,20 @@ debugger:
     check_type:
 #      - name: Activation
 #        period: 10
-      - name: Bias
-        period: 10
+#      - name: Bias
+#        period: 10
 #      - name: Loss
 #        period: 10
 #      - name: Weight
 #        period: 10
 #      - name: ProperFitting
 #      - name: Gradient
-#      - name: Action
-#        period: 10
+      - name: Action
+        period: 10
 #      - name: Agent
 #      - name: ExplorationParameter
-#      - name: Reward
-#        period: 10
+      - name: Reward
+        period: 10
 #      - name: State
 #        period: 10
 #      - name: Step
@@ -29,3 +29,8 @@ debugger:
 #        period: 100
 #      - name: ValueFunction
 #        period: 10
+
+  wandb_logger:
+    disable: False
+    project: DRLDebugger
+    name: default_name

@@ -12,7 +12,7 @@ from debugger.utils.settings import react, load_default_config
 class DebuggerFactory:
     def __init__(self):
         self.logger = settings.set_logger()
-        self.wandb_logger = settings.set_wandb_logger()
+        self.wandb_logger = None
         self.debuggers = dict()
         self.observed_params = {}
         self.observed_params_update_nums = dict()
@@ -95,8 +95,8 @@ class DebuggerFactory:
         Returns (bool): returns True if the step is the last one in an episode, and False otherwise.
         """
         if self.observed_params["done"] or (
-            (self.step_num > 0)
-            and ((self.step_num % self.observed_params["max_steps_per_episode"]) == 0)
+                (self.step_num > 0)
+                and ((self.step_num % self.observed_params["max_steps_per_episode"]) == 0)
         ):
             return True
         return False
@@ -199,6 +199,9 @@ class DebuggerFactory:
         Args:
             config_path (str): The path to the configuration dict
         """
+        if not (config_path is None):
+            self.wandb_logger = settings.set_wandb_logger(config_path)
+
         if config_path is None:
             config_path = load_default_config()
 
@@ -258,21 +261,26 @@ class DebuggerFactory:
         self.training = True
 
     def set_custom_wandb_logger(
-        self,
-        project,
-        name,
-        dir=None,
-        mode=None,
-        id=None,
-        resume=None,
-        start_method=None,
-        **kwargs,
+            self,
+            project,
+            name,
+            dir=None,
+            mode=None,
+            id=None,
+            resume=None,
+            start_method=None,
+            **kwargs,
     ):
         self.wandb_logger.custom_wandb_logger(
             project, name, dir, mode, id, resume, start_method, **kwargs
         )
 
     def plot_wandb(self, debugger):
-        if debugger.wandb_metrics:
-            self.wandb_logger.plot(debugger.wandb_metrics)
+        if debugger.wandb_metrics and (not (self.wandb_logger is None)):
+            for (key, values) in debugger.wandb_metrics.items():
+                if values.ndim == 0:
+                    self.wandb_logger.plot({key: values})
+                else:
+                    for value in values:
+                        self.wandb_logger.plot({key: value})
             debugger.wandb_metrics = {}
