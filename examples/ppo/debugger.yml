@@ -7,8 +7,8 @@ debugger:
     check_type:
 #      - name: Activation
 #        period: 10
-#      - name: Bias
-#        period: 10
+      - name: Bias
+        period: 10000
 #      - name: Loss
 #        period: 10000
 #      - name: Weight
@@ -23,8 +23,8 @@ debugger:
 #        period: 1000
 #      - name: State
 #        period: 1000
-      - name: Step
-        period: 1000
+#      - name: Step
+#        period: 1000
 #      - name: UncertaintyAction
 #        period: 1000
 #      - name: ValueFunction

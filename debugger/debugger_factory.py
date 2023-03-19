@@ -135,8 +135,7 @@ class DebuggerFactory:
                 debugger.increment_iteration()
                 debugger.run(**kwargs)
                 # TODO: wandb is taken too much time
-                if debugger.wandb_metrics:
-                    self.wandb_logger.plot(debugger.wandb_metrics)
+                self.plot_wandb(debugger)
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
@@ -272,3 +271,8 @@ class DebuggerFactory:
         self.wandb_logger.custom_wandb_logger(
             project, name, dir, mode, id, resume, start_method, **kwargs
         )
+
+    def plot_wandb(self, debugger):
+        if debugger.wandb_metrics:
+            self.wandb_logger.plot(debugger.wandb_metrics)
+            debugger.wandb_metrics = {}
