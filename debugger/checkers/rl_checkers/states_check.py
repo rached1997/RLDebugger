@@ -108,21 +108,14 @@ class StatesCheck(DebuggerInterface):
         if self.is_final_step():
             self._episode_index += [len(self._hashed_observations_buffer)]
             self._episodes_rewards += [reward]
-            if self.check_period() and (len(self._episode_index) > self.config.start):
+            if len(self._episode_index) > self.config.start:
                 self.check_normalized_observations(observations)
                 self.check_states_stagnation()
                 self.check_states_converging(max_reward, max_total_steps)
 
-                self._hashed_observations_buffer = []
+                # self._hashed_observations_buffer = []
                 self._episode_index = []
                 self._episodes_rewards = []
-
-        # if self.skip_run(self.config.skip_run_threshold):
-        #     return
-        # if self.check_period():
-        #     self.check_normalized_observations(observations)
-        #     self.check_states_stagnation()
-        #     self.check_states_converging(max_reward, max_total_steps)
 
     def update_hashed_observation_buffer(self, environment, observations):
         """
@@ -149,12 +142,11 @@ class StatesCheck(DebuggerInterface):
         if self.config.stagnation.disabled:
             return
         episode_start_index = self._episode_index[-2]
-        if all(
-                (obs == self._hashed_observations_buffer[-1])
-                for obs in self._hashed_observations_buffer[
-                           episode_start_index + 1:episode_start_index + 1 + self.config.stagnation.stagnated_obs_nbr
-                           ]
-        ):
+        if (self._episode_index[-1] - self._episode_index[-2] - 1) < self.config.stagnation.stagnated_obs_nbr:
+            return
+        stag_obs = list((obs == self._hashed_observations_buffer[-1]) for obs in self._hashed_observations_buffer[
+                                                                                 episode_start_index + 1:episode_start_index + self.config.stagnation.stagnated_obs_nbr])
+        if all(stag_obs):
             self.error_msg.append(
                 self.main_msgs["observations_are_similar"].format(
                     self.config.stagnation.stagnated_obs_nbr
@@ -180,7 +172,7 @@ class StatesCheck(DebuggerInterface):
                 < max_reward * self.config.states_convergence.reward_tolerance
         ) and (self.step_num >= (max_total_steps * self.config.exploitation_perc)):
             final_obs = []
-            for i in range(1,self.config.states_convergence.number_of_episodes + 1):
+            for i in range(1, self.config.states_convergence.number_of_episodes + 1):
                 i = self._episode_index[-i]
                 starting_index = i - self.config.states_convergence.last_obs_num
                 final_obs.append(self._hashed_observations_buffer[starting_index:i])

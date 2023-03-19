@@ -1,1 +1,0 @@
-{"train/full_episode_length": 81, "train/0_reward": 81.0, "train/0_episode_length": 81, "0_step": 5074, "train_step": 5074, "test_step": 26, "_timestamp": 1679203994, "_runtime": 62, "_step": 5014, "0/epsilon": 0.1, "test/full_episode_length": 110.0, "test/0_reward": 110.0, "test/0_episode_length": 110.0, "debugger/reward_stds": 0.0, "_wandb": {"runtime": 58}}

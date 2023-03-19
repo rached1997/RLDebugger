@@ -23,9 +23,9 @@ debugger:
 #        period: 1000
 #      - name: State
 #        period: 1000
-#      - name: Step
-#        period: 10000
-      - name: UncertaintyAction
+      - name: Step
         period: 1000
+#      - name: UncertaintyAction
+#        period: 1000
 #      - name: ValueFunction
 #      - name: Environment

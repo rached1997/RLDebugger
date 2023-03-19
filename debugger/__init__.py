@@ -15,7 +15,7 @@ from debugger.checkers.rl_checkers.uncertainty_action_check import (
 from debugger.checkers.rl_checkers.agent_check import AgentCheck
 from debugger.checkers.rl_checkers.reward_check import RewardsCheck
 from debugger.checkers.rl_checkers.states_check import StatesCheck
-from debugger.checkers.rl_checkers.value_function_check import ValueFunctionCheck
+from debugger.checkers.rl_checkers.q_target_check import QTargetCheck
 from debugger.checkers.rl_checkers.environment_check import EnvironmentCheck
 from debugger.debugger_interface import DebuggerInterface
 from debugger.debugger_factory import DebuggerFactory
@@ -32,7 +32,7 @@ registry.register("Environment", EnvironmentCheck, EnvironmentCheck)
 registry.register("State", StatesCheck, StatesCheck)
 registry.register("Reward", RewardsCheck, RewardsCheck)
 registry.register("Agent", AgentCheck, AgentCheck)
-registry.register("ValueFunction", ValueFunctionCheck, ValueFunctionCheck)
+registry.register("ValueFunction", QTargetCheck, QTargetCheck)
 registry.register("Action", ActionCheck, ActionCheck)
 registry.register("UncertaintyAction", UncertaintyActionCheck, UncertaintyActionCheck)
 registry.register(
