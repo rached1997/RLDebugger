@@ -209,7 +209,7 @@ def main():
     runner = set_up_experiment(config)
     rl_debugger.debug(
         environment=runner._environment._env,
-        max_reward=runner._environment._env.spec.reward_threshold,
+        max_reward=100,
         max_steps_per_episode=runner._max_steps_per_episode,
         max_total_steps=runner._experiment_manager._config["train_steps"],
     )

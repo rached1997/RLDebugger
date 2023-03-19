@@ -113,11 +113,10 @@ class RewardsCheck(DebuggerInterface):
                     self._episodes_rewards[count: count + self.config.window_size]
                     / max_reward
                 )
-                self.wandb_metrics = {
-                    "reward_stds": reward_std
-                }
                 stds += [reward_std]
                 stds_nor += [reward_std_nor]
+
+            self.wandb_metrics = {"reward_stds": stds}
 
             stds = torch.tensor(stds).float()
             stds_nor = torch.tensor(stds_nor).float()
