@@ -8,7 +8,7 @@ class InstanceWiseOperation:
 
 @dataclass
 class ProperFittingConfig:
-    period: int = 1
+    period: int = 0
     single_batch_size: int = 16
     total_iters: int = 100
     abs_loss_min_thresh: float = 1e-8

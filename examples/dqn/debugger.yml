@@ -6,17 +6,18 @@ debugger:
       variable: []
     check_type:
 #      - name: Activation
+#        period: 100
+#      - name: Bias
 #        period: 10
-      - name: Bias
-        period: 10
 #      - name: Loss
 #        period: 10
 #      - name: Weight
 #        period: 10
 #      - name: ProperFitting
 #      - name: Gradient
-#      - name: Action
-#        period: 10
+      - name: Action
+        period: 10
+        skip_run_threshold: 2
 #      - name: Agent
 #      - name: ExplorationParameter
 #      - name: Reward

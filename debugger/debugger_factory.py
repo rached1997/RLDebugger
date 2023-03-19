@@ -224,6 +224,8 @@ class DebuggerFactory:
                     debugger = debugger_fn()
                     if "period" in debugger_config.keys():
                         debugger.period = debugger_config["period"]
+                    if "skip_run_threshold" in debugger_config.keys():
+                        debugger.config.skip_run_threshold = debugger_config["skip_run_threshold"]
                     self.debuggers[debugger_config["name"]] = debugger
 
                 # set internal parameters of the debuggers
