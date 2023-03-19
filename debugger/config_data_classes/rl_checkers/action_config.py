@@ -18,14 +18,16 @@ class Monotonicity:
 @dataclass
 class StrongDecrease:
     disabled: bool = False
-    strong_decrease_thresh: int = 5
+    strong_decrease_thresh: int = -0.1
     acceleration_points_ratio: float = 0.2
+    region_length: int = 10
 
 
 @dataclass
 class Fluctuation:
     disabled: bool = False
-    fluctuation_thresh: float = 0.5
+    fluctuation_thresh: float = 0.1
+    region_length: int = 10
 
 
 @dataclass
@@ -39,7 +41,7 @@ class ActionStag:
 class ActionStagPerEp:
     disabled: bool = False
     nb_ep_to_check: int = 2
-    last_step_num: int = 50
+    last_step_num: int = 10
     reward_tolerance: float = 0.5
 
 

@@ -80,8 +80,7 @@ class ActionCheck(DebuggerInterface):
             - Missing Exploration (checks triggered: 1..7)
             - Suboptimal exploration rate (checks triggered: 1..7)
             - The agent is stuck in a local optimum (checks triggered: 5,6)
-            # TODO: we can put references in the doc
-            - Noisy tv problem [ref] (checks triggered: 5,6)
+            - Noisy tv problem (https://arxiv.org/abs/1810.12894#) (checks triggered: 5,6)
             - Bad conception of the environment (checks triggered: 1..7)
                 . For example, the environment is not returning the right rewards or states
 
@@ -127,8 +126,16 @@ class ActionCheck(DebuggerInterface):
             reward: The cumulative reward collected during one episode.
             max_reward: The reward threshold before the task is considered solved.
         """
-        if self.is_final_step():
-            self._episodes_rewards += [reward]
+        # start checking action stagnation
+        if self.step_num > max_total_steps * self.config.exploitation_perc:
+            self._action_buffer.append(torch.argmax(actions_probs).item())
+            if self.is_final_step():
+                self._episodes_rewards += [reward]
+                self._end_episode_indices.append(len(self._action_buffer))
+                self.check_action_stagnation_per_episode(max_reward)
+            if self.check_period():
+                self.check_action_stagnation_overall()
+
         if self.skip_run(self.config.skip_run_threshold):
             return
         actions_probs = copy.copy(actions_probs)
@@ -155,14 +162,6 @@ class ActionCheck(DebuggerInterface):
                     self.check_entropy_monotonicity(entropy_slope=entropy_slope)
                     self.check_entropy_decrease_very_fast()
                 self.check_entropy_fluctuation(entropy_slope=entropy_slope)
-        # start checking action stagnation
-        if self.step_num > max_total_steps * self.config.exploitation_perc:
-            self._action_buffer.append(torch.argmax(actions_probs).item())
-            if self.check_period():
-                self.check_action_stagnation_overall()
-            if self.is_final_step():
-                self._end_episode_indices.append(len(self._action_buffer))
-                self.check_action_stagnation_per_episode(max_reward)
 
     def compute_entropy(self):
         """
@@ -191,6 +190,7 @@ class ActionCheck(DebuggerInterface):
             mean = torch.mean(self._entropies)
             if mean < self.config.low_start.entropy_min_thresh:
                 self.error_msg.append(self.main_msgs["entropy_start"].format(mean))
+            self.config.low_start.disabled = True
         return None
 
     def check_entropy_monotonicity(self, entropy_slope):
@@ -224,7 +224,7 @@ class ActionCheck(DebuggerInterface):
         if self.config.strong_decrease.disabled:
             return
         entropy_values = self._entropies.detach().cpu().numpy()
-        second_derivative = np.gradient(np.gradient(entropy_values))
+        second_derivative = np.gradient(np.gradient(entropy_values[-self.config.strong_decrease.region_length:]))
         acceleration_ratio = np.mean(
             second_derivative < self.config.strong_decrease.strong_decrease_thresh
         )
@@ -247,7 +247,7 @@ class ActionCheck(DebuggerInterface):
         """
         if self.config.fluctuation.disabled:
             return
-        residuals = estimate_fluctuation_rmse(entropy_slope, self._entropies)
+        residuals = estimate_fluctuation_rmse(entropy_slope, self._entropies[-self.config.fluctuation.region_length:])
         if residuals > self.config.fluctuation.fluctuation_thresh:
             self.error_msg.append(
                 self.main_msgs["entropy_fluctuation"].format(
@@ -273,7 +273,7 @@ class ActionCheck(DebuggerInterface):
 
             if similarity_pct > self.config.action_stag.similarity_pct_thresh:
                 self.error_msg.append(
-                    self.main_msgs["action_stagnation"].format(similarity_pct)
+                    self.main_msgs["action_stagnation"].format(similarity_pct*100)
                 )
         return None
 
@@ -301,12 +301,12 @@ class ActionCheck(DebuggerInterface):
         ):
             final_actions = []
             for i in self._end_episode_indices:
-                start_index = i - self.config.action_stag_per_ep._last_step_num
+                start_index = i - self.config.action_stag_per_ep.last_step_num
                 final_actions.append(self._action_buffer[start_index:i])
             if all(
                     (final_actions[i] == final_actions[i + 1])
                     for i in range(len(final_actions) - 1)
             ):
-                self.error_msg.append(self.main_msgs["actions_are_similar"])
+                self.error_msg.append(self.main_msgs["actions_are_similar"].format(len(self._end_episode_indices)))
             self._end_episode_indices = []
         return None

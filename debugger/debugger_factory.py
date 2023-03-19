@@ -122,8 +122,8 @@ class DebuggerFactory:
             kwargs = {}
             is_ready = True
             for arg in arg_names:
-                param_iter = self.observed_params_update_nums[arg]
-                if not (param_iter == -1 or param_iter >= debugger.iter_num + 1):
+                param_update_num = self.observed_params_update_nums[arg]
+                if not (param_update_num == -1 or param_update_num >= debugger.get_number_off_calls()):
                     is_ready = False
                     break
                 else:
@@ -134,6 +134,7 @@ class DebuggerFactory:
                     debugger.max_total_steps = self.observed_params["max_total_steps"]
                 debugger.increment_iteration()
                 debugger.run(**kwargs)
+                # TODO: wandb is taken too much time
                 if debugger.wandb_metrics:
                     self.wandb_logger.plot(debugger.wandb_metrics)
                 react(self.logger, debugger.error_msg)

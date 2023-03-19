@@ -29,6 +29,8 @@ class DebuggableDQNAgent(DQNAgent):
             # Note: not explicitly handling the ties
             action = torch.argmax(qvals).item()
 
+        # action = torch.argmax(qvals).item()
+
         if (
                 self._training
                 and self._logger.should_log(self._timescale)

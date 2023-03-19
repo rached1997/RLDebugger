@@ -16,6 +16,7 @@ class DebuggerInterface(Registrable):
         self.iter_num = 0
         self.error_msg = list()
         self.step_num = None
+        self.skipped_step_num = 0
         self.old_step_num = -1
         self.is_final_step = None
         self.max_total_steps = None
@@ -40,6 +41,7 @@ class DebuggerInterface(Registrable):
             self.old_step_num = self.step_num
             return False
         self.iter_num -= 1
+        self.skipped_step_num += 1
         return True
 
     def increment_iteration(self):
@@ -83,3 +85,6 @@ class DebuggerInterface(Registrable):
         if self.arg_names is None:
             self.arg_names = inspect.getfullargspec(self.run).args[1:]
         return self.arg_names
+
+    def get_number_off_calls(self):
+        return self.iter_num + self.skipped_step_num + 1

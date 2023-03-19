@@ -1,0 +1,1 @@
+{"debugger/entropy": 0.6931309103965759, "_timestamp": 1679190972, "_runtime": 5, "_step": 189, "train/full_episode_length": 19, "train/0_reward": 19.0, "train/0_episode_length": 19, "0_step": 200, "train_step": 200, "test_step": 0, "0/epsilon": 1.0, "_wandb": {"runtime": 39}}
