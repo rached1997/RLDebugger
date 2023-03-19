@@ -21,12 +21,12 @@ debugger:
 #      - name: ExplorationParameter
 #      - name: Reward
 #        period: 10
-#      - name: State
-#        period: 10
+      - name: State
+        period: 10
 #      - name: Step
 #        period: 10
 #      - name: UncertaintyAction
 #        period: 100
-      - name: ValueFunction
-        period: 10
+#      - name: ValueFunction
+#        period: 10
 #      - name: Environment
