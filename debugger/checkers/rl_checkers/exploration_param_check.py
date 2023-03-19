@@ -18,9 +18,11 @@ class ExplorationParameterCheck(DebuggerInterface):
         Initializes the following parameters:
             * _exploration_factor_buffer : A buffer storing the values of the parameter controlling the ratio of
                                           exploration and exploitation
+            * _initial_value_checked : a boolean to track if the check on the initial value is done or not
         """
         super().__init__(check_type="ExplorationParameter", config=ExplorationPramConfig)
         self._exploration_factor_buffer = []
+        self._initial_value_checked = False
 
     def run(self, exploration_factor) -> None:
         """
@@ -78,7 +80,8 @@ class ExplorationParameterCheck(DebuggerInterface):
         """
         if self.is_final_step():
             self._exploration_factor_buffer += [exploration_factor]
-        self.check_initial_value()
+        if not self._initial_value_checked:
+            self.check_initial_value()
         self.check_exploration_parameter_monotonicity()
         self.check_is_changing_too_quickly()
 
@@ -93,6 +96,7 @@ class ExplorationParameterCheck(DebuggerInterface):
                         self._exploration_factor_buffer[0], self.config.starting_value
                     )
                 )
+            self._initial_value_checked = True
 
     def check_exploration_parameter_monotonicity(self):
         """

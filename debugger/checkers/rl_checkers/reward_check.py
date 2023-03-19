@@ -114,8 +114,7 @@ class RewardsCheck(DebuggerInterface):
                     / max_reward
                 )
                 self.wandb_metrics = {
-                    "reward_stds": reward_std,
-                    "reward_stds_nor": reward_std_nor,
+                    "reward_stds": reward_std
                 }
                 stds += [reward_std]
                 stds_nor += [reward_std_nor]

@@ -1,0 +1,24 @@
+{
+    "os": "Windows-10-10.0.17134-SP0",
+    "python": "3.7.13",
+    "heartbeatAt": "2023-03-19T05:19:54.021986",
+    "startedAt": "2023-03-19T05:19:47.819276",
+    "docker": null,
+    "gpu": "GeForce 920M",
+    "gpu_count": 1,
+    "cpu_count": 4,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "C:\\Users\\EXTRA\\Desktop\\RL debugging\\RLDebugger\\examples\\dqn\\single_agent_debuggable.py",
+    "codePath": "examples\\dqn\\single_agent_debuggable.py",
+    "git": {
+        "remote": "https://github.com/rached1997/RLDebugger.git",
+        "commit": "d8e79d5065bbd9e66ab708fd19aa31578d8be4ed"
+    },
+    "email": "bouchoucharached@gmail.com",
+    "root": "C:/Users/EXTRA/Desktop/RL debugging/RLDebugger",
+    "host": "DESKTOP-VHI3HDI",
+    "username": "EXTRA",
+    "executable": "C:\\Users\\EXTRA\\Anaconda3-2021\\envs\\RL_debugging\\python.exe"
+}

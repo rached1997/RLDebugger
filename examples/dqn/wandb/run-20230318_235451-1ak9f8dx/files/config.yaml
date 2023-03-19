@@ -1,0 +1,125 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.12.16
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.7.13
+    start_time: 1679198094
+    t:
+      1:
+      - 1
+      - 55
+      3:
+      - 13
+      - 24
+      4: 3.7.13
+      5: 0.12.16
+      8:
+      - 3
+      - 5
+agent:
+  desc: null
+  value:
+    kwargs:
+      act_dim: 2
+      batch_size: 128
+      device: cuda
+      discount_rate: 0.99
+      epsilon_schedule:
+        kwargs:
+          value: 0.1
+        name: ConstantSchedule
+      log_frequency: 100
+      logger: {}
+      loss_fn:
+        kwargs: {}
+        name: SmoothL1Loss
+      min_replay_history: 500
+      obs_dim:
+      - 4
+      optimizer_fn:
+        kwargs: {}
+        name: Adam
+      replay_buffer:
+        kwargs:
+          capacity: 1000
+          gamma: 0.99
+          observation_dtype: np.float64
+          observation_shape:
+          - 4
+          stack_size: 1
+        name: CircularReplayBuffer
+      representation_net:
+        kwargs:
+          hidden_units:
+          - 256
+          - 256
+        name: MLPNetwork
+      reward_clip: 1
+      target_net_update_schedule:
+        kwargs:
+          off_value: false
+          on_value: true
+          period: 100
+        name: PeriodicSchedule
+      test_epsilon: 0.001
+      update_period_schedule:
+        kwargs:
+          off_value: false
+          on_value: true
+          period: 1
+        name: PeriodicSchedule
+    name: DebuggableDQNAgent
+environment:
+  desc: null
+  value:
+    kwargs:
+      env_name: CartPole-v0
+    name: GymEnv
+loggers:
+  desc: null
+  value:
+    kwargs:
+      logger_list:
+      - kwargs: {}
+        name: ChompLogger
+      - kwargs:
+          name: gym-dqn
+          project: Hive
+          resume: allow
+          start_method: thread
+        name: WandbLogger
+    name: CompositeLogger
+max_steps_per_episode:
+  desc: null
+  value: 100
+run_name:
+  desc: null
+  value: gym-dqn
+save_dir:
+  desc: null
+  value: experiment
+saving_schedule:
+  desc: null
+  value:
+    kwargs:
+      off_value: false
+      on_value: true
+      period: 10000
+    name: PeriodicSchedule
+stack_size:
+  desc: null
+  value: 1
+test_episodes:
+  desc: null
+  value: 10
+test_frequency:
+  desc: null
+  value: 200
+train_steps:
+  desc: null
+  value: 5000
