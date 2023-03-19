@@ -23,25 +23,28 @@ class EnvironmentCheck(DebuggerInterface):
             * _done_list : A list of done flag collected in a random episode
         """
         super().__init__(check_type="Environment", config=EnvironmentConfig)
-        # TODO: maybe add the "device=self.get_device) for these lists
-        self._obs_list = torch.tensor([])
-        self._reward_list = torch.tensor([])
-        self._done_list = torch.tensor([])
+        self._obs_list = None
+        self._reward_list = torch.tensor([], device=self.device)
+        self._done_list = torch.tensor([], device=self.device)
 
     def run(self, environment) -> None:
         """
-        I. The EnvironmentChecks class is designed to verify the proper implementation of a custom environment. It is
+        ----------------------------------- I. Introduction of the Environment Check -----------------------------------
+
+        The EnvironmentChecks class is designed to verify the proper implementation of a custom environment. It is
         particularly useful when creating a new environment from scratch, rather than using a predefined one. The
         purpose of this class is to ensure that the environment adheres to the predefined rules, and to identify any
         issues before the training begins.
         To ensure the environment works as intended, two main functions are tested to check the behaviour of the
-        environment:
-            * The reset() function and the step() function. The reset() function should return an initial
-            state and is used at the beginning of each episode to initialise it.
+        environment The reset() function and the step() function:
+            * The reset() function should return an initial state and is used at the beginning of each episode to
+            initialise it.
             * The step() function should return three essential elements: the state, the reward, and done a boolean
             indicating if the episode is finished, and other variables, if applicable.
 
-        II. Before beginning the learning process, the environment check performs the following checks in the training
+        ------------------------------------------   II. The performed checks  -----------------------------------------
+
+        Before beginning the learning process, the environment check performs the following checks in the training
         environment to evaluate the environment's relevancy:
             (1) Verifies the environment's conception: verifies various features required in any DRL environment
                 a. Verifies that observations and actions are bounded within a valid range.
@@ -53,17 +56,20 @@ class EnvironmentCheck(DebuggerInterface):
                 e. Checks that the max_reward parameter is numerical and sets a valid threshold for solving the task.
                 f. Verifies that the reset function returns None to indicate that the environment is ready to start a
                    new episode.
-
             (2) Checks if the max reward threshold is too low
             (3) Checks whether the reward value is normalized
 
-        III. The potential root causes behind the warnings that can be detected are
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
+
+        The potential root causes behind the warnings that can be detected are
             - A bad conception of the environment (checks triggered : 1,2,3)
             - Bad hyperparameters of the environment (checks triggered : 2)
             - The environment is too easy to solve (checks triggered : 2)
             - Lack of preprocessing of the reward returned (checks triggered : 3)
 
-        IV. The recommended fixes for the detected issues :
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
+
+        The recommended fixes for the detected issues :
             - Check if the step function is coded correctly (checks that can be fixed: 1,2,3)
             - Check if the reset function is coded correctly (checks that can be fixed: 1)
             - Check the hyperparameters of the environment (checks that can be fixed: 2)
@@ -92,7 +98,7 @@ class EnvironmentCheck(DebuggerInterface):
                 self.check_env_conception(environment)
                 if sum(self._reward_list) > environment.spec.reward_threshold:
                     self.error_msg.append(self.main_msgs['weak_reward_threshold'])
-
+                aaa = torch.mean(torch.std(self._obs_list, dim=0))
                 if (
                         torch.mean(torch.std(self._obs_list, dim=0))
                         <= self.config.observations_std_coef_thresh
@@ -117,7 +123,7 @@ class EnvironmentCheck(DebuggerInterface):
         environment = copy.deepcopy(environment)
         done = False
         initial_obs = torch.tensor(environment.reset())
-        self._obs_list = torch.cat((self._obs_list, initial_obs), dim=0)
+        self.save_observation_to_buffer(initial_obs)
 
         step = 0
         while (not done) and (step < environment.spec.max_episode_steps):
@@ -125,7 +131,7 @@ class EnvironmentCheck(DebuggerInterface):
             obs, reward, done, info = environment.step(
                 environment.action_space.sample()
             )
-            self._obs_list = torch.cat((self._obs_list, torch.tensor(obs)), dim=0)
+            self.save_observation_to_buffer(obs)
             self._reward_list = torch.cat(
                 (self._reward_list, torch.tensor([reward])), dim=0
             )
@@ -203,3 +209,16 @@ class EnvironmentCheck(DebuggerInterface):
                 or torch.min(self._reward_list) < min_reward_value
         ):
             self.error_msg.append(self.main_msgs["reward_unnormalized"])
+
+    def save_observation_to_buffer(self, observation):
+        """
+        Save the observations to the buffer self._old_training_data
+
+        args:
+            observations (Tensor): The tensor of the observation to be saved
+        """
+        reshaped_observation = torch.tensor(observation, device=self.device).unsqueeze(dim=0)
+        if self._obs_list is None:
+            self._obs_list = reshaped_observation
+        else:
+            self._obs_list = torch.cat([self._obs_list, reshaped_observation], dim=0)
