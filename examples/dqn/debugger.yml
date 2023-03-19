@@ -30,3 +30,8 @@ debugger:
 #        period: 100
 #      - name: ValueFunction
 #        period: 10
+
+  wandb_logger:
+    disable: False
+    project: DRLDebugger
+    name: default_name

@@ -11,6 +11,7 @@ class RewardsCheck(DebuggerInterface):
     This class performs checks on the accumulated reward.
     For more details on the specific checks performed, refer to the `run()` function.
     """
+
     def __init__(self):
         """
         Initializes the following parameters:
@@ -99,7 +100,7 @@ class RewardsCheck(DebuggerInterface):
             return
         n_rewards = len(self._episodes_rewards)
         if self.check_period() and (
-            n_rewards >= self.config.window_size * self.config.start
+                n_rewards >= self.config.window_size * self.config.start
         ):
             stds = []
             stds_nor = []
@@ -116,13 +117,13 @@ class RewardsCheck(DebuggerInterface):
                 stds += [reward_std]
                 stds_nor += [reward_std_nor]
 
-            self.wandb_metrics = {"reward_stds": stds}
-
             stds = torch.tensor(stds).float()
             stds_nor = torch.tensor(stds_nor).float()
 
+            self.wandb_metrics = {"reward_stds": stds}
+
             if (self.step_num < max_total_steps * self.config.exploration_perc) and (
-                not self.config.fluctuation.disabled
+                    not self.config.fluctuation.disabled
             ):
                 cof = get_data_slope(stds)
                 fluctuations = estimate_fluctuation_rmse(cof, stds)
@@ -134,7 +135,7 @@ class RewardsCheck(DebuggerInterface):
                     )
 
             if self.step_num > max_total_steps * (self.config.exploitation_perc) and (
-                not self.config.monotonicity.disabled
+                    not self.config.monotonicity.disabled
             ):
                 cof = get_data_slope(stds_nor)
                 self.check_reward_monotonicity(cof, max_reward)
@@ -159,7 +160,7 @@ class RewardsCheck(DebuggerInterface):
         else:
             stagnated_reward = torch.mean(self._episodes_rewards)
             if stagnated_reward < max_reward * (
-                1 - self.config.monotonicity.reward_stagnation_tolerance
+                    1 - self.config.monotonicity.reward_stagnation_tolerance
             ):
                 self.error_msg.append(
                     self.main_msgs["stagnated_reward"].format(

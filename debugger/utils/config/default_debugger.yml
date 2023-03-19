@@ -31,7 +31,8 @@ debugger:
         steps_done
       ]
     check_type:
-  wand_logger:
+  wandb_logger:
+    disable: False
     project: DRLDebugger
     name: default_name
 
