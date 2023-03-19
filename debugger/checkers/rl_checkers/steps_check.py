@@ -13,7 +13,7 @@ class StepCheck(DebuggerInterface):
         Initializes the following parameters:
             * _final_step_number_buffer :  list storing the number of steps taken in each episode
             * _episode_reward_buffer : list storing the rewards accumulated in each episode
-            * _last_step_num : an integetr storing the total number of steps the agent did in the previous episode
+            * _last_step_num : an integer storing the total number of steps the agent did in the previous episode
         """
         super().__init__(check_type="Step", config=StepsConfig)
         self._final_step_number_buffer = []
@@ -78,32 +78,30 @@ class StepCheck(DebuggerInterface):
         if self.skip_run(self.config.skip_run_threshold):
             return
 
-        self.check_step_is_not_changing(
-            max_reward, max_total_steps, max_steps_per_episode
-        )
+        if self.check_period() and (
+                self.step_num >= (max_total_steps * self.config.exploitation_perc)
+        ):
+            self.check_step_is_not_changing(
+                max_reward, max_steps_per_episode
+            )
 
-    def check_step_is_not_changing(
-        self, max_reward, max_total_steps, max_steps_per_episode
-    ):
+    def check_step_is_not_changing(self, max_reward, max_steps_per_episode):
         """
         Checks if episodes are being ended prematurely due to the max step limit being reached during the
         exploitation phase when the agent is not learning (i.e. the reward is far from the max reward).
 
         Args:
-            max_reward (int):  The reward threshold before the task is considered solved
-            max_total_steps (int): The maximum total number of steps to finish the training.
-            max_steps_per_episode (int): the max steps for an episode
+            max_reward (int):  The reward threshold before the task is considered solved.
+            max_steps_per_episode (int): the max steps for an episode.
         """
-        if self.config.check_stagnation.disabled:
+        if self.config.poor_max_step_per_ep.disabled:
             return
+        region_length = self.config.poor_max_step_per_ep.region_length
 
-        if self.check_period() and (
-            self.step_num >= (max_total_steps * self.config.exploitation_perc)
+        if (
+                statistics.mean(self._final_step_number_buffer[-region_length:]) >= max_steps_per_episode
+        ) and (
+            statistics.mean(self._episode_reward_buffer[-region_length:])
+            < (max_reward * self.config.poor_max_step_per_ep.max_reward_tol)
         ):
-            if (
-                    statistics.mean(self._final_step_number_buffer) >= max_steps_per_episode
-            ) and (
-                statistics.mean(self._episode_reward_buffer)
-                < (max_reward * self.config.poor_max_step_per_ep.max_reward_tol)
-            ):
-                self.error_msg.append(self.main_msgs["poor_max_step_per_ep"])
+            self.error_msg.append(self.main_msgs["poor_max_step_per_ep"])
