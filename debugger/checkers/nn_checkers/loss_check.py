@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import torch
 from debugger.config_data_classes.nn_checkers.loss_config import LossConfig
@@ -231,6 +233,7 @@ class LossCheck(DebuggerInterface):
             loss_fn (function): The loss function.
             model (nn.Module): The model to be trained.
         """
+        loss_fn = copy.deepcopy(loss_fn)
         losses = []
         n = self.config.init_loss.size_growth_rate
         while n <= (

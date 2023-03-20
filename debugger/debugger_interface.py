@@ -5,8 +5,6 @@ from debugger.utils import settings
 from debugger.utils.utils import get_device
 
 
-# todo DOC: env in the first run, we can check this too
-# todo DOC: think on when two runs sends the same parameter
 class DebuggerInterface(Registrable):
     def __init__(self, check_type, config):
         self.main_msgs = settings.load_messages()

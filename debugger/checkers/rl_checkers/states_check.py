@@ -22,10 +22,8 @@ class StatesCheck(DebuggerInterface):
         self._episodes_rewards = []
         self._episode_index = []
 
-    # TODO IDEA: ADD the state coverage check
-    # TODO: maybe changing the observations parameter into state parameter
     def run(
-            self, observations, environment, reward, max_reward, max_total_steps
+        self, observations, environment, reward, max_reward, max_total_steps
     ) -> None:
         """
         -----------------------------------   I. Introduction of the Reward Check   -----------------------------------
@@ -104,18 +102,22 @@ class StatesCheck(DebuggerInterface):
         Returns:
 
         """
-        self.update_hashed_observation_buffer(environment, observations)
-        if self.is_final_step():
-            self._episode_index += [len(self._hashed_observations_buffer)]
-            self._episodes_rewards += [reward]
-            if len(self._episode_index) > self.config.start:
-                self.check_normalized_observations(observations)
-                self.check_states_stagnation()
-                self.check_states_converging(max_reward, max_total_steps)
+        if self.step_num >= (max_total_steps * self.config.exploitation_perc):
+            self.update_hashed_observation_buffer(environment, observations)
+            if self.is_final_step():
+                self._episode_index += [len(self._hashed_observations_buffer)]
+                self._episodes_rewards += [reward]
 
-                # self._hashed_observations_buffer = []
-                self._episode_index = []
-                self._episodes_rewards = []
+                if self.skip_run(self.config.skip_run_threshold):
+                    return
+                if len(self._episode_index) > self.config.start:
+                    self.check_normalized_observations(observations)
+                    self.check_states_stagnation()
+                    self.check_states_converging(max_reward, max_total_steps)
+
+                    # self._hashed_observations_buffer = []
+                    self._episode_index = []
+                    self._episodes_rewards = []
 
     def update_hashed_observation_buffer(self, environment, observations):
         """
@@ -142,10 +144,18 @@ class StatesCheck(DebuggerInterface):
         if self.config.stagnation.disabled:
             return
         episode_start_index = self._episode_index[-2]
-        if (self._episode_index[-1] - self._episode_index[-2] - 1) < self.config.stagnation.stagnated_obs_nbr:
+        if (
+            self._episode_index[-1] - self._episode_index[-2] - 1
+        ) < self.config.stagnation.stagnated_obs_nbr:
             return
-        stag_obs = list((obs == self._hashed_observations_buffer[-1]) for obs in self._hashed_observations_buffer[
-                                                                                 episode_start_index + 1:episode_start_index + self.config.stagnation.stagnated_obs_nbr])
+        stag_obs = list(
+            (obs == self._hashed_observations_buffer[-1])
+            for obs in self._hashed_observations_buffer[
+                episode_start_index
+                + 1 : episode_start_index
+                + self.config.stagnation.stagnated_obs_nbr
+            ]
+        )
         if all(stag_obs):
             self.error_msg.append(
                 self.main_msgs["observations_are_similar"].format(
@@ -168,17 +178,16 @@ class StatesCheck(DebuggerInterface):
         if self.config.states_convergence.disabled:
             return
         if (
-                statistics.mean(self._episodes_rewards)
-                < max_reward * self.config.states_convergence.reward_tolerance
-        ) and (self.step_num >= (max_total_steps * self.config.exploitation_perc)):
+            statistics.mean(self._episodes_rewards)
+            < max_reward * self.config.states_convergence.reward_tolerance
+        ):
             final_obs = []
             for i in range(1, self.config.states_convergence.number_of_episodes + 1):
                 i = self._episode_index[-i]
                 starting_index = i - self.config.states_convergence.last_obs_num
                 final_obs.append(self._hashed_observations_buffer[starting_index:i])
             if all(
-                    (final_obs[i] == final_obs[i + 1])
-                    for i in range(len(final_obs) - 1)
+                (final_obs[i] == final_obs[i + 1]) for i in range(len(final_obs) - 1)
             ):
                 self.error_msg.append(self.main_msgs["observations_are_similar"])
 

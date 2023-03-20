@@ -44,6 +44,7 @@ class NumericalInstability:
 
 @dataclass
 class ActivationConfig:
+    disabled: bool = False
     period: int = 10
     start: int = 10
     buff_scale: int = 10

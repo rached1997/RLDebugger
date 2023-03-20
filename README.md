@@ -62,6 +62,7 @@ debugger:
     check_type:
       - name: #Checker_Name_1
         period: #Checker_period_value
+        skip_run_threshold: #Checker_skip_run_value
       - name: #Checker_Name_2
 ```
 
@@ -76,6 +77,9 @@ Constant or variable indicates the nature of the observed parm.
 of the Checker can be found in the above table (Check Column).
   * **period** : You can specify the period over which the checker will be called each time. If you don't specify a 
   specific period the default values found in the [config data classes](https://github.com/rached1997/RLDebugger/tree/dev/debugger/config_data_classes) 
+  will be automatically used.
+  * **skip_run_threshold** : You can specify the number of skipped steps over which the checker will be called each 
+  time. If you don't specify a specific value the default values found in the [config data classes](https://github.com/rached1997/RLDebugger/tree/dev/debugger/config_data_classes) 
   will be automatically used.
 
 ### 2. Installation and Importing
@@ -252,7 +256,28 @@ from debugger import rl_debugger
 env = gym.make("CartPole-v1")
 rl_debugger.debug(environment=env)
 ```
-2. If you have a test run during the learning process, you have to turn off/on the debugger. Otherwise, 
+
+2. Every observed parameters (e.g., model, target_model, action_probs, etc) need to be send once to the debugger through
+the ".debug()".
+The following code snippet is a wrong behavior.
+
+```python
+from debugger import rl_debugger
+
+....
+state, reward, done, _ = env.step(action)
+qvals = qnet(state)
+rl_debugger.debug(model=qnet)
+...
+batch = replay_buffer.sample(batch_size=32)
+qvals = qnet(batch["state"])
+rl_debugger.debug(model=qnet)
+```
+
+The above code would result in a wrong behavior as the model is sent twice to the debugger. You should avoid send 
+the same observed parameters from two different code locations.
+
+3. If you have a test run during the learning process, you have to turn off/on the debugger. Otherwise, 
 some unexpected behavior may arise. 
 
 ```python
@@ -265,7 +290,7 @@ def run_testing():
         rl_debugger.turn_on()
         return results
 ```
-3. It is recommended to add all the constant observed params (e.g., max_reward, loss_fn, max_total_steps, ...) at the 
+4. It is recommended to add all the constant observed params (e.g., max_reward, loss_fn, max_total_steps, ...) at the 
 beginning of your code and in the first call of ".debug()". These params needs to be observed once and many checkers 
 rely on them. Thus, providing them once and in at the beginning of your code would be more efficient.
 

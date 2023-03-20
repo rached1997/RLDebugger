@@ -8,6 +8,7 @@ class PoorMaxStepPerEpConfig:
     max_reward_tol: reward tolerance
     region_length: length of the region on which the check is performed
     """
+
     disabled: bool = False
     max_reward_tol: float = 0.1
     region_length: int = 10
@@ -20,6 +21,7 @@ class StepsConfig:
     skip_run_threshold: the number of runs to skip in order to accelerate the debugger
     exploitation_perc: ratio of episodes after which we consider that exploration is occurring
     """
+
     period: int = 1
     skip_run_threshold: int = 2
     exploitation_perc: float = 0.8

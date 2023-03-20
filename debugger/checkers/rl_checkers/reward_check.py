@@ -95,23 +95,18 @@ class RewardsCheck(DebuggerInterface):
                 ),
                 dim=0,
             )
-
-        if self.skip_run(self.config.skip_run_threshold):
-            return
         n_rewards = len(self._episodes_rewards)
-        if self.check_period() and (
-                n_rewards >= self.config.window_size * self.config.start
-        ):
+        if n_rewards >= self.config.window_size * self.config.start:
             stds = []
             stds_nor = []
 
             for i in range(0, len(self._episodes_rewards) // self.config.window_size):
                 count = i * self.config.window_size
                 reward_std = torch.std(
-                    self._episodes_rewards[count: count + self.config.window_size]
+                    self._episodes_rewards[count : count + self.config.window_size]
                 )
                 reward_std_nor = torch.std(
-                    self._episodes_rewards[count: count + self.config.window_size]
+                    self._episodes_rewards[count : count + self.config.window_size]
                     / max_reward
                 )
                 stds += [reward_std]
@@ -123,7 +118,7 @@ class RewardsCheck(DebuggerInterface):
             self.wandb_metrics = {"reward_stds": stds}
 
             if (self.step_num < max_total_steps * self.config.exploration_perc) and (
-                    not self.config.fluctuation.disabled
+                not self.config.fluctuation.disabled
             ):
                 cof = get_data_slope(stds)
                 fluctuations = estimate_fluctuation_rmse(cof, stds)
@@ -135,7 +130,7 @@ class RewardsCheck(DebuggerInterface):
                     )
 
             if self.step_num > max_total_steps * (self.config.exploitation_perc) and (
-                    not self.config.monotonicity.disabled
+                not self.config.monotonicity.disabled
             ):
                 cof = get_data_slope(stds_nor)
                 self.check_reward_monotonicity(cof, max_reward)
@@ -160,7 +155,7 @@ class RewardsCheck(DebuggerInterface):
         else:
             stagnated_reward = torch.mean(self._episodes_rewards)
             if stagnated_reward < max_reward * (
-                    1 - self.config.monotonicity.reward_stagnation_tolerance
+                1 - self.config.monotonicity.reward_stagnation_tolerance
             ):
                 self.error_msg.append(
                     self.main_msgs["stagnated_reward"].format(

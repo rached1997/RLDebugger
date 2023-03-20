@@ -1,9 +1,11 @@
 import numpy as np
 import torch
 
-from debugger.config_data_classes.rl_checkers.exploration_param_config import ExplorationPramConfig
+from debugger.config_data_classes.rl_checkers.exploration_param_config import (
+    ExplorationPramConfig,
+)
 from debugger.debugger_interface import DebuggerInterface
-from debugger.utils.utils import get_data_slope
+from debugger.utils.utils import get_data_slope, almost_equal
 
 
 class ExplorationParameterCheck(DebuggerInterface):
@@ -13,6 +15,7 @@ class ExplorationParameterCheck(DebuggerInterface):
     deactivate this check.
     For more details on the specific checks performed, refer to the `run()` function.
     """
+
     def __init__(self):
         """
         Initializes the following parameters:
@@ -20,7 +23,9 @@ class ExplorationParameterCheck(DebuggerInterface):
                                           exploration and exploitation
             * _initial_value_checked : a boolean to track if the check on the initial value is done or not
         """
-        super().__init__(check_type="ExplorationParameter", config=ExplorationPramConfig)
+        super().__init__(
+            check_type="ExplorationParameter", config=ExplorationPramConfig
+        )
         self._exploration_factor_buffer = []
         self._initial_value_checked = False
 
@@ -89,7 +94,9 @@ class ExplorationParameterCheck(DebuggerInterface):
         """
         Checks if the initial value is correctly set.
         """
-        if (len(self._exploration_factor_buffer) == 1) and not self.config.check_initialization.disabled:
+        if (
+            len(self._exploration_factor_buffer) == 1
+        ) and not self.config.check_initialization.disabled:
             if self._exploration_factor_buffer[0] != self.config.starting_value:
                 self.error_msg.append(
                     self.main_msgs["bad_exploration_param_initialization"].format(
@@ -109,6 +116,8 @@ class ExplorationParameterCheck(DebuggerInterface):
             slope = get_data_slope(
                 torch.tensor(self._exploration_factor_buffer, device=self.device)
             )[0]
+            if almost_equal(slope, 0):
+                return
             if (slope > 0) and (self.config.starting_value > self.config.ending_value):
                 self.error_msg.append(self.main_msgs["increasing_exploration_factor"])
             elif (slope < 0) and (

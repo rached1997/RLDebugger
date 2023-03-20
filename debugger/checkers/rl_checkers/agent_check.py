@@ -29,13 +29,13 @@ class AgentCheck(DebuggerInterface):
         self._old_model_output = None
 
     def run(
-            self,
-            model,
-            target_model,
-            actions_probs,
-            target_model_update_period,
-            observations,
-            target_net_update_fraction,
+        self,
+        model,
+        target_model,
+        actions_probs,
+        target_model_update_period,
+        observations,
+        target_net_update_fraction,
     ) -> None:
         """
         ------------------------------------   I. Introduction of the Agent Check  ------------------------------------
@@ -137,11 +137,11 @@ class AgentCheck(DebuggerInterface):
             self._old_model_output = model(self._old_training_data)
 
     def check_main_target_models_behaviour(
-            self,
-            target_model,
-            model,
-            target_net_update_fraction,
-            target_model_update_period,
+        self,
+        target_model,
+        model,
+        target_net_update_fraction,
+        target_model_update_period,
     ):
         """
         Checks whether the main and target models are being updated correctly during the learning process. This function
@@ -156,25 +156,34 @@ class AgentCheck(DebuggerInterface):
 
         """
         if (
-                (((self.step_num - 1) % target_model_update_period) == 0)
-                and (self.step_num > 1)
-                and not self.config.target_update.disabled
+            (((self.step_num - 1) % target_model_update_period) == 0)
+            and (self.step_num > 1)
+            and not self.config.target_update.disabled
         ):
-            all_equal, _, _ = self.compare_random_layers(model, target_model, target_net_update_fraction)
+            all_equal, _, _ = self.compare_random_layers(
+                model, target_model, target_net_update_fraction
+            )
             if not all_equal:
                 self.error_msg.append(self.main_msgs["target_network_not_updated"])
-            # todo verify that we should do this even when there is a mistake
             self._old_target_model_params = copy.deepcopy(list(target_model.modules()))
 
-        elif (((self.step_num - 2) % target_model_update_period) == 0) and (self.step_num > 2) and (
-                not self.config.similarity.disabled):
-            all_equal, layer_idx, random_target_model_layer = self.compare_random_layers(model, target_model,
-                                                                                         target_net_update_fraction)
+        elif (
+            (((self.step_num - 2) % target_model_update_period) == 0)
+            and (self.step_num > 2)
+            and (not self.config.similarity.disabled)
+        ):
+            (
+                all_equal,
+                layer_idx,
+                random_target_model_layer,
+            ) = self.compare_random_layers(
+                model, target_model, target_net_update_fraction
+            )
             if all_equal:
                 self.error_msg.append(self.main_msgs["similar_target_and_main_network"])
             if not torch.equal(
-                    self._old_target_model_params[layer_idx].weight,
-                    random_target_model_layer
+                self._old_target_model_params[layer_idx].weight,
+                random_target_model_layer,
             ):
                 self.error_msg.append(self.main_msgs["target_network_changing"])
 
@@ -189,7 +198,9 @@ class AgentCheck(DebuggerInterface):
         """
         if self.config.wrong_model_out.disabled:
             return
-        pred_qvals = model(torch.tensor(observations, device=self.device).unsqueeze(dim=0))
+        pred_qvals = model(
+            torch.tensor(observations, device=self.device).unsqueeze(dim=0)
+        )
         if not torch.equal(action_probs, pred_qvals):
             self.error_msg.append(self.main_msgs["using_the_wrong_network"])
 
@@ -204,12 +215,11 @@ class AgentCheck(DebuggerInterface):
         Returns:
 
         """
-        # todo : should we add the kl divergence to the plots
         if self.iter_num > 1 and (not self.config.kl_div.disabled):
             new_model_output = model(self._old_training_data)
             if not torch.allclose(
-                    torch.sum(new_model_output, dim=1),
-                    torch.ones(new_model_output.shape[0], device=self.device),
+                torch.sum(new_model_output, dim=1),
+                torch.ones(new_model_output.shape[0], device=self.device),
             ):
                 new_model_output = F.softmax(new_model_output, dim=1)
                 self._old_model_output = F.softmax(self._old_model_output, dim=1)
@@ -238,8 +248,11 @@ class AgentCheck(DebuggerInterface):
         return (boolean): True if the random layer has the same weights in both main and target networks, otherwise
         false
         """
-        layers = [i for i, module in enumerate(model.modules()) if
-                  (hasattr(module, "bias") or hasattr(module, "weight"))][1:-1]
+        layers = [
+            i
+            for i, module in enumerate(model.modules())
+            if (hasattr(module, "bias") or hasattr(module, "weight"))
+        ][1:-1]
         layer_idx = random.choice(layers)
 
         random_main_model_layer = list(model.modules())[layer_idx].weight
@@ -261,8 +274,12 @@ class AgentCheck(DebuggerInterface):
         args:
             observations (Tensor): The tensor of the observation to be saved
         """
-        reshaped_observation = torch.tensor(observations, device=self.device).unsqueeze(dim=0)
+        reshaped_observation = torch.tensor(observations, device=self.device).unsqueeze(
+            dim=0
+        )
         if self._old_training_data is None:
             self._old_training_data = reshaped_observation
         elif len(self._old_training_data) < self.config.start:
-            self._old_training_data = torch.cat([self._old_training_data, reshaped_observation], dim=0)
+            self._old_training_data = torch.cat(
+                [self._old_training_data, reshaped_observation], dim=0
+            )

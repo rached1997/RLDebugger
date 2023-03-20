@@ -32,7 +32,7 @@ registry.register("Environment", EnvironmentCheck, EnvironmentCheck)
 registry.register("State", StatesCheck, StatesCheck)
 registry.register("Reward", RewardsCheck, RewardsCheck)
 registry.register("Agent", AgentCheck, AgentCheck)
-registry.register("ValueFunction", QTargetCheck, QTargetCheck)
+registry.register("QTarget", QTargetCheck, QTargetCheck)
 registry.register("Action", ActionCheck, ActionCheck)
 registry.register("UncertaintyAction", UncertaintyActionCheck, UncertaintyActionCheck)
 registry.register(

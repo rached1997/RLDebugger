@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from hive.agents.dqn import DQNAgent
 from debugger import rl_debugger
+
 # uncomment the following line if you want to use the custom check provided in the examples folder
 # from custom_checker import CustomChecker
 
@@ -32,13 +33,15 @@ class DebuggableDQNAgent(DQNAgent):
         # action = torch.argmax(qvals).item()
 
         if (
-                self._training
-                and self._logger.should_log(self._timescale)
-                and self._state["episode_start"]
+            self._training
+            and self._logger.should_log(self._timescale)
+            and self._state["episode_start"]
         ):
             self._state["episode_start"] = False
 
-        rl_debugger.debug(actions_probs=qvals.detach(), exploration_factor=epsilon, model=self._qnet)
+        rl_debugger.debug(
+            actions_probs=qvals.detach(), exploration_factor=epsilon, model=self._qnet
+        )
         return action
 
     def update(self, update_info):
@@ -50,9 +53,9 @@ class DebuggableDQNAgent(DQNAgent):
 
         self._replay_buffer.add(**self.preprocess_update_info(update_info))
         if (
-                self._learn_schedule.update()
-                and self._replay_buffer.size() > 0
-                and self._update_period_schedule.update()
+            self._learn_schedule.update()
+            and self._replay_buffer.size() > 0
+            and self._update_period_schedule.update()
         ):
             batch = self._replay_buffer.sample(batch_size=self._batch_size)
             (
@@ -71,7 +74,7 @@ class DebuggableDQNAgent(DQNAgent):
             next_qvals = self._target_qnet(*next_state_inputs)
             next_qvals, _ = torch.max(next_qvals, dim=1)
             q_targets = batch["reward"] + self._discount_rate * next_qvals * (
-                    1 - batch["done"]
+                1 - batch["done"]
             )
 
             rl_debugger.debug(
@@ -86,7 +89,7 @@ class DebuggableDQNAgent(DQNAgent):
                 discount_rate=self._discount_rate,
                 predicted_next_vals=next_qvals.detach(),
                 steps_rewards=batch["reward"],
-                steps_done=batch["done"]
+                steps_done=batch["done"],
             )
 
             loss = self._loss_fn(pred_qvals, q_targets).mean()

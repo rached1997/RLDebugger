@@ -74,6 +74,8 @@ class ProperFittingCheck(DebuggerInterface):
             model (nn.Module): Model to be trained.
             loss_fn (function): Loss function.
         """
+        if self.config.disabled:
+            return
         model = copy.deepcopy(model)
         opt = copy.deepcopy(opt)
         if not self.check_period():

@@ -8,6 +8,7 @@ class LowStart:
     start: the minimum number of elements required to run the check
     entropy_min_thresh: minimum accepted initial entropy value
     """
+
     disabled: bool = False
     start: int = 3
     entropy_min_thresh: float = 0.3
@@ -20,6 +21,7 @@ class Monotonicity:
     increase_thresh: maximum accepted entropy slope
     stagnation_thresh: minimum accepted entropy slope
     """
+
     disabled: bool = False
     increase_thresh: float = 0.1
     stagnation_thresh: float = 1e-3
@@ -33,6 +35,7 @@ class StrongDecrease:
     acceleration_points_ratio: accepted ratio of entropy point with low second derivative values
     region_length: length of the region on which the check is performed
     """
+
     disabled: bool = False
     strong_decrease_thresh: int = -0.1
     acceleration_points_ratio: float = 0.2
@@ -46,6 +49,7 @@ class Fluctuation:
     fluctuation_thresh: maximum accepted value of rmse value of the entropy
     region_length: length of the region on which the check is performed
     """
+
     disabled: bool = False
     fluctuation_thresh: float = 0.1
     region_length: int = 10
@@ -58,6 +62,7 @@ class ActionStag:
     start: the minimum number of elements required to run the check
     similarity_pct_thresh: maximum accepted ratio of single action in one episode
     """
+
     disabled: bool = False
     start: int = 100
     similarity_pct_thresh: float = 0.8
@@ -71,6 +76,7 @@ class ActionStagPerEp:
     last_step_num: number of last steps to consider in one episode
     reward_tolerance: reward tolerance
     """
+
     disabled: bool = False
     nb_ep_to_check: int = 2
     last_step_num: int = 10
@@ -86,6 +92,7 @@ class ActionConfig:
     exploration_perc: ratio of first episodes to consider as exploration episodes
     exploitation_perc: ratio of episodes after which we consider that exploration is occurring
     """
+
     period: int = 50
     start: int = 10
     skip_run_threshold: int = 2

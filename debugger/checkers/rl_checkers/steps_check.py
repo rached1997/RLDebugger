@@ -8,6 +8,7 @@ class StepCheck(DebuggerInterface):
     This class performs checks on the maximum number of steps that can be reached .
     For more details on the specific checks performed, refer to the `run()` function.
     """
+
     def __init__(self):
         """
         Initializes the following parameters:
@@ -74,16 +75,13 @@ class StepCheck(DebuggerInterface):
             self._final_step_number_buffer += [self.step_num - self._last_step_num]
             self._episode_reward_buffer += [reward]
             self._last_step_num = self.step_num
-        # TODO: check if this change is working
         if self.skip_run(self.config.skip_run_threshold):
             return
 
         if self.check_period() and (
-                self.step_num >= (max_total_steps * self.config.exploitation_perc)
+            self.step_num >= (max_total_steps * self.config.exploitation_perc)
         ):
-            self.check_step_is_not_changing(
-                max_reward, max_steps_per_episode
-            )
+            self.check_step_is_not_changing(max_reward, max_steps_per_episode)
 
     def check_step_is_not_changing(self, max_reward, max_steps_per_episode):
         """
@@ -99,7 +97,8 @@ class StepCheck(DebuggerInterface):
         region_length = self.config.poor_max_step_per_ep.region_length
 
         if (
-                statistics.mean(self._final_step_number_buffer[-region_length:]) >= max_steps_per_episode
+            statistics.mean(self._final_step_number_buffer[-region_length:])
+            >= max_steps_per_episode
         ) and (
             statistics.mean(self._episode_reward_buffer[-region_length:])
             < (max_reward * self.config.poor_max_step_per_ep.max_reward_tol)

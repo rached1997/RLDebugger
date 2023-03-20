@@ -12,6 +12,7 @@ class UncertaintyActionConfig:
     buffer_max_size: maximum size of observations buffer
     batch_size: batch size of observations
     """
+
     period: int = 1000
     start: int = 1000
     skip_run_threshold: int = 2

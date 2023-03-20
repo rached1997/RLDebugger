@@ -1,6 +1,8 @@
 import numpy as np
 
-from debugger.config_data_classes.rl_checkers.uncertainty_action_config import UncertaintyActionConfig
+from debugger.config_data_classes.rl_checkers.uncertainty_action_config import (
+    UncertaintyActionConfig,
+)
 from debugger.utils.utils import get_device
 from debugger.debugger_interface import DebuggerInterface
 import torch

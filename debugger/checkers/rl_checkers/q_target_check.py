@@ -10,8 +10,9 @@ class QTargetCheck(DebuggerInterface):
     are computed correctly.
     For more details on the specific checks performed, refer to the `run()` function.
     """
+
     def __init__(self):
-        super().__init__(check_type="ValueFunction", config=QTargetConfig)
+        super().__init__(check_type="QTarget", config=QTargetConfig)
 
     def run(
         self, targets, steps_rewards, discount_rate, predicted_next_vals, steps_done

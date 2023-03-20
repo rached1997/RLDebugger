@@ -6,6 +6,7 @@ class TargetUpdateConfig:
     """
     disabled: disable the check or not
     """
+
     disabled: bool = False
 
 
@@ -14,6 +15,7 @@ class SimilarityConfig:
     """
     disabled: disable the check or not
     """
+
     disabled: bool = False
 
 
@@ -22,6 +24,7 @@ class WrongModelOutConfig:
     """
     disabled: disable the check or not
     """
+
     disabled: bool = False
 
 
@@ -31,6 +34,7 @@ class KLdivConfig:
     disabled: disable the check or not
     div_threshold: the threshold of the KL divergence
     """
+
     disabled: bool = False
     div_threshold: float = 0.1
 
@@ -45,6 +49,7 @@ class AgentConfig:
     wrong_model_out
     kl_div
     """
+
     period: int = 100
     start: int = 32
     target_update: TargetUpdateConfig = TargetUpdateConfig()

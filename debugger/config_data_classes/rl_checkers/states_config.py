@@ -13,6 +13,7 @@ class NormalizationConfig:
     normalized_data_min: the min value of the observations
     normalized_data_max: the max value of the observations
     """
+
     disabled: bool = False
     normalized_data_min: float = -10
     normalized_data_max: float = 10
@@ -24,6 +25,7 @@ class StagnationConfig:
     disabled: disable the check or not
     stagnated_obs_nbr: the number of observations to compare
     """
+
     disabled: bool = False
     stagnated_obs_nbr: int = 10
 
@@ -36,6 +38,7 @@ class StatesConvergenceConfig:
     last_obs_num: the number of observations to compare
     reward_tolerance: the percentage of reward tolerance to consider the agent close to achieve its goal
     """
+
     disabled: bool = False
     number_of_episodes: int = 2
     last_obs_num: int = 10
@@ -51,6 +54,7 @@ class StatesConfig:
     start: the minimum number of elements required to be in the buffer
     window_size: the number of points to be aggregated
     """
+
     period: int = 1
     skip_run_threshold: int = 2
     exploitation_perc: float = 0.8

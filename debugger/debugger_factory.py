@@ -8,7 +8,6 @@ from debugger.utils.utils import get_device
 from debugger.utils.settings import react, load_default_config
 
 
-# TODO: add the skip parameters
 class DebuggerFactory:
     def __init__(self):
         self.logger = settings.set_logger()
@@ -48,7 +47,9 @@ class DebuggerFactory:
                 self.observed_params["observations"] = self.observed_params[
                     "next_observations"
                 ]
-                self.observed_params["next_observations"] = torch.tensor(results[0], device=get_device())
+                self.observed_params["next_observations"] = torch.tensor(
+                    results[0], device=get_device()
+                )
                 self.observed_params["reward"] += results[1]
                 self.observed_params["done"] = results[2]
                 self.observed_params_update_nums["observations"] += 1
@@ -66,7 +67,9 @@ class DebuggerFactory:
             """
             results = func_reset(*args, **kwargs)
             if self.training:
-                self.observed_params["observations"] = torch.tensor(results, device=get_device())
+                self.observed_params["observations"] = torch.tensor(
+                    results, device=get_device()
+                )
                 self.observed_params_update_nums["observations"] += 1
             return results
 
@@ -95,8 +98,8 @@ class DebuggerFactory:
         Returns (bool): returns True if the step is the last one in an episode, and False otherwise.
         """
         if self.observed_params["done"] or (
-                (self.step_num > 0)
-                and ((self.step_num % self.observed_params["max_steps_per_episode"]) == 0)
+            (self.step_num > 0)
+            and ((self.step_num % self.observed_params["max_steps_per_episode"]) == 0)
         ):
             return True
         return False
@@ -123,7 +126,10 @@ class DebuggerFactory:
             is_ready = True
             for arg in arg_names:
                 param_update_num = self.observed_params_update_nums[arg]
-                if not (param_update_num == -1 or param_update_num >= debugger.get_number_off_calls()):
+                if not (
+                    param_update_num == -1
+                    or param_update_num >= debugger.get_number_off_calls()
+                ):
                     is_ready = False
                     break
                 else:
@@ -134,12 +140,10 @@ class DebuggerFactory:
                     debugger.max_total_steps = self.observed_params["max_total_steps"]
                 debugger.increment_iteration()
                 debugger.run(**kwargs)
-                # TODO: wandb is taken too much time
                 self.plot_wandb(debugger)
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
-    # todo improve the documentation of this function
     def debug(self, **kwargs):
         """
         This function is used to initiate debugging of the DRL. It requires the parameters that the debugger is
@@ -174,7 +178,6 @@ class DebuggerFactory:
                     )
                 # self.wandb_logger.log_scalar("step_num", self.step_num, "debugger")
         except Exception as e:
-            # TODO: put it back to false and make it run once
             react(logger=self.logger, messages=[f"Error: {e}"], fail_on=True)
             # Attempt to recover from the error and continue
             pass
@@ -228,7 +231,9 @@ class DebuggerFactory:
                     if "period" in debugger_config.keys():
                         debugger.period = debugger_config["period"]
                     if "skip_run_threshold" in debugger_config.keys():
-                        debugger.config.skip_run_threshold = debugger_config["skip_run_threshold"]
+                        debugger.config.skip_run_threshold = debugger_config[
+                            "skip_run_threshold"
+                        ]
                     self.debuggers[debugger_config["name"]] = debugger
 
                 # set internal parameters of the debuggers
@@ -263,15 +268,15 @@ class DebuggerFactory:
         self.training = True
 
     def set_custom_wandb_logger(
-            self,
-            project,
-            name,
-            dir=None,
-            mode=None,
-            id=None,
-            resume=None,
-            start_method=None,
-            **kwargs,
+        self,
+        project,
+        name,
+        dir=None,
+        mode=None,
+        id=None,
+        resume=None,
+        start_method=None,
+        **kwargs,
     ):
         self.wandb_logger.custom_wandb_logger(
             project, name, dir, mode, id, resume, start_method, **kwargs
@@ -279,7 +284,7 @@ class DebuggerFactory:
 
     def plot_wandb(self, debugger):
         if debugger.wandb_metrics and (not (self.wandb_logger is None)):
-            for (key, values) in debugger.wandb_metrics.items():
+            for key, values in debugger.wandb_metrics.items():
                 if values.ndim == 0:
                     self.wandb_logger.plot({key: values})
                 else:

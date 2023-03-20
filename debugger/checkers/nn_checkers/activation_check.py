@@ -39,7 +39,7 @@ class ActivationCheck(DebuggerInterface):
 
     def run(self, training_observations: torch.Tensor, model: torch.nn.Module) -> None:
         """
-        -----------------------------------   I. Introduction of the Activation Check  -----------------------------------
+        -----------------------------------   I. Introduction of the Activation Check  --------------------------------
 
         This class performs multiple checks on the activation values of the neural network. Activation consists of
         non-linear functions applied to each output neuron in order to determine if the neuron will be activated or
@@ -98,6 +98,8 @@ class ActivationCheck(DebuggerInterface):
             training_observations (Tensor): A sample of observations collected during the training
             model (torch.nn.Module)): The model being trained
         """
+        if self.config.disabled:
+            return
         model = copy.deepcopy(model)
         activations = {}
 
@@ -132,6 +134,7 @@ class ActivationCheck(DebuggerInterface):
                     self.check_dead_layers(acts_name, acts_buffer)
 
                 self.check_acts_distribution(acts_name, acts_buffer)
+                self.config.disabled = True
 
     def update_outs_conds(self, outs_array: torch.Tensor) -> None:
         """
@@ -364,7 +367,7 @@ class ActivationCheck(DebuggerInterface):
         n = acts_array.shape[0]
         self._acts_data[acts_name][0:-n] = self._acts_data[acts_name][
             -(self.config.buff_scale - 1) * n :
-                                           ]
+        ]
         self._acts_data[acts_name][-n:] = acts_array.cpu().detach().numpy()
         return self._acts_data[acts_name]
 

@@ -2,7 +2,9 @@ import copy
 import gym
 import torch
 
-from debugger.config_data_classes.rl_checkers.environment_config import EnvironmentConfig
+from debugger.config_data_classes.rl_checkers.environment_config import (
+    EnvironmentConfig,
+)
 from debugger.debugger_interface import DebuggerInterface
 import numbers
 
@@ -97,11 +99,11 @@ class EnvironmentCheck(DebuggerInterface):
                 self.generate_random_eps(environment)
                 self.check_env_conception(environment)
                 if sum(self._reward_list) > environment.spec.reward_threshold:
-                    self.error_msg.append(self.main_msgs['weak_reward_threshold'])
+                    self.error_msg.append(self.main_msgs["weak_reward_threshold"])
                 aaa = torch.mean(torch.std(self._obs_list, dim=0))
                 if (
-                        torch.mean(torch.std(self._obs_list, dim=0))
-                        <= self.config.observations_std_coef_thresh
+                    torch.mean(torch.std(self._obs_list, dim=0))
+                    <= self.config.observations_std_coef_thresh
                 ):
                     self.error_msg.append(
                         self.main_msgs["invalid_step_func"].format(
@@ -122,7 +124,7 @@ class EnvironmentCheck(DebuggerInterface):
         """
         environment = copy.deepcopy(environment)
         done = False
-        initial_obs = torch.tensor(environment.reset())
+        initial_obs = torch.tensor(environment.reset(), device=self.device)
         self.save_observation_to_buffer(initial_obs)
 
         step = 0
@@ -133,9 +135,11 @@ class EnvironmentCheck(DebuggerInterface):
             )
             self.save_observation_to_buffer(obs)
             self._reward_list = torch.cat(
-                (self._reward_list, torch.tensor([reward])), dim=0
+                (self._reward_list, torch.tensor([reward], device=self.device)), dim=0
             )
-            self._done_list = torch.cat((self._done_list, torch.tensor([done])), dim=0)
+            self._done_list = torch.cat(
+                (self._done_list, torch.tensor([done], device=self.device)), dim=0
+            )
 
     def check_env_conception(self, env: gym.envs):
         """
@@ -155,20 +159,20 @@ class EnvironmentCheck(DebuggerInterface):
 
         def is_numerical(x):
             return (
-                    isinstance(None, numbers.Number)
-                    and (x is not torch.inf)
-                    and (x is not torch.nan)
+                isinstance(None, numbers.Number)
+                and (x is not torch.inf)
+                and (x is not torch.nan)
             )
 
         if not (
-                isinstance(env.observation_space, gym.spaces.Box)
-                or isinstance(env.observation_space, gym.spaces.Discrete)
+            isinstance(env.observation_space, gym.spaces.Box)
+            or isinstance(env.observation_space, gym.spaces.Discrete)
         ):
             self.error_msg.append(self.main_msgs["bounded_observations"])
 
         if not (
-                isinstance(env.action_space, gym.spaces.Box)
-                or (isinstance(env.action_space, gym.spaces.Discrete))
+            isinstance(env.action_space, gym.spaces.Box)
+            or (isinstance(env.action_space, gym.spaces.Discrete))
         ):
             self.error_msg.append(self.main_msgs["bounded_actions"])
 
@@ -205,8 +209,8 @@ class EnvironmentCheck(DebuggerInterface):
         min_reward_value = self.config.normalization.normalized_reward_min
 
         if (
-                torch.max(self._reward_list) > max_reward_value
-                or torch.min(self._reward_list) < min_reward_value
+            torch.max(self._reward_list) > max_reward_value
+            or torch.min(self._reward_list) < min_reward_value
         ):
             self.error_msg.append(self.main_msgs["reward_unnormalized"])
 
@@ -217,7 +221,9 @@ class EnvironmentCheck(DebuggerInterface):
         args:
             observations (Tensor): The tensor of the observation to be saved
         """
-        reshaped_observation = torch.tensor(observation, device=self.device).unsqueeze(dim=0)
+        reshaped_observation = torch.tensor(observation, device=self.device).unsqueeze(
+            dim=0
+        )
         if self._obs_list is None:
             self._obs_list = reshaped_observation
         else:

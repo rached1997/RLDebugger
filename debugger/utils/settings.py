@@ -89,13 +89,21 @@ def set_wandb_logger(config_path):
         if "wandb_logger" in config["debugger"].keys():
             if bool(config["debugger"]["wandb_logger"]["disable"]):
                 return None
+            project = (
+                config["debugger"]["wandb_logger"]["project"]
+                if "project" in config["debugger"]["wandb_logger"].keys()
+                else "DRLDebugger"
+            )
+            name = (
+                config["debugger"]["wandb_logger"]["name"]
+                if "name" in config["debugger"]["wandb_logger"].keys()
+                else "Default Name"
+            )
             return WandbLogger(
-                project=config["debugger"]["wandb_logger"]["project"],
-                name=config["debugger"]["wandb_logger"]["name"],
+                project=project,
+                name=name,
             )
         return None
-
-
 
 
 def react(logger, messages, fail_on=False):

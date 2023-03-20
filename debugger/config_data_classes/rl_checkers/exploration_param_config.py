@@ -7,6 +7,7 @@ class CheckInitializationConfig:
     """
     disabled: disable the check or not
     """
+
     disabled: bool = False
 
 
@@ -15,6 +16,7 @@ class CheckMonotonicityConfig:
     """
     disabled: disable the check or not
     """
+
     disabled: bool = False
 
 
@@ -24,6 +26,7 @@ class CheckQuickChangeConfig:
     disabled: disable the check or not
     strong_decrease_thresh: the min accepted value if the acceleration to measure how fast the value is changing
     """
+
     disabled: bool = False
     strong_decrease_thresh: float = 0.22
 
@@ -35,6 +38,7 @@ class ExplorationPramConfig:
     starting_value: The starting value of the exploration parameter
     ending_value:  The ending value of the exploration parameter
     """
+
     period: int = 1000
     starting_value: int = 1
     ending_value: int = 0

@@ -138,12 +138,12 @@ class ActionCheck(DebuggerInterface):
 
         if self.skip_run(self.config.skip_run_threshold):
             return
-        actions_probs = copy.copy(actions_probs)
+        actions_probs = copy.deepcopy(actions_probs)
         if actions_probs.dim() < 2:
             actions_probs = actions_probs.reshape((1, -1))
         if not torch.allclose(
-                torch.sum(actions_probs, dim=1),
-                torch.ones(actions_probs.shape[0], device=self.device),
+            torch.sum(actions_probs, dim=1),
+            torch.ones(actions_probs.shape[0], device=self.device),
         ):
             actions_probs = torch.softmax(actions_probs, dim=1)
         self._action_prob_buffer = torch.cat(
@@ -224,7 +224,9 @@ class ActionCheck(DebuggerInterface):
         if self.config.strong_decrease.disabled:
             return
         entropy_values = self._entropies.detach().cpu().numpy()
-        second_derivative = np.gradient(np.gradient(entropy_values[-self.config.strong_decrease.region_length:]))
+        second_derivative = np.gradient(
+            np.gradient(entropy_values[-self.config.strong_decrease.region_length :])
+        )
         acceleration_ratio = np.mean(
             second_derivative < self.config.strong_decrease.strong_decrease_thresh
         )
@@ -247,7 +249,9 @@ class ActionCheck(DebuggerInterface):
         """
         if self.config.fluctuation.disabled:
             return
-        residuals = estimate_fluctuation_rmse(entropy_slope, self._entropies[-self.config.fluctuation.region_length:])
+        residuals = estimate_fluctuation_rmse(
+            entropy_slope, self._entropies[-self.config.fluctuation.region_length :]
+        )
         if residuals > self.config.fluctuation.fluctuation_thresh:
             self.error_msg.append(
                 self.main_msgs["entropy_fluctuation"].format(
@@ -273,7 +277,7 @@ class ActionCheck(DebuggerInterface):
 
             if similarity_pct > self.config.action_stag.similarity_pct_thresh:
                 self.error_msg.append(
-                    self.main_msgs["action_stagnation"].format(similarity_pct*100)
+                    self.main_msgs["action_stagnation"].format(similarity_pct * 100)
                 )
         return None
 
@@ -290,23 +294,27 @@ class ActionCheck(DebuggerInterface):
         if self.config.action_stag_per_ep.disabled:
             return
         if (
-                len(self._end_episode_indices)
-                >= self.config.action_stag_per_ep.nb_ep_to_check
+            len(self._end_episode_indices)
+            >= self.config.action_stag_per_ep.nb_ep_to_check
         ) and (
-                (len(self._episodes_rewards) == 0)
-                or (
-                        statistics.mean(self._episodes_rewards)
-                        < max_reward * self.config.action_stag_per_ep.reward_tolerance
-                )
+            (len(self._episodes_rewards) == 0)
+            or (
+                statistics.mean(self._episodes_rewards)
+                < max_reward * self.config.action_stag_per_ep.reward_tolerance
+            )
         ):
             final_actions = []
             for i in self._end_episode_indices:
                 start_index = i - self.config.action_stag_per_ep.last_step_num
                 final_actions.append(self._action_buffer[start_index:i])
             if all(
-                    (final_actions[i] == final_actions[i + 1])
-                    for i in range(len(final_actions) - 1)
+                (final_actions[i] == final_actions[i + 1])
+                for i in range(len(final_actions) - 1)
             ):
-                self.error_msg.append(self.main_msgs["actions_are_similar"].format(len(self._end_episode_indices)))
+                self.error_msg.append(
+                    self.main_msgs["actions_are_similar"].format(
+                        len(self._end_episode_indices)
+                    )
+                )
             self._end_episode_indices = []
         return None
