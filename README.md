@@ -36,7 +36,6 @@ each checker).
 |            | State                | [Link to Description](https://github.com/rached1997/RLDebugger/blob/dev/debugger/checkers/rl_checkers/states_check.py)             |
 |            | UncertaintyAction    | [Link to Description](https://github.com/rached1997/RLDebugger/blob/dev/debugger/checkers/rl_checkers/uncertainty_action_check.py) |
 |            | ValueFunction        | [Link to Description](https://github.com/rached1997/RLDebugger/blob/dev/debugger/checkers/rl_checkers/value_function_check.py)     |
-=======
 
 [^1]: https://arxiv.org/pdf/2204.00694.pdf
 
