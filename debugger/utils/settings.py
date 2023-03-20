@@ -2,13 +2,15 @@ import os
 import logging
 from configparser import ConfigParser
 from pathlib import Path
+from debugger.utils.wandb_logger import WandbLogger
+import yaml
 
 # Conventional constants
-LOG_DIR = 'logs'
+LOG_DIR = "logs"
 
 
 # Standard messages
-def load_messages(messages_section='Messages'):
+def load_messages(messages_section="Messages"):
     """
     Loads the messages from the `messages.properties` file.
 
@@ -19,7 +21,9 @@ def load_messages(messages_section='Messages'):
     Returns:
         dict: A dictionary containing the messages from the specified section of the `messages.properties` file.
     """
-    messages_fpath = os.path.join(os.path.join(Path(__file__).parent, 'config'), 'messages.properties')
+    messages_fpath = os.path.join(
+        os.path.join(Path(__file__).parent, "config"), "messages.properties"
+    )
     config = ConfigParser()
     config.read(messages_fpath)
     return dict(config[messages_section])
@@ -40,7 +44,7 @@ def build_log_file_path(app_path, app_name):
     log_dir_path = os.path.join(app_path, LOG_DIR)
     if not (os.path.exists(log_dir_path)):
         os.makedirs(log_dir_path)
-    return os.path.join(log_dir_path, f'{app_name}.log')
+    return os.path.join(log_dir_path, f"{app_name}.log")
 
 
 def file_logger(file_path, app_name):
@@ -54,17 +58,74 @@ def file_logger(file_path, app_name):
     Returns:
         logging.Logger: A logger object that writes logs to both a file and the console.
     """
-    logger = logging.getLogger(f'TheDeepChecker: {app_name} Logs')
+    logger = logging.getLogger(f"TheDRLDebugger: {app_name} Logs")
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(file_path)
     fh.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     return logger
 
+
+def set_logger():
+    app_path = str(Path.cwd())
+    log_fpath = build_log_file_path(app_path, "logger")
+    return file_logger(log_fpath, "logger")
+
+
+def set_wandb_logger(config_path):
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+        if "wandb_logger" in config["debugger"].keys():
+            if bool(config["debugger"]["wandb_logger"]["disable"]):
+                return None
+            project = (
+                config["debugger"]["wandb_logger"]["project"]
+                if "project" in config["debugger"]["wandb_logger"].keys()
+                else "DRLDebugger"
+            )
+            name = (
+                config["debugger"]["wandb_logger"]["name"]
+                if "name" in config["debugger"]["wandb_logger"].keys()
+                else "Default Name"
+            )
+            return WandbLogger(
+                project=project,
+                name=name,
+            )
+        return None
+
+
+def react(logger, messages, fail_on=False):
+    """
+    Reacts to the provided `messages` by either raising an exception or logging a warning, depending on the value of
+     `fail_on`.
+
+    Args:
+        logger (logger): the logger that will print the data
+        messages (list): list of error messages to be displayed
+        fail_on (bool): if True it raises an exception otherwise it only displays the error
+    """
+    if len(messages) > 0:
+        for message in messages:
+            if fail_on:
+                logger.error(message)
+                raise Exception(message)
+            else:
+                logger.warning(message)
+
+
+def load_default_config():
+    return os.path.join(
+        os.path.join(Path(__file__).parent, "config"), "default_debugger.yml"
+    )

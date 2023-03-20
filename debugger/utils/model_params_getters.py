@@ -6,10 +6,10 @@ def get_model_weights_and_biases(model):
     weights = {}
     biases = {}
     for name, param in model.named_parameters():
-        if 'weight' in name:
-            weights[name.split('.weight')[0]] = param.data
-        if 'bias' in name:
-            biases[name.split('.bias')[0]] = param.data
+        if "weight" in name:
+            weights[name.split(".weight")[0]] = param.data
+        if "bias" in name:
+            biases[name.split(".bias")[0]] = param.data
 
     return weights, biases
 
@@ -24,7 +24,7 @@ def get_sample(observations, targets, sample_size):
 
 
 def is_activation_function(layer):
-    return layer.__module__ == 'torch.nn.modules.activation'
+    return layer.__module__ == "torch.nn.modules.activation"
 
 
 def get_last_layer_activation(model):
@@ -33,9 +33,9 @@ def get_last_layer_activation(model):
     last_layer = layers[-1]
 
     # Check if the last layer has an activation function
-    if isinstance(last_layer, nn.Module) and hasattr(last_layer, 'activation'):
+    if isinstance(last_layer, nn.Module):
         # Get the name of the activation function
-        activation_name = last_layer.activation.__class__.__name__
+        activation_name = last_layer.__class__.__name__
     else:
-        activation_name = 'None'
+        activation_name = "None"
     return activation_name

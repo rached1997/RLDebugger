@@ -8,7 +8,6 @@ from debugger import rl_debugger
 
 
 class DebuggableRainbowAgent(RainbowDQNAgent):
-
     def update(self, update_info):
         """
         Updates the DQN agent.
@@ -30,9 +29,9 @@ class DebuggableRainbowAgent(RainbowDQNAgent):
         # If the replay buffer doesn't have enough samples, catch the exception
         # and move on.
         if (
-                self._learn_schedule.update()
-                and self._replay_buffer.size() > 0
-                and self._update_period_schedule.update()
+            self._learn_schedule.update()
+            and self._replay_buffer.size() > 0
+            and self._update_period_schedule.update()
         ):
             batch = self._replay_buffer.sample(batch_size=self._batch_size)
             (
@@ -71,18 +70,19 @@ class DebuggableRainbowAgent(RainbowDQNAgent):
                 next_qvals = next_qvals[torch.arange(next_qvals.size(0)), next_action]
 
                 q_targets = batch["reward"] + self._discount_rate * next_qvals * (
-                        1 - batch["done"]
+                    1 - batch["done"]
                 )
 
-                rl_debugger.run_debugging(observations=current_state_inputs[0],
-                                          model=self._qnet,
-                                          targets=q_targets,
-                                          predictions=pred_qvals.detach(),
-                                          loss_fn=self._loss_fn,
-                                          opt=self._optimizer,
-                                          actions=actions,
-                                          done=update_info["done"]
-                                          )
+                rl_debugger.debug(
+                    observations=current_state_inputs[0],
+                    model=self._qnet,
+                    targets=q_targets,
+                    predictions=pred_qvals.detach(),
+                    loss_fn=self._loss_fn,
+                    opt=self._optimizer,
+                    actions=actions,
+                    done=update_info["done"],
+                )
 
                 loss = self._loss_fn(pred_qvals, q_targets)
 
@@ -107,14 +107,16 @@ class DebuggableRainbowAgent(RainbowDQNAgent):
 
 
 def main():
-    hive.registry.register('DebuggableRainbowAgent', DebuggableRainbowAgent, DebuggableRainbowAgent)
-    config = load_config(config='agent_configs/custom_rainbow_agent_cartpole.yml')
+    hive.registry.register(
+        "DebuggableRainbowAgent", DebuggableRainbowAgent, DebuggableRainbowAgent
+    )
+    config = load_config(config="agent_configs/custom_rainbow_agent_cartpole.yml")
 
-    rl_debugger.set_config(config_path='debugger.yml')
+    rl_debugger.set_config(config_path="../dqn/debugger.yml")
 
     runner = set_up_experiment(config)
     runner.run_training()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

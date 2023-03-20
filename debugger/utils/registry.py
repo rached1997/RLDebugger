@@ -21,7 +21,7 @@ class Registrable:
     @classmethod
     def type_name(cls):
         """This should represent a string that denotes the which type of class you are
-        creating. For example, "logger", "agent", or "env".
+        creating. For examples, "logger", "agent", or "env".
         """
         raise ValueError
 
@@ -42,7 +42,7 @@ class Registry:
     command line. These parameters are specified in dot notation. They also are able
     to handle lists and dictionaries of Registrable objects.
 
-    For example, let's consider the following scenario:
+    For examples, let's consider the following scenario:
     Your agent class has an argument `arg1` which is annotated to be `List[Class1]`,
     `Class1` is `Registrable`, and the `Class1` constructor takes an argument `arg2`.
     In the passed yml config, there are two different Class1 object configs listed.
@@ -139,11 +139,11 @@ def construct_objects(object_constructor, config, prefix=None):
             origin = expected_type.__origin__
             args = expected_type.__args__
             if (
-                    (origin == List or origin == list)
-                    and len(args) == 1
-                    and isinstance(args[0], type)
-                    and issubclass(args[0], Registrable)
-                    and isinstance(config[argument], Sequence)
+                (origin == List or origin == list)
+                and len(args) == 1
+                and isinstance(args[0], type)
+                and issubclass(args[0], Registrable)
+                and isinstance(config[argument], Sequence)
             ):
                 objs = []
                 expanded_config[argument] = []
@@ -155,11 +155,11 @@ def construct_objects(object_constructor, config, prefix=None):
                     expanded_config[argument].append(obj_config)
                 config[argument] = objs
             elif (
-                    origin == dict
-                    and len(args) == 2
-                    and isinstance(args[1], type)
-                    and issubclass(args[1], Registrable)
-                    and isinstance(config[argument], Mapping)
+                origin == dict
+                and len(args) == 2
+                and isinstance(args[1], type)
+                and issubclass(args[1], Registrable)
+                and isinstance(config[argument], Mapping)
             ):
                 objs = {}
                 expanded_config[argument] = {}
@@ -216,7 +216,7 @@ def get_parsed_args(arguments, prefix=None):
 
     # Strip the prefix from the parsed arguments and remove arguments not present
     parsed_args = {
-        (key[len(prefix):] if key.startswith(prefix) else key): parsed_args[key]
+        (key[len(prefix) :] if key.startswith(prefix) else key): parsed_args[key]
         for key in parsed_args
         if parsed_args[key] is not None
     }

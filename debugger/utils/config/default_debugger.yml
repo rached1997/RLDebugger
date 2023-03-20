@@ -1,0 +1,39 @@
+debugger:
+  name: 'Debugger'
+  kwargs:
+    observed_params:
+      constant: [
+        target_net_update_fraction,
+        target_model_update_period,
+        max_steps_per_episode,
+        max_total_steps,
+        environment,
+        max_reward,
+        loss_fn,
+        opt,
+      ]
+
+      variable: [
+        model,
+        target_model,
+        exploration_factor,
+        targets,
+        actions,
+        actions_probs,
+        training_observations,
+        observations,
+        next_observations,
+        reward,
+        done,
+        discount_rate,
+        predicted_next_vals,
+        steps_rewards,
+        steps_done
+      ]
+    check_type:
+  wandb_logger:
+    disable: False
+    project: DRLDebugger
+    name: default_name
+
+

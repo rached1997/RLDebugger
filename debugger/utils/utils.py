@@ -1,9 +1,34 @@
 from itertools import groupby
 from operator import itemgetter
-
 import numpy as np
 from scipy.stats import mannwhitneyu
 import torch
+
+
+def get_data_slope(data):
+    """Compute the slope of entropy evolution over time.
+
+    Returns:
+    entropy_slope (float): The slope of the linear regression fit to the entropy values.
+    """
+    # Compute the x-values (time steps) for the linear regression
+    x = torch.arange(len(data), device=data.device)
+    # Fit a linear regression model to the entropy values
+    ones = torch.ones_like(x)
+    X = torch.stack([x, ones], dim=1).float()
+    cof, _ = torch.lstsq(data.unsqueeze(1), X)
+
+    return cof[0:2]
+
+
+def estimate_fluctuation_rmse(slope_coef, data):
+    """
+    x
+    """
+    x = torch.arange(len(data), device=data.device)
+    predicted = slope_coef[0] * x + slope_coef[1]
+    residuals = torch.sqrt(torch.mean((data - predicted) ** 2))
+    return residuals
 
 
 def almost_equal(value1, value2, rtol=1e-2):
@@ -51,8 +76,8 @@ def smoothness(data):
     data_size = len(data)
     if data_size < 1:
         return 1.0
-    ratios = (data[1:] / data[:-1])
-    rate_changes = np.abs(np.diff(ratios > 1.))
+    ratios = data[1:] / data[:-1]
+    rate_changes = np.abs(np.diff(ratios > 1.0))
     rate_changes_count = np.count_nonzero(rate_changes)
     return (data_size - rate_changes_count) / data_size
 
@@ -69,6 +94,7 @@ def pure_f_test(data, ref_std, alpha=0.1):
     Returns:
         a tuple of the calculated F-value and a boolean indicating if the variances are significantly different
     """
+
     def _F_critical(alpha):
         # http://socr.ucla.edu/Applets.dir/F_Table.html
         if alpha == 0.1:
@@ -82,8 +108,8 @@ def pure_f_test(data, ref_std, alpha=0.1):
 
     if isinstance(data, torch.Tensor):
         data = data.detach().cpu().numpy()
-    var_1 = np.std(data)**2
-    var_2 = ref_std ** 2
+    var_1 = np.std(data) ** 2
+    var_2 = ref_std**2
     F = var_1 / var_2 if var_1 > var_2 else var_2 / var_1
     return F, F <= _F_critical(alpha)
 
@@ -114,26 +140,26 @@ def get_activation_max_min_bound(name):
     Returns:
         a tuple of the minimum and maximum bounds of the activation function
     """
-    name = name[:name.rfind('_')]
-    if name == 'ELU':
+    name = name[: name.rfind("_")]
+    if name == "ELU":
         activation_max_bound = +np.inf
         activation_min_bound = -1.0
-    elif name == 'LeakyReLU':
+    elif name == "LeakyReLU":
         activation_max_bound = +np.inf
         activation_min_bound = -np.inf
-    elif name == 'ReLU6':
+    elif name == "ReLU6":
         activation_max_bound = 6.0
         activation_min_bound = 0.0
-    elif name == 'SELU':
+    elif name == "SELU":
         activation_max_bound = +np.inf
         activation_min_bound = -np.inf
-    elif name == 'Tanh':
+    elif name == "Tanh":
         activation_max_bound = 1.0
         activation_min_bound = -1.0
-    elif name == 'Sigmoid':
+    elif name == "Sigmoid":
         activation_max_bound = 1.0
         activation_min_bound = 0.0
-    elif name == 'ReLU':
+    elif name == "ReLU":
         activation_max_bound = +np.inf
         activation_min_bound = 0.0
     else:
@@ -172,12 +198,14 @@ def get_balance(targets):
         the balance of the targets
     """
     if targets.shape[1] == 1:
-        targets = 2
+        label_nums = 2
     else:
-        targets = targets.shape[1]
+        label_nums = targets.shape[1]
     targets_probas = get_probas(targets)
-    perplexity = torch.exp(torch.distributions.Categorical(targets_probas, validate_args=False).entropy())
-    balance = (perplexity - 1) / (targets - 1)
+    perplexity = torch.exp(
+        torch.distributions.Categorical(targets_probas, validate_args=False).entropy()
+    )
+    balance = (perplexity - 1) / (label_nums - 1)
     return balance
 
 
@@ -199,13 +227,21 @@ def compute_ro_B(activations, min_out, max_out, bins_count):
     divided_values = np.digitize(activations, bins)
     data = [(neu_act, bin_v) for neu_act, bin_v in zip(divided_values, activations)]
     data = list(zip(divided_values, activations))
-    grouped_data = [list(map(lambda x: x[1], group)) for _, group in groupby(sorted(data), key=itemgetter(0))]
+    grouped_data = [
+        list(map(lambda x: x[1], group))
+        for _, group in groupby(sorted(data), key=itemgetter(0))
+    ]
     f_g = [(len(values), np.mean(values)) for values in grouped_data]
-    f_g_prime = np.array([(f_b, np.abs(2 * (g_b - min_out) / (max_out - min_out) - 1) * f_b) for f_b, g_b in f_g])
+    f_g_prime = np.array(
+        [
+            (f_b, np.abs(2 * (g_b - min_out) / (max_out - min_out) - 1) * f_b)
+            for f_b, g_b in f_g
+        ]
+    )
     return f_g_prime[:, 1].sum() / f_g_prime[:, 0].sum()
 
 
-def transform_2d(array, keep='first'):
+def transform_2d(array, keep="first"):
     """
     Reshape a 2D numpy array into a 2D matrix with the specified dimension kept.
 
@@ -216,9 +252,11 @@ def transform_2d(array, keep='first'):
     Returns:
         The reshaped 2D numpy array.
     """
-    if keep == 'first':
+    if keep == "first":
         return array.reshape(array.shape[0], -1)
-    elif keep == 'last':
+    elif keep == "last":
         return array.reshape(-1, array.shape[-1])
 
 
+def get_device():
+    return "cuda" if torch.cuda.is_available() else "cpu"

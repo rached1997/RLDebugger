@@ -1,82 +1,112 @@
 import copy
 import numpy as np
 import torch.nn
-
+from debugger.config_data_classes.nn_checkers.proper_fitting_config import (
+    ProperFittingConfig,
+)
 from debugger.debugger_interface import DebuggerInterface
 from debugger.utils.utils import smoothness
 from debugger.utils.utils import are_significantly_different
 from debugger.utils.model_params_getters import get_loss
 
 
-def get_config():
-    """
-    Return the configuration dictionary needed to run the checkers.
-
-    Returns:
-        config (dict): The configuration dictionary containing the necessary parameters for running the checkers.
-    """
-
-    config = {
-        "Period": 0,
-        "single_batch_size": 16,
-        "total_iters": 100,
-        "abs_loss_min_thresh": 1e-8,
-        "loss_min_thresh": 0.00001,
-        "smoothness_max_thresh": 0.95,
-        "mislabeled_rate_max_thresh": 0.05,
-        "mean_error_max_thresh": 0.001,
-        "sample_size_of_losses": 100,
-        "Instance_wise_Operation": {"sample_size": 32, "trials": 10}}
-
-    return config
-
-
-class PreTrainProperFittingCheck(DebuggerInterface):
+class ProperFittingCheck(DebuggerInterface):
     """
     The check in charge of verifying the proper fitting of the DNN before training.
+    For more details on the specific checks performed, refer to the `run()` function.
     """
 
     def __init__(self):
-        super().__init__(check_type="PreTrainProperFitting", config=get_config())
+        super().__init__(check_type="ProperFitting", config=ProperFittingConfig)
 
-    def run(self, observations, targets, actions, opt, model, loss_fn):
+    def run(self, training_observations, targets, actions, opt, model, loss_fn):
         """
-        Evaluate the convergence (ability to fit a sample of data) of the proposed model using an initial sample of
-        data. This function performs the following checks:
+        --------------------------------- I. Introduction of the Proper Fitting Check ---------------------------------
 
-        (1) Stability of the loss function (refer to _loss_is_stable for details)
-        (2) Regularization (refer to regularization_verification for details)
-        (3) Input dependency verification, which compares training performance on real observations and zeroed
-         observations
+        The ProperFittingCheck function evaluates the convergence ability  of the neural network model by testing its
+        ability to fit a small sample of data.
+
+        The function trains the model on a sample of data and then uses it to predict the output values for the same
+        sample. It then compares the predicted values with the actual values to calculate the model's accuracy.
+
+        ------------------------------------------   II. The performed checks  -----------------------------------------
+        The ProperFittingCheck function performs the following checks:
+            (1) Checks the stability of the loss function
+            (2) Checks if there is a Regularization
+            (3) Input dependency verification, which compares training performance on real observations and zeroed
+                observations
+
+        ------------------------------------   III. The potential Root Causes  -----------------------------------------
+
+        The potential root causes behind the warnings that can be detected are
+            - Bad architecture of the neural network (checks triggered : 1,2,3)
+            - Bad hyperparameters (checks triggered : 1,2,3)
+            - Bad initialization of the model's parameters (checks triggered : 1,2,3)
+
+        --------------------------------------   IV. The Recommended Fixes  --------------------------------------------
+
+        The recommended fixes for the detected issues:
+            - Change the architecture of the neural network ( checks tha can be fixed: 1,2,3)
+            - Do a hyperparameter tuning ( checks tha can be fixed: 1,2,3)
+            - Reinitialize the model ( checks tha can be fixed: 1,2,3)
+
+
+
+        Examples
+        --------
+        To perform value function checks, the debugger needs to be called when updating the agent.
+
+        >>> from debugger import rl_debugger
+        >>> ...
+        >>> next_qvals = target_qnet(next_states)
+        >>> next_qvals, _ = torch.max(next_qvals, dim=1)
+        >>> batch = replay_buffer.sample(batch_size=32)
+        >>> q_targets = batch["reward"] + discount_rate * next_qvals * (1 - batch["done"])
+        >>> rl_debugger.debug(training_observations=batch["state"], targets=q_targets.detach(), actions=actions,
+        >>>                   opt=optimizer, model=qnet, loss_fn=loss_fn)
+        >>> loss = loss_fn(pred_qvals, q_targets).mean()
 
         Args:
-            observations (Tensor): Initial sample of observations.
+            training_observations (Tensor): Initial sample of observations.
             targets (Tensor): Ground truth of the initial observations.
             actions (Tensor): Predicted actions for the initial set of observations.
             opt (function): Optimizer function.
             model (nn.Module): Model to be trained.
             loss_fn (function): Loss function.
         """
+        if self.config.disabled:
+            return
+        model = copy.deepcopy(model)
+        opt = copy.deepcopy(opt)
         if not self.check_period():
             return
 
-        real_losses = self.overfit_verification(model, opt, observations, targets, actions, loss_fn)
+        real_losses = self.overfit_verification(
+            model, opt, training_observations, targets, actions, loss_fn
+        )
         if not real_losses:
             return
 
         if not self.regularization_verification(real_losses):
             return
 
-        fake_losses = self.input_dependency_verification(model, opt, observations, targets, actions, loss_fn)
+        fake_losses = self.input_dependency_verification(
+            model, opt, training_observations, targets, actions, loss_fn
+        )
         if not fake_losses:
             return
 
-        stability_test = np.array([self._loss_is_stable(loss_value) for loss_value in (real_losses + fake_losses)])
+        stability_test = np.array(
+            [
+                self._loss_is_stable(loss_value)
+                for loss_value in (real_losses + fake_losses)
+            ]
+        )
         if (stability_test == False).any():
-            last_real_losses = real_losses[-self.config['sample_size_of_losses']:]
-            last_fake_losses = fake_losses[-self.config['sample_size_of_losses']:]
+            last_real_losses = real_losses[-self.config.sample_size_of_losses :]
+            last_fake_losses = fake_losses[-self.config.sample_size_of_losses :]
             if not (are_significantly_different(last_real_losses, last_fake_losses)):
-                self.error_msg.append(self.main_msgs['data_dep'])
+                self.error_msg.append(self.main_msgs["data_dep"])
 
     def _loss_is_stable(self, loss_value):
         """
@@ -90,14 +120,16 @@ class PreTrainProperFittingCheck(DebuggerInterface):
         """
 
         if np.isnan(loss_value):
-            self.error_msg.append(self.main_msgs['nan_loss'])
+            self.error_msg.append(self.main_msgs["nan_loss"])
             return False
         if np.isinf(loss_value):
-            self.error_msg.append(self.main_msgs['inf_loss'])
+            self.error_msg.append(self.main_msgs["inf_loss"])
             return False
         return True
 
-    def input_dependency_verification(self, model, opt, derived_batch_x, derived_batch_y, actions, loss_fn):
+    def input_dependency_verification(
+        self, model, opt, derived_batch_x, derived_batch_y, actions, loss_fn
+    ):
         """
         This function evaluates the stability of the loss generated by training the model on a batch of zeroed data.
 
@@ -114,12 +146,14 @@ class PreTrainProperFittingCheck(DebuggerInterface):
         """
 
         zeroed_model = copy.deepcopy(model)
-        zeroed_opt = opt.__class__(zeroed_model.parameters(), )
+        zeroed_opt = opt.__class__(
+            zeroed_model.parameters(),
+        )
 
         zeroed_batch_x = torch.zeros_like(derived_batch_x)
         fake_losses = []
         zeroed_model.train(True)
-        for i in range(self.config["total_iters"]):
+        for i in range(self.config.total_iters):
             zeroed_opt.zero_grad()
             outputs = zeroed_model(zeroed_batch_x)
             outputs = outputs[torch.arange(outputs.size(0)), actions]
@@ -129,7 +163,9 @@ class PreTrainProperFittingCheck(DebuggerInterface):
                 return False
         return fake_losses
 
-    def overfit_verification(self, model, opt, derived_batch_x, derived_batch_y, actions, loss_fn):
+    def overfit_verification(
+        self, model, opt, derived_batch_x, derived_batch_y, actions, loss_fn
+    ):
         """
         This function tracks the losses during training the model on the initial sample of observations.
 
@@ -146,11 +182,13 @@ class PreTrainProperFittingCheck(DebuggerInterface):
             model is unable to fit a single batch of observations properly. Otherwise, it returns real_losses, a list of
              the losses collected during training on the initial sample of observations.
         """
-        overfit_opt = opt.__class__(model.parameters(), )
+        overfit_opt = opt.__class__(
+            model.parameters(),
+        )
 
         real_losses = []
         model.train(True)
-        for i in range(self.config["total_iters"]):
+        for i in range(self.config.total_iters):
             overfit_opt.zero_grad()
             outputs = model(derived_batch_x)
             outputs = outputs[torch.arange(outputs.size(0)), actions]
@@ -159,7 +197,7 @@ class PreTrainProperFittingCheck(DebuggerInterface):
             overfit_opt.step()
             real_losses.append(loss_value.item())
             if not (self._loss_is_stable(loss_value.item())):
-                self.error_msg.append(self.main_msgs['underfitting_single_batch'])
+                self.error_msg.append(self.main_msgs["underfitting_single_batch"])
                 return False
         return real_losses
 
@@ -179,8 +217,10 @@ class PreTrainProperFittingCheck(DebuggerInterface):
         """
         loss_smoothness = smoothness(np.array(real_losses))
         min_loss = np.min(np.array(real_losses))
-        if min_loss <= self.config['abs_loss_min_thresh'] or (
-                min_loss <= self.config['loss_min_thresh'] and loss_smoothness > self.config['smoothness_max_thresh']):
-            self.error_msg.append(self.main_msgs['zero_loss'])
+        if min_loss <= self.config.abs_loss_min_thresh or (
+            min_loss <= self.config.loss_min_thresh
+            and loss_smoothness > self.config.smoothness_max_thresh
+        ):
+            self.error_msg.append(self.main_msgs["zero_loss"])
             return False
         return True
