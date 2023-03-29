@@ -256,7 +256,3 @@ def transform_2d(array, keep="first"):
         return array.reshape(array.shape[0], -1)
     elif keep == "last":
         return array.reshape(-1, array.shape[-1])
-
-
-def get_device():
-    return "cuda" if torch.cuda.is_available() else "cpu"

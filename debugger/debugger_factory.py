@@ -4,7 +4,6 @@ from debugger.utils import settings
 from debugger.utils.registry import registry
 import yaml
 import torch
-from debugger.utils.utils import get_device
 from debugger.utils.settings import react, load_default_config
 
 
@@ -17,6 +16,7 @@ class DebuggerFactory:
         self.observed_params_update_nums = dict()
         self.step_num = -1
         self.training = True
+        self.device = "cpu"
 
     def track_func(self, func_step, func_reset):
         """
@@ -48,7 +48,7 @@ class DebuggerFactory:
                     "next_observations"
                 ]
                 self.observed_params["next_observations"] = torch.tensor(
-                    results[0], device=get_device()
+                    results[0], device=self.get_device()
                 )
                 self.observed_params["reward"] += results[1]
                 self.observed_params["done"] = results[2]
@@ -68,7 +68,7 @@ class DebuggerFactory:
             results = func_reset(*args, **kwargs)
             if self.training:
                 self.observed_params["observations"] = torch.tensor(
-                    results, device=get_device()
+                    results, device=self.get_device()
                 )
                 self.observed_params_update_nums["observations"] += 1
             return results
@@ -291,3 +291,12 @@ class DebuggerFactory:
                     for value in values:
                         self.wandb_logger.plot({key: value})
             debugger.wandb_metrics = {}
+
+    def cuda(self):
+        if torch.cuda.is_available():
+            self.device = "cuda"
+            for debugger in self.debuggers.values():
+                debugger.device = "cuda"
+
+    def get_device(self):
+        return self.device

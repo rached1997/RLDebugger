@@ -134,9 +134,11 @@ class EnvironmentCheck(DebuggerInterface):
                 environment.action_space.sample()
             )
             self.save_observation_to_buffer(obs)
+            self._reward_list = self._reward_list.to(self.device)
             self._reward_list = torch.cat(
                 (self._reward_list, torch.tensor([reward], device=self.device)), dim=0
             )
+            self._done_list = self._done_list.to(self.device)
             self._done_list = torch.cat(
                 (self._done_list, torch.tensor([done], device=self.device)), dim=0
             )

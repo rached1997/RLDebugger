@@ -146,11 +146,13 @@ class ActionCheck(DebuggerInterface):
             torch.ones(actions_probs.shape[0], device=self.device),
         ):
             actions_probs = torch.softmax(actions_probs, dim=1)
+        self._action_prob_buffer = self._action_prob_buffer.to(self.device)
         self._action_prob_buffer = torch.cat(
             (self._action_prob_buffer, actions_probs), dim=0
         )
         if self.check_period():
             entropy = self.compute_entropy()
+            self._entropies = self._entropies.to(self.device)
             self._entropies = torch.cat((self._entropies, entropy.view(1)))
             self.wandb_metrics = {"entropy": entropy}
             self._action_prob_buffer = torch.tensor([], device=self.device)

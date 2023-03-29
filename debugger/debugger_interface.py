@@ -2,7 +2,6 @@ import inspect
 import torch
 from debugger.utils.registry import Registrable
 from debugger.utils import settings
-from debugger.utils.utils import get_device
 
 
 class DebuggerInterface(Registrable):
@@ -20,7 +19,7 @@ class DebuggerInterface(Registrable):
         self.max_total_steps = None
         self.arg_names = None
         self.wandb_metrics = {}
-        self.device = get_device()
+        self.device = "cpu"
 
     def check_period(self):
         """
