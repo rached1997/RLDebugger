@@ -88,6 +88,7 @@ class RewardsCheck(DebuggerInterface):
             max_total_steps (int): The maximum total number of steps to finish the training.
         """
         if self.is_final_step():
+            self._episodes_rewards = self._episodes_rewards.to(self.device)
             self._episodes_rewards = torch.cat(
                 (
                     self._episodes_rewards,

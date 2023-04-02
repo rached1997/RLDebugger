@@ -1,6 +1,6 @@
 numpy
 PyYAML
-torch
+torch==1.7.1
 scipy
 gym
 wandb

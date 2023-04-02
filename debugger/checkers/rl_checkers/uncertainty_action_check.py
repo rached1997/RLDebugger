@@ -1,9 +1,6 @@
-import numpy as np
-
 from debugger.config_data_classes.rl_checkers.uncertainty_action_config import (
     UncertaintyActionConfig,
 )
-from debugger.utils.utils import get_device
 from debugger.debugger_interface import DebuggerInterface
 import torch
 import random
@@ -27,10 +24,10 @@ class Memory:
         for obj in objs:
             self.append(obj)
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, device):
         indices = random.sample(range(self.size), batch_size)
         result = torch.stack([self.buffer[index] for index in indices], dim=0).squeeze()
-        return torch.tensor(result, device=get_device())
+        return torch.tensor(result, device=device)
 
 
 class DropoutWrapper(nn.Module):
@@ -102,7 +99,7 @@ class UncertaintyActionCheck(DebuggerInterface):
             self._buffer.append_batch(observations)
         if self.check_period() and self.iter_num >= self.config.start:
             last_layer_name, _ = list(model.named_modules())[-1]
-            observations_batch = self._buffer.sample(batch_size=self.config.batch_size)
+            observations_batch = self._buffer.sample(batch_size=self.config.batch_size, device=self.device)
             self.check_mont_carlo_dropout_uncertainty(
                 model, observations_batch, last_layer_name
             )
