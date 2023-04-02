@@ -228,6 +228,7 @@ class AgentCheck(DebuggerInterface):
                 self._old_model_output,
                 reduction="batchmean",
             )
+            self.wandb_metrics = {"kl_div": kl_div}
             if torch.any(kl_div > self.config.kl_div.div_threshold):
                 self.error_msg.append(
                     self.main_msgs["kl_div_high"].format(

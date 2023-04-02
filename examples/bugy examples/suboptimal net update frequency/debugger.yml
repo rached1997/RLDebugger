@@ -1,0 +1,15 @@
+debugger:
+  name: 'Debugger'
+  kwargs:
+    observed_params:
+      constant: []
+      variable: []
+    check_type:
+      - name: Loss
+        period: 10
+
+
+  wandb_logger:
+    disable: True
+    project: Hive
+    name: gym-dqn

@@ -1,6 +1,7 @@
 import os
 import logging
 from configparser import ConfigParser
+from difflib import SequenceMatcher
 from pathlib import Path
 from debugger.utils.wandb_logger import WandbLogger
 import yaml
@@ -106,6 +107,22 @@ def set_wandb_logger(config_path):
         return None
 
 
+def delete_duplicate_messages(messages):
+    new_list = []
+
+    for i in range(len(messages)):
+        is_duplicate = False
+        for j in range(i + 1, len(messages)):
+            similarity = SequenceMatcher(None, messages[i], messages[j]).ratio()
+            if similarity >= 0.5:
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            new_list.append(messages[i])
+
+    return new_list
+
+
 def react(logger, messages, fail_on=False):
     """
     Reacts to the provided `messages` by either raising an exception or logging a warning, depending on the value of
@@ -117,6 +134,7 @@ def react(logger, messages, fail_on=False):
         fail_on (bool): if True it raises an exception otherwise it only displays the error
     """
     if len(messages) > 0:
+        messages = delete_duplicate_messages(messages)
         for message in messages:
             if fail_on:
                 logger.error(message)

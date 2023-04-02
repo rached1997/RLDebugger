@@ -17,6 +17,7 @@ class DebuggerFactory:
         self.step_num = -1
         self.training = True
         self.device = "cpu"
+        self.display_ratio_period = 0.05
 
     def track_func(self, func_step, func_reset):
         """
@@ -98,8 +99,8 @@ class DebuggerFactory:
         Returns (bool): returns True if the step is the last one in an episode, and False otherwise.
         """
         if self.observed_params["done"] or (
-            (self.step_num > 0)
-            and ((self.step_num % self.observed_params["max_steps_per_episode"]) == 0)
+                (self.step_num > 0)
+                and ((self.step_num % self.observed_params["max_steps_per_episode"]) == 0)
         ):
             return True
         return False
@@ -127,8 +128,8 @@ class DebuggerFactory:
             for arg in arg_names:
                 param_update_num = self.observed_params_update_nums[arg]
                 if not (
-                    param_update_num == -1
-                    or param_update_num >= debugger.get_number_off_calls()
+                        param_update_num == -1
+                        or param_update_num >= debugger.get_number_off_calls()
                 ):
                     is_ready = False
                     break
@@ -141,6 +142,7 @@ class DebuggerFactory:
                 debugger.increment_iteration()
                 debugger.run(**kwargs)
                 self.plot_wandb(debugger)
+            if (self.step_num % (self.observed_params["max_total_steps"] * self.display_ratio_period)) == 0:
                 react(self.logger, debugger.error_msg)
                 debugger.reset_error_msg()
 
@@ -268,15 +270,15 @@ class DebuggerFactory:
         self.training = True
 
     def set_custom_wandb_logger(
-        self,
-        project,
-        name,
-        dir=None,
-        mode=None,
-        id=None,
-        resume=None,
-        start_method=None,
-        **kwargs,
+            self,
+            project,
+            name,
+            dir=None,
+            mode=None,
+            id=None,
+            resume=None,
+            start_method=None,
+            **kwargs,
     ):
         self.wandb_logger.custom_wandb_logger(
             project, name, dir, mode, id, resume, start_method, **kwargs
