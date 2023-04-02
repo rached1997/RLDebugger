@@ -1,0 +1,19 @@
+debugger:
+  name: 'Debugger'
+  kwargs:
+    observed_params:
+      constant: []
+      variable: []
+    check_type:
+      - name: Environment
+      - name: Bias
+        period: 10
+      - name: Weight
+        period: 10
+      - name: Reward
+        period: 10
+
+  wandb_logger:
+    disable: True
+    project: Hive
+    name: gym-dqn

@@ -103,7 +103,7 @@ each checker).
 ## Integrating the Debugger tool in your DRL Pytorch Application
 To integrate the tool you have to do the following 4 steps : 
 
-### Step 1. Prepare the config file
+### 1. Prepare the config file
 ***
 
 Create a .yml config file and copy the following lines :
