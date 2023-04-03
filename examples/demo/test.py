@@ -133,3 +133,13 @@ def learn():
 for e in range(EPISODES):
     run_episode(e, env)
 env.close()
+
+print(rl_debugger.step_num)
+
+from debugger import reset_debugger
+
+reset_debugger()
+
+from debugger import rl_debugger
+
+print(rl_debugger.step_num)

@@ -49,33 +49,34 @@ def build_log_file_path(app_path, app_name):
 
 
 def file_logger(file_path, app_name):
-    """
-    Creates a logger object that writes logs to both a file and the console.
+   """
+   Creates a logger object that writes logs to both a file and the console.
 
-    Args:
-        file_path (str): The file path for the log file.
-        app_name (str): The name of the application.
+   Args:
+       file_path (str): The file path for the log file.
+       app_name (str): The name of the application.
 
-    Returns:
-        logging.Logger: A logger object that writes logs to both a file and the console.
-    """
-    logger = logging.getLogger(f"TheDRLDebugger: {app_name} Logs")
-    logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler(file_path)
-    fh.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    return logger
+   Returns:
+       logging.Logger: A logger object that writes logs to both a file and the console.
+   """
+   logger = logging.getLogger(f"TheDRLDebugger: {app_name} Logs")
+   logger.setLevel(logging.DEBUG)
+   fh = logging.FileHandler(file_path)
+   fh.setLevel(logging.DEBUG)
+   formatter = logging.Formatter(
+       "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+   )
+   fh.setFormatter(formatter)
+   logger.addHandler(fh)
+   ch = logging.StreamHandler()
+   ch.setLevel(logging.DEBUG)
+   formatter = logging.Formatter(
+       "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+   )
+   ch.setFormatter(formatter)
+   logger.addHandler(ch)
+   return logger
+
 
 
 def set_logger():

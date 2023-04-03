@@ -5,7 +5,8 @@ from scipy.stats import mannwhitneyu
 import torch
 
 
-def get_data_slope(data):
+# This function work with pytorch 1.7.1 and is now deprecated (torch.lstsq)
+def get_data_slope_old(data):
     """Compute the slope of entropy evolution over time.
 
     Returns:
@@ -19,6 +20,22 @@ def get_data_slope(data):
     cof, _ = torch.lstsq(data.unsqueeze(1), X)
 
     return cof[0:2]
+
+
+def get_data_slope(entropies):
+    """Compute the slope of entropy evolution over time.
+
+    Returns:
+    entropy_slope (float): The slope of the linear regression fit to the entropy values.
+    """
+    # Compute the x-values (time steps) for the linear regression
+    x = torch.arange(len(entropies), device=entropies.device)
+    # Fit a linear regression model to the entropy values
+    ones = torch.ones_like(x)
+    X = torch.stack([x, ones], dim=1).float()
+    cof = torch.linalg.lstsq(X, entropies.unsqueeze(1))
+
+    return cof.solution
 
 
 def estimate_fluctuation_rmse(slope_coef, data):
@@ -109,7 +126,7 @@ def pure_f_test(data, ref_std, alpha=0.1):
     if isinstance(data, torch.Tensor):
         data = data.detach().cpu().numpy()
     var_1 = np.std(data) ** 2
-    var_2 = ref_std**2
+    var_2 = ref_std ** 2
     F = var_1 / var_2 if var_1 > var_2 else var_2 / var_1
     return F, F <= _F_critical(alpha)
 

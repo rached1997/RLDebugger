@@ -52,6 +52,16 @@ class DebuggerSingleton:
             cls._instance.set_config()
         return cls._instance
 
+    @staticmethod
+    def reset():
+        DebuggerSingleton._instance = None
+
 
 # Create an instance of the singleton class
 rl_debugger = DebuggerSingleton()
+
+
+def reset_debugger():
+    global rl_debugger
+    DebuggerSingleton.reset()
+    rl_debugger = DebuggerSingleton()

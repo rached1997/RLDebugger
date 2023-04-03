@@ -29,7 +29,7 @@ class ExplorationParameterCheck(DebuggerInterface):
         self._exploration_factor_buffer = []
         self._initial_value_checked = False
 
-    def run(self, exploration_factor) -> None:
+    def run(self, exploration_factor, max_total_steps) -> None:
         """
         ------------------------------   I. Introduction of the Exploration Params Check  ------------------------------
 
@@ -86,21 +86,19 @@ class ExplorationParameterCheck(DebuggerInterface):
         if self.is_final_step():
             self._exploration_factor_buffer += [exploration_factor]
         if not self._initial_value_checked:
-            self.check_initial_value()
+            self.check_initial_value(exploration_factor)
         self.check_exploration_parameter_monotonicity()
-        self.check_is_changing_too_quickly()
+        self.check_is_changing_too_quickly(max_total_steps)
 
-    def check_initial_value(self):
+    def check_initial_value(self, exploration_factor):
         """
         Checks if the initial value is correctly set.
         """
-        if (
-            len(self._exploration_factor_buffer) == 1
-        ) and not self.config.check_initialization.disabled:
-            if self._exploration_factor_buffer[0] != self.config.starting_value:
+        if not self.config.check_initialization.disabled:
+            if exploration_factor != self.config.starting_value:
                 self.error_msg.append(
                     self.main_msgs["bad_exploration_param_initialization"].format(
-                        self._exploration_factor_buffer[0], self.config.starting_value
+                        exploration_factor, self.config.starting_value
                     )
                 )
             self._initial_value_checked = True
@@ -125,20 +123,21 @@ class ExplorationParameterCheck(DebuggerInterface):
             ):
                 self.error_msg.append(self.main_msgs["decreasing_exploration_factor"])
 
-    def check_is_changing_too_quickly(self):
+    def check_is_changing_too_quickly(self, max_total_steps):
         """
         Checks if the exploration parameter's value is changing too quickly
         """
         if self.config.check_quick_change.disabled:
             return
         if self.check_period():
+            reached_end_val = (self.step_num < max_total_steps * 0.05) and (np.any(np.array(self._exploration_factor_buffer) < 0.1))
             abs_second_derivative = np.abs(
                 np.gradient(np.gradient(self._exploration_factor_buffer))
             )
             if np.any(
                 abs_second_derivative
                 > self.config.check_quick_change.strong_decrease_thresh
-            ):
+            ) or reached_end_val:
                 self.error_msg.append(
                     self.main_msgs["quick_changing_exploration_factor"]
                 )
