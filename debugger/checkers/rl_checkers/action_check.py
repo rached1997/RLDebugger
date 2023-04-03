@@ -176,6 +176,8 @@ class ActionCheck(DebuggerInterface):
         """
         log_probs = torch.log(self._action_prob_buffer)
         entropy = -torch.mean(torch.sum(self._action_prob_buffer * log_probs, dim=1))
+        if torch.isnan(entropy):
+            entropy = torch.tensor(0, device=self.device)
         return entropy
 
     def check_entropy_start_very_low(self):
