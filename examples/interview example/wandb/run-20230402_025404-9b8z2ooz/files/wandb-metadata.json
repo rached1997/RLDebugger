@@ -1,0 +1,24 @@
+{
+    "os": "Windows-10-10.0.17134-SP0",
+    "python": "3.7.13",
+    "heartbeatAt": "2023-04-02T06:54:47.710712",
+    "startedAt": "2023-04-02T06:54:04.818604",
+    "docker": null,
+    "gpu": "GeForce 920M",
+    "gpu_count": 1,
+    "cpu_count": 4,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "C:\\Users\\EXTRA\\Desktop\\RL debugging\\RLDebugger\\examples\\interview example\\buggy_dqn.py",
+    "codePath": "examples\\interview example\\buggy_dqn.py",
+    "git": {
+        "remote": "https://github.com/rached1997/RLDebugger.git",
+        "commit": "abbc251cbd9f705ec474ab5a2ee85ba1f1d30383"
+    },
+    "email": "bouchoucharached@gmail.com",
+    "root": "C:/Users/EXTRA/Desktop/RL debugging/RLDebugger",
+    "host": "DESKTOP-VHI3HDI",
+    "username": "EXTRA",
+    "executable": "C:\\Users\\EXTRA\\Anaconda3-2021\\envs\\RL_debugging\\python.exe"
+}
