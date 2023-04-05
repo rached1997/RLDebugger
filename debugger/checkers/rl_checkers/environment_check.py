@@ -29,7 +29,7 @@ class EnvironmentCheck(DebuggerInterface):
         self._reward_list = torch.tensor([], device=self.device)
         self._done_list = torch.tensor([], device=self.device)
 
-    def run(self, environment) -> None:
+    def run(self, unwrapped_environment) -> None:
         """
         ----------------------------------- I. Introduction of the Environment Check -----------------------------------
 
@@ -95,10 +95,10 @@ class EnvironmentCheck(DebuggerInterface):
             environment (gym.env): the training RL environment
         """
         if self.check_period():
-            if environment.spec.max_episode_steps:
-                self.generate_random_eps(environment)
-                self.check_env_conception(environment)
-                if sum(self._reward_list) > environment.spec.reward_threshold:
+            if unwrapped_environment.spec.max_episode_steps:
+                self.generate_random_eps(unwrapped_environment)
+                self.check_env_conception(unwrapped_environment)
+                if sum(self._reward_list) > unwrapped_environment.spec.reward_threshold:
                     self.error_msg.append(self.main_msgs["weak_reward_threshold"])
                 aaa = torch.mean(torch.std(self._obs_list, dim=0))
                 if (
@@ -122,7 +122,7 @@ class EnvironmentCheck(DebuggerInterface):
         Returns:
 
         """
-        environment = copy.deepcopy(environment)
+        # environment = copy.deepcopy(environment)
         done = False
         initial_obs = torch.tensor(environment.reset(), device=self.device)
         self.save_observation_to_buffer(initial_obs)

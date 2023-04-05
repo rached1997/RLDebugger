@@ -1,3 +1,5 @@
+import copy
+
 from debugger import DebuggerInterface
 import debugger as debugger_lib
 from debugger.utils import settings
@@ -115,6 +117,8 @@ class DebuggerFactory:
             if self.observed_params_update_nums[key] != -1:
                 self.observed_params_update_nums[key] += 1
         if "environment" in kwargs.keys() and self.step_num == -1:
+            self.observed_params["unwrapped_environment"] = copy.deepcopy(kwargs["environment"])
+            self.observed_params_update_nums["unwrapped_environment"] = -1
             self.wrap_env(kwargs["environment"])
 
     def run(self):
